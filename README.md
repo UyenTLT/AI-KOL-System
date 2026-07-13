@@ -57,6 +57,13 @@ Buildup_KOL/
 
 ---
 
+## 工具 Tools
+
+`tools/vlog_app.py` — 本地端把 KOL 照片變成直式 9:16 TikTok/Reels vlog（LLM 腳本 → `say` 配音 →
+Ken Burns + 字幕 → ffmpeg 合成）。100% local、免費。用法見 [`tools/README.md`](tools/README.md)。
+
+---
+
 ## 延伸研究：本地端互動 AI 伴侶
 
 `research/local-ai-companion/` 是一條探索中的延伸研究：如何把 `kols/` 裡的靜態人格資料，變成一個
