@@ -1,0 +1,127 @@
+{
+  "id": "jax-calloway",
+  "meta": {
+    "created_at": "2026-07-05",
+    "updated_at": "2026-07-05",
+    "status": "draft",
+    "category": "lifestyle",
+    "flavor": "Male Real-IP / Confident-Casual",
+    "tags": ["male", "real-ip", "authentic", "candid", "film-grain", "festival", "streetwear", "fitness", "lifestyle", "americana", "unfiltered", "first-male-kol"],
+    "reference_profiles": [],
+    "reference_note": "Style standard derived from 3 user-uploaded reference photos (festival golden-hour, desert road-trip, streetwear fast-food candid) — recorded as a STYLE reference only, per repo convention (same as @11.mzzz for mika-tran). Jax is an ORIGINAL identity — not a clone of any real individual's likeness, identity, or private details. Full derived standard: docs/03-kol-male-real-ip-standard.md.",
+    "design_note": "Flavor 4 — Male Real-IP / Confident-Casual. First male KOL in this database. The hook is the same real-IP realness doctrine as Flavor 3, applied to a male identity: gym-lean confident build, candid unstaged moments across 3 real-world scene genres (festival, road-trip, streetwear). Adult persona, mainstream/brand-safe level — confident and attractive, never explicit."
+  },
+  "identity": {
+    "name": "Jax Calloway",
+    "handle": "@jax.calloway",
+    "age": 23,
+    "ethnicity": "White American",
+    "origin": "Austin, Texas (USA)",
+    "current_location": "Los Angeles, CA (West Hollywood-adjacent)",
+    "languages": ["English (native)", "Spanish (conversational)"],
+    "appearance": {
+      "height": "183cm",
+      "hair": "Light-to-medium brown, wavy, tousled and swept — natural, not overly styled",
+      "eyes": "Hazel, light, a little sleepy-confident",
+      "face": "Sharp defined jawline, straight nose, full lips, fair-to-light-olive skin with real texture",
+      "build": "Gym-lean athletic — visible abs, natural shoulder line, toned not bulky (not bodybuilder)",
+      "style_vibe": "Confident-casual Americana: exposed waistband branding, layered chain necklaces, rings, engraved western belt buckles, denim, vintage sunglasses. Effortless, a little undone — never overly styled or 'trying too hard'."
+    }
+  },
+  "persona": {
+    "archetype": "The Effortlessly Confident One — the guy who looks like he just wandered into a great photo; charming, a little cocky in a self-aware way, easy to be around",
+    "personality_traits": [
+      "Confident and easygoing — never try-hard",
+      "Playfully cocky with enough self-awareness to laugh at himself",
+      "Physically active — festivals, road trips, gym, outdoors — always doing something",
+      "Warm and social; the friend who makes any group bigger and better",
+      "A little impulsive — spontaneous trips, last-minute plans",
+      "Style-conscious without being precious about it"
+    ],
+    "values": [
+      "Living in the moment over overplanning",
+      "Real experiences over a curated highlight reel",
+      "Loyalty to his friend group",
+      "Staying active and healthy as a lifestyle, not a performance",
+      "Confidence without arrogance"
+    ],
+    "backstory": "Jax grew up in Austin, played club soccer and worked summers at his uncle's vintage-truck restoration shop — which explains the old Land Rover he's always driving somewhere. He moved to LA at 21 chasing a marketing job and never really left the West Coast festival-and-road-trip circuit. He's the friend who always has a plan for the weekend, a story from the last one, and somehow always looks like he stepped out of a candid photo, even at the drive-thru.",
+    "voice_tone": "Casual, warm, a little cocky but self-aware. Short, confident sentences. Talks like texting a friend group chat — dry humor, not trying to sound polished.",
+    "humor_style": "Dry, self-aware, a little cocky but always in on the joke. Roasts his own 'main character energy' before anyone else can.",
+    "quirks": [
+      "Always has sunglasses on or pushed up, rain or shine",
+      "Never orders the same drink twice, then regrets it",
+      "Documents every road trip like it's a movie trailer",
+      "Wears the same three necklaces every single day",
+      "Shows up 10 minutes late to everything, blames traffic every time"
+    ]
+  },
+  "content": {
+    "pillars": [
+      { "name": "Festival / Live Events", "description": "Music festivals, concerts, golden-hour crowd energy — shirtless or open-shirt confidence, high-energy candid moments.", "weight": "25%" },
+      { "name": "Road Trip / Outdoors", "description": "Vintage vehicle road trips, desert/coastal drives, casual outdoor moments — relaxed, unstaged, travel-props-forward.", "weight": "25%" },
+      { "name": "Streetwear / Daily Life", "description": "Everyday candid content — coffee runs, fast food stops, street style — proves the look holds up in ordinary light and settings.", "weight": "20%" },
+      { "name": "Gym / Fitness", "description": "Real gym sessions and post-workout candids — framed as energy and lifestyle, never a body-image sell.", "weight": "15%" },
+      { "name": "Friends / Social", "description": "Group hangouts, nights out, the social glue of the friend group — blurred-friends-in-background candids.", "weight": "10%" },
+      { "name": "Real Talk", "description": "Short, dry, self-aware reflections — a little cocky, always in on the joke.", "weight": "5%" }
+    ],
+    "formats": [
+      "Candid environmental photos — signature format across all three scene genres",
+      "Short-form vertical video (Reels/TikTok) — festival clips, road-trip montages, GRWM",
+      "Photo dumps — mixed candid frames from a weekend or trip",
+      "Stories — frequent, casual, friend-group energy"
+    ],
+    "posting_frequency": "Instagram: 1 feed post + 4–6 Stories daily. TikTok: 1 video daily. Higher volume around festivals/trips.",
+    "aesthetic": {
+      "color_palette": ["warm film tones", "sun-bleached denim blue", "desert tan", "golden backlight", "muted festival neon"],
+      "mood": "Warm, confident, unstaged — feels like a real camera roll from a great weekend, not a studio shoot.",
+      "editing_style": "35mm film grain, phone-camera realism, natural/available light only. Minimal retouching — keeps real skin texture, sweat sheen, and natural build. NO exaggerated muscle editing, NO studio polish."
+    },
+    "brand_do": [
+      "Menswear, denim, and streetwear brands",
+      "Sunglasses, jewelry, and accessories brands",
+      "Festival, travel, and outdoor/adventure brands",
+      "Fitness and activewear (energy-focused, not aesthetic-obsessed)",
+      "Beverage, food, and casual lifestyle brands"
+    ],
+    "brand_dont": [
+      "Anything explicit, adult, or NSFW — confident and attractive, mainstream IG level",
+      "Body-image-focused / 'get shredded' fitness products",
+      "Overly-polished luxury campaigns that break his casual, unstaged voice",
+      "Heavily-scripted reads or staged 'perfect life' framing",
+      "Airbrushing or exaggerated-muscle editing requirements"
+    ]
+  },
+  "social": {
+    "platforms": {
+      "instagram": { "handle": "@jax.calloway", "focus": "Festival, road-trip, and streetwear candids — home base", "follower_tier": "macro" },
+      "tiktok": { "handle": "@jax.calloway", "focus": "Festival clips, road-trip montages, GRWM, gym", "follower_tier": "macro" }
+    },
+    "engagement_style": "Casual, warm, a little cocky — replies like texting a friend. Runs polls on trip destinations and outfit picks, reposts friends' candids of him.",
+    "community_name": "the crew"
+  },
+  "ai_assets": {
+    "consistency": "reference_element",
+    "generation_model": "seedream_v4_5",
+    "primary_element_id": null,
+    "element_v1": {
+      "element_id": null,
+      "generation_model": "seedream_v4_5",
+      "element_status": "pending",
+      "canonical_face_job_id": null,
+      "images_path": "kols/jax-calloway/images/seedream_v1/",
+      "note": "Male Real-IP seed chain per docs/03-kol-male-real-ip-standard.md. Generate canonical face with Seedream (text-only) -> show_reference_elements(action=create) -> generate content shots with Seedream + <<<element_id>>> embedded in prompt. Souls are soul_2-only and not used. Fill element_id + job ids after generation."
+    }
+  },
+  "ai_prompts": {
+    "engine_notes": "First male KOL. Generated with SEEDREAM (seedream_v4_5) + Higgsfield Reference Element for identity consistency (embed <<<element_id>>> in the prompt). Always film-candid, never studio. Full standard: docs/03-kol-male-real-ip-standard.md. Aspect ratio 3:4 (Seedream holds it natively).",
+    "base_character_prompt": "A candid, authentic phone-camera photo of Jax, a 23-year-old White American man, gym-lean athletic build with visible abs and a natural shoulder line, sharp defined jawline, straight nose, full lips, hazel eyes with a relaxed confident gaze, light-to-medium brown wavy tousled hair, fair-to-light-olive skin with real texture and natural sheen. Real-person influencer vibe, not studio-polished. Shot on 35mm film camera, film grain, natural available light, authentic unstaged moment, natural skin texture. --ar 3:4",
+    "negative_prompt_sd": "exaggerated bodybuilder muscle, studio lighting, glossy, over-retouched, plastic skin, heavy smoothing, airbrushed, posing for camera, professional model pose, oversaturated, fake AI look, nsfw, explicit, deformed, extra fingers, watermark, logo, text",
+    "scenes": [
+      { "id": "A_festival_golden_hour", "label": "音樂節黃金時刻 (festival-golden-hour)", "prompt": "<<<element_id>>>, shirtless, layered thin necklace, white cat-eye sunglasses, stacked colorful festival wristbands, rings, hooking thumbs into waistband looking off to the side, at an outdoor music festival at golden hour, blurred crowd and a ferris wheel silhouette in the background, warm backlight, sun-kissed skin with natural sweat sheen, shot on 35mm film, film grain, authentic candid festival moment, natural skin texture. --ar 3:4" },
+      { "id": "B_road_trip_desert", "label": "沙漠公路旅行 (road-trip-casual)", "prompt": "<<<element_id>>>, shirtless with grey drawstring sweatpants, silver cross necklace, sneakers kicked off on the ground nearby, looking down adjusting his waistband, leaning against a vintage green off-road vehicle parked on a sandy coastal cliff, flat hazy late-afternoon daylight, relaxed road-trip mood, shot on 35mm film, film grain, authentic unstaged moment, natural skin texture. --ar 3:4" },
+      { "id": "C_streetwear_fastfood", "label": "速食店街拍 (streetwear-candid)", "prompt": "<<<element_id>>>, sleeveless acid-wash denim western shirt with snap buttons, layered silver chain necklaces, white rectangular sunglasses, engraved western belt buckle, holding two fast-food drinks walking out of a storefront glass door, direct glance at camera like caught looking up, mixed fluorescent and daylight indoor-outdoor lighting, blurred figures in background, shot on 35mm film, film grain, authentic street candid moment, natural skin texture. --ar 3:4" },
+      { "id": "D_gym_mirror", "label": "健身房鏡子 (gym-mirror)", "prompt": "<<<element_id>>>, wearing grey gym shorts, post-workout gym mirror selfie, natural toned physique, slightly flushed, phone in hand, relaxed confident half-smile, natural gym daylight, shot on 35mm film, film grain, authentic candid moment, natural skin texture. --ar 3:4" }
+    ]
+  }
+}

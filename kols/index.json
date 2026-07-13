@@ -1,0 +1,99 @@
+{
+  "version": "1.0.0",
+  "description": "Master index of all KOL profiles in this database",
+  "kols": [
+    {
+      "id": "sofia-vargas",
+      "name": "Sofia Vargas",
+      "handle": "@sofiavargasreal",
+      "category": "lifestyle",
+      "ethnicity": "Latina (Colombian)",
+      "status": "active",
+      "created_at": "2026-06-20",
+      "path": "kols/sofia-vargas/"
+    },
+    {
+      "id": "xie-yizhen",
+      "name": "謝宜蓁",
+      "handle": "@yizhen.daily",
+      "category": "lifestyle",
+      "ethnicity": "Taiwanese",
+      "status": "active",
+      "created_at": "2026-06-20",
+      "path": "kols/xie-yizhen/"
+    },
+    {
+      "id": "xiang-xiang",
+      "name": "香香",
+      "handle": null,
+      "category": "food_beverage_lifestyle",
+      "ethnicity": "Taiwanese",
+      "status": "photos_collected",
+      "created_at": "2026-06-21",
+      "path": "kols/xiang-xiang/"
+    },
+    {
+      "id": "chloe-lin",
+      "name": "Chloe Lin (林可昕)",
+      "handle": "@chloe.linnn",
+      "category": "lifestyle",
+      "ethnicity": "Eurasian (British-Taiwanese)",
+      "status": "draft",
+      "created_at": "2026-06-28",
+      "path": "kols/chloe-lin/"
+    },
+    {
+      "id": "sienna-lai",
+      "name": "Sienna Lai (賴思妍)",
+      "handle": "@sienna.lai",
+      "category": "lifestyle",
+      "ethnicity": "Taiwanese-Canadian",
+      "status": "draft",
+      "created_at": "2026-06-28",
+      "path": "kols/sienna-lai/"
+    },
+    {
+      "id": "brooke-sinclair",
+      "name": "Brooke Sinclair",
+      "handle": "@brookesinclair",
+      "category": "lifestyle",
+      "ethnicity": "White American",
+      "status": "draft",
+      "created_at": "2026-06-28",
+      "path": "kols/brooke-sinclair/"
+    },
+    {
+      "id": "mika-tran",
+      "name": "Mika Tran",
+      "handle": "@mika.trn",
+      "category": "lifestyle",
+      "ethnicity": "Vietnamese-American",
+      "status": "draft",
+      "created_at": "2026-07-05",
+      "path": "kols/mika-tran/"
+    },
+    {
+      "id": "jax-calloway",
+      "name": "Jax Calloway",
+      "handle": "@jax.calloway",
+      "category": "lifestyle",
+      "gender": "male",
+      "ethnicity": "White American",
+      "status": "draft",
+      "created_at": "2026-07-05",
+      "path": "kols/jax-calloway/"
+    },
+    {
+      "id": "lena-chen",
+      "name": "Lena Chen (陳語彤)",
+      "handle": "@lena.chennn",
+      "category": "lifestyle",
+      "ethnicity": "Eurasian (Taiwanese-American)",
+      "status": "draft",
+      "created_at": "2026-07-13",
+      "role": "R2-active-seller",
+      "markets": ["taiwan", "americas", "europe"],
+      "path": "kols/lena-chen/"
+    }
+  ]
+}

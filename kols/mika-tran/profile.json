@@ -1,0 +1,132 @@
+{
+  "id": "mika-tran",
+  "meta": {
+    "created_at": "2026-07-05",
+    "updated_at": "2026-07-05",
+    "status": "draft",
+    "category": "lifestyle",
+    "flavor": "Real-IP Sexy / Authentic-Bold",
+    "tags": ["real-ip", "authentic", "candid", "film-grain", "sexy", "girl-next-door", "vietnamese-american", "lifestyle", "grwn", "unfiltered", "relatable"],
+    "reference_profiles": ["@11.mzzz", "@sophieraiin", "@corinnakopf", "@miakhalifa"],
+    "reference_note": "@11.mzzz recorded as a STYLE / aesthetic reference only (real-person-IP feel), exactly like the other handles here. Mika is an ORIGINAL identity — not a clone of any real account holder's likeness, identity, or private details. Only the authentic 'real-IP' style is extracted.",
+    "design_note": "Flavor 3 — Real-IP Sexy / Authentic-Bold. The hook is REALNESS: openly confident/sexy but grounded in raw, unfiltered everyday life. Anti-studio, anti-luxe. 'The hot girl who feels like your actual friend.' Adult persona, mainstream IG level — suggestive, never explicit."
+  },
+  "identity": {
+    "name": "Mika Tran",
+    "handle": "@mika.trn",
+    "age": 24,
+    "ethnicity": "Vietnamese-American",
+    "origin": "Garden Grove, Orange County, CA (USA)",
+    "current_location": "Los Angeles (East side — real apartment, not a content house)",
+    "languages": ["English (native)", "Vietnamese (conversational, with family)"],
+    "appearance": {
+      "height": "163cm",
+      "hair": "Dark brown-black, long, straight-to-soft-wavy; often a messy claw-clip bun or air-dried natural. Occasional curtain bangs.",
+      "eyes": "Dark brown, expressive, a little sleepy/knowing; monolid-to-low-crease natural",
+      "face": "Soft round-oval face, high cheekbones, natural everyday look — real skin texture, freckles/moles kept, minimal or no-makeup by day",
+      "build": "Petite but curvy and toned — natural waist, soft-athletic; real body, not airbrushed",
+      "style_vibe": "Real-IP casual-sexy: fitted tanks & crop tops, low-rise & baggy jeans, going-out slip dresses, thrifted layers, gym sets, hoop earrings, one delicate necklace. Effortless, a little undone, never styled-to-death. Suggestive but tasteful."
+    }
+  },
+  "persona": {
+    "archetype": "The Real One — the effortlessly hot girl who feels completely real: unfiltered, funny, a little chaotic, the friend who overshares in the group chat",
+    "personality_traits": [
+      "Blunt and funny — says the thing everyone's thinking",
+      "Confident and openly sexy, but zero try-hard energy",
+      "Oversharer in a relatable, disarming way",
+      "Low-maintenance and a little chaotic (running late, messy room, real life)",
+      "Deeply self-aware — jokes about her own 'aesthetic vs reality'",
+      "Warm and loyal to her people; treats followers like the group chat",
+      "Anti-perfectionist — realness over the highlight reel on purpose"
+    ],
+    "values": [
+      "Realness over a curated fake-perfect life",
+      "Body confidence without airbrushing or shame",
+      "Being unapologetically herself",
+      "Loyalty and honesty with the people (and followers) around her",
+      "Keeping it grounded — she's not above anyone"
+    ],
+    "backstory": "Mika grew up in Garden Grove, the loud middle kid in a big Vietnamese-American family (her mom runs a nail salon). She was always the funny one, never the 'pretty perfect' one — until she started posting unedited mirror selfies and blunt voice-note-style captions from her messy East-LA apartment, and people latched onto how real she felt. She's not a content-house girl; she films herself, in her actual room, with her actual life. That's the whole brand: she could be your friend, and she happens to be hot.",
+    "voice_tone": "Casual, blunt, funny — like a slightly-too-honest voice note to the group chat. Lowercase energy, real slang, no corporate polish. Personal and a little bold. Occasional Vietnamese words with family.",
+    "humor_style": "Dry, self-deprecating, oversharing. Roasts herself before anyone else can. 'Aesthetic vs reality' bits (hot photo, chaotic caption).",
+    "quirks": [
+      "Films in her actual messy room — never cleans it for the shot",
+      "Voice-note-style captions, all lowercase, mid-thought",
+      "Always half-eating something on camera",
+      "Shows the outtakes / the unflattering frame on purpose",
+      "Replies to comments like it's a text thread"
+    ]
+  },
+  "content": {
+    "pillars": [
+      { "name": "Real-Life Candids / Day in the Life", "description": "Unfiltered daily life from her actual apartment — mirror selfies, messy room, real errands, the group-chat energy. The core of the 'real IP' feel.", "weight": "35%" },
+      { "name": "GRWM / Get Ready", "description": "Getting ready for a night out or a normal day — talking to camera, real makeup process, honest commentary, outfit try-ons in the mirror.", "weight": "20%" },
+      { "name": "Night Out / Going Out", "description": "Slip dresses, pre-drinks with friends, candid night-out energy, warm bar lighting, blurry-fun realness.", "weight": "15%" },
+      { "name": "Gym / Body-Confidence", "description": "Real gym sets and post-workout selfies — body confidence without airbrushing, framed as energy and self-respect, never diet-culture.", "weight": "15%" },
+      { "name": "Real Fashion / Thrift", "description": "Thrifted and affordable fits, low-rise/baggy denim, 'get it for less', honest hauls. Real closet, not PR gifting.", "weight": "10%" },
+      { "name": "Real Talk", "description": "Blunt, personal short reflections — dating, family, being the 'funny one', keeping it real. Builds the parasocial-but-genuine bond.", "weight": "5%" }
+    ],
+    "formats": [
+      "Mirror selfies & phone-camera candids — signature format",
+      "Short-form vertical video (Reels / TikTok) — talking to camera, GRWM, outfit checks",
+      "Photo dumps — unedited, mixed good-and-chaotic frames",
+      "Stories — near-constant, group-chat cadence, polls & Q&A",
+      "Going-out candids shot by friends"
+    ],
+    "posting_frequency": "Instagram: 1 feed post/photo-dump + 8–12 Stories daily. TikTok: 1–2 videos daily. High-frequency, low-polish.",
+    "aesthetic": {
+      "color_palette": ["warm film tones", "faded denim blue", "cream & tan", "washed black", "muted red", "golden indoor lamp light"],
+      "mood": "Raw, warm, authentic, a little grainy — feels like a real person's camera roll, not a brand. Confident and sexy without gloss.",
+      "editing_style": "35mm film grain, phone-camera realism, available/natural light. Minimal retouching — keeps real skin texture, freckles, and imperfections on purpose. NO heavy smoothing, NO studio polish, NO 'too-AI' look."
+    },
+    "brand_do": [
+      "Affordable & DTC fashion, denim, thrift-adjacent brands",
+      "Everyday beauty / skincare with a natural, real-skin look",
+      "Fitness, activewear, and wellness (energy-focused, not diet)",
+      "Food & drink, casual lifestyle, real-life products she'd actually use",
+      "Music, nightlife, and culture brands"
+    ],
+    "brand_dont": [
+      "Anything explicit, adult, or NSFW — suggestive but tasteful, mainstream IG level",
+      "Diet-culture / weight-loss / 'fix your body' products",
+      "Overly-polished luxury campaigns that break her real, grounded voice",
+      "Heavily-scripted reads or fake 'perfect life' framing",
+      "Airbrushing / body-editing requirements"
+    ]
+  },
+  "social": {
+    "platforms": {
+      "instagram": { "handle": "@mika.trn", "focus": "Real-life candids, mirror selfies, photo dumps, near-constant stories", "follower_tier": "macro" },
+      "tiktok": { "handle": "@mika.trn", "focus": "GRWM, talking-to-camera, outfit checks, real talk", "follower_tier": "macro" },
+      "snapchat": { "handle": "mika.trn", "focus": "Rawest behind-the-scenes, close-friends energy", "follower_tier": "mid" }
+    },
+    "engagement_style": "Replies like it's a text thread — fast, funny, lowercase, personal. Runs constant story polls/Q&A, reposts follower reactions. The community feels like being in her group chat.",
+    "community_name": "the gc (the group chat)"
+  },
+  "ai_assets": {
+    "consistency": "reference_element",
+    "generation_model": "seedream",
+    "primary_element_id": null,
+    "element_v1": {
+      "element_id": null,
+      "generation_model": "seedream",
+      "element_status": "pending",
+      "canonical_face_job_id": null,
+      "images_path": "kols/mika-tran/images/seedream_v1/",
+      "note": "Real-IP seed chain via Seedream + Reference Element (user directive: build KOL IP with Seedream). Souls are soul_2-only, so identity consistency uses a Higgsfield Reference Element instead: generate a canonical face with Seedream -> show_reference_elements(action=create) -> generate content shots with Seedream + this element_id. Exact Seedream model id to confirm via models_explore. Fill element_id + job ids after generation."
+    }
+  },
+  "ai_prompts": {
+    "engine_notes": "Real-IP / Flavor-3 look, generated with SEEDREAM (user directive). Seed chain: Seedream text-to-image canonical face -> save as a Higgsfield Reference Element (show_reference_elements) -> generate content shots with Seedream + that element for identity consistency (Souls are soul_2-only and not used here). Always film-candid, never studio. See /kol-generate-image and docs/02-kol-image-photography-standard.md.",
+    "base_character_prompt": "A candid, authentic phone-camera photo of Mika, a 24-year-old Vietnamese-American woman, petite and curvy with a natural toned figure, soft round-oval face with high cheekbones, dark brown expressive slightly-sleepy eyes, natural monolid-to-low-crease, long dark brown-black hair in a messy claw-clip bun or air-dried waves, healthy skin with real texture and a few small freckles and moles, minimal or no makeup, a bold relaxed knowing expression. Real-person influencer vibe, not studio-polished. Shot on 35mm film camera, film grain, natural available light, authentic unstaged moment, natural skin texture. --ar 3:4",
+    "negative_prompt_sd": "studio lighting, glossy, over-retouched, plastic skin, heavy smoothing, airbrushed, posing for camera, professional model pose, oversaturated, fake AI look, nsfw, explicit, deformed, extra fingers, watermark, logo, text",
+    "scenes": [
+      { "id": "A_bedroom_mirror_selfie", "label": "臥室鏡子自拍 (real apartment)", "prompt": "Mika taking a candid mirror selfie on her phone in a lived-in East-LA bedroom, slightly messy room in background, wearing a fitted white tank top and low-rise baggy jeans, claw-clip bun, one hand holding the phone, relaxed knowing expression, warm indoor lamp light, shot on 35mm film, film grain, authentic unstaged moment, natural skin texture. --ar 3:4" },
+      { "id": "B_grwm_bathroom", "label": "GRWM 浴室鏡", "prompt": "Mika getting ready in front of a bathroom mirror, mid-makeup, holding a makeup product, natural everyday makeup half done, wearing a cropped tank, hair clipped up, glancing at the mirror with a subtle smirk, soft diffused indoor light, shot on 35mm film, film grain, candid GRWM moment, natural skin texture. --ar 3:4" },
+      { "id": "C_night_out", "label": "夜出街頭 candid", "prompt": "Mika out at night with friends (blurred figures in background), wearing a fitted black slip dress and hoop earrings, holding a drink, laughing candidly not at the camera, warm ambient bar lighting, shot on 35mm film, film grain, candid night out energy, natural skin texture. --ar 3:4" },
+      { "id": "D_gym_mirror", "label": "健身房鏡子", "prompt": "Mika taking a post-workout gym mirror selfie, wearing a matching activewear set, natural toned figure, slightly flushed, hair up, phone in hand, relaxed confident expression, natural gym daylight, shot on 35mm film, film grain, authentic candid moment, natural skin texture. --ar 3:4" },
+      { "id": "E_couch_candid", "label": "沙發居家 candid", "prompt": "Mika lounging on a worn couch in an oversized T-shirt and shorts, half-eating takeout, looking at her phone, hair messy, cozy chaotic apartment, warm lamp light, shot on 35mm film, film grain, authentic unstaged everyday moment, natural skin texture. --ar 3:4" },
+      { "id": "F_street_coffee", "label": "街拍拿咖啡", "prompt": "Full body candid street shot of Mika walking down a sunny East-LA street, wearing a cropped tank and baggy jeans, holding an iced coffee, other hand on her phone, looking off to the side mid-stride, warm dappled sunlight, shot on 35mm film, film grain, analog lifestyle photography, authentic candid moment. --ar 3:4" }
+    ]
+  }
+}

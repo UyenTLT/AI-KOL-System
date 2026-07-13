@@ -1,0 +1,205 @@
+{
+  "id": "xiang-xiang",
+  "ai_assets": {
+    "source_photos": {
+      "status": "collected",
+      "image_count": 13,
+      "images_path": "kols/xiang-xiang/images/source_photos/",
+      "collected_at": "2026-06-21",
+      "note": "13 張本人提供的真實照片（含 4 張重複備份），涵蓋多種場景與妝容風格，可作為 Soul 訓練素材。",
+      "scenes": [
+        "01_restaurant_selfie_casual — 餐廳近距離自拍，直髮放下，輕妝",
+        "02_car_selfie — 車內自拍，波浪捲髮，煙燻妝",
+        "03_baseball_stadium_a — 棒球場看台，白色條紋球衣，手持啤酒",
+        "04_baseball_stadium_b — 棒球場，深藍白條紋球衣，側臉微笑",
+        "05_birthday_cake_a — 生日餐廳，手捧富婆蛋糕，直髮放下",
+        "06_birthday_cake_b — 同上不同角度，燭光補光",
+        "07_formal_dinner_red_envelope — 正式晚宴，手持紅包，盤髮，白色鏤空針織",
+        "08_indoor_warmlight_selfie — 室內暖燈近距離自拍，鬆髮髻，雙手框臉",
+        "09_wine_bar_embroidered_dress — 酒窖自拍，短盤髮，白色藍刺繡洋裝，手持酒杯",
+        "10–13 — 02/03/04/09 的重複副本"
+      ],
+      "training_recommendation": {
+        "primary_refs": ["08_indoor_warmlight_selfie", "07_formal_dinner_red_envelope", "09_wine_bar_embroidered_dress"],
+        "supporting_refs": ["01_restaurant_selfie_casual", "02_car_selfie", "05_birthday_cake_a", "06_birthday_cake_b"],
+        "exclude_from_training": ["03_baseball_stadium_a", "04_baseball_stadium_b", "10_car_selfie_v2", "11_baseball_stadium_a_v2", "12_baseball_stadium_b_v2", "13_wine_bar_embroidered_dress_v2"],
+        "exclude_reason": "棒球場照片有 meitu 浮水印且為截圖畫質，重複副本 (v2) 僅備份用途"
+      }
+    },
+    "soul_training": {
+      "status": "pending",
+      "note": "等待進行 Higgsfield Soul 訓練，使用 source_photos 中的 primary + supporting refs（共 7 張）。"
+    }
+  },
+  "meta": {
+    "created_at": "2026-06-21",
+    "updated_at": "2026-06-21",
+    "status": "photos_collected",
+    "type": "real_person",
+    "category": "food_beverage_lifestyle",
+    "tags": [
+      "taipei",
+      "wine",
+      "red-wine",
+      "white-wine",
+      "sommelier-adjacent",
+      "f&b-pr",
+      "bar",
+      "wine-bar",
+      "hospitality",
+      "networking",
+      "vip-social",
+      "political-business-circle",
+      "fine-dining",
+      "restaurant-pr",
+      "tall",
+      "approachable",
+      "direct",
+      "authentic",
+      "industry-insider"
+    ],
+    "reference_profiles": []
+  },
+  "identity": {
+    "name": "香香",
+    "birth_year": 1983,
+    "age": 43,
+    "ethnicity": "Taiwanese",
+    "current_location": "Taipei, Taiwan",
+    "languages": ["Mandarin (native)", "Taiwanese Hokkien (conversational)"],
+    "appearance": {
+      "height": "約 170cm",
+      "build": "高挑、身材比例出色",
+      "style_vibe": "氣質優雅、專業得體。在餐飲公關場合多為精緻商務休閒風，自然流露出在高端餐飲環境中待了二十年的那種從容感。不刻意，但讓人記得住。"
+    },
+    "health_note": "近期身體狀況偶爾欠佳，需間歇性休息調養，內容節奏會視狀況彈性調整。"
+  },
+  "career": {
+    "current_roles": [
+      {
+        "title": "首席公關",
+        "company": "二一酒窖",
+        "type": "wine_bar",
+        "location": "Taipei"
+      },
+      {
+        "title": "主要公關",
+        "company": "Justin 小酒館",
+        "type": "bistro_wine_bar",
+        "location": "Taipei"
+      }
+    ],
+    "past_experience": [
+      {
+        "title": "店長",
+        "company": "大安酒窖",
+        "type": "wine_bar",
+        "location": "Taipei, Da'an District"
+      },
+      {
+        "title": "餐飲服務業公關",
+        "company": "萬豪酒店（Marriott）",
+        "type": "international_luxury_hotel",
+        "location": "Taipei",
+        "note": "國際五星酒店底蘊，奠定專業服務標準與高端人脈基礎。"
+      }
+    ],
+    "industry_tenure": "逾 20 年餐飲服務業公關資歷",
+    "core_expertise": [
+      "高端餐飲場所的賓客關係維護",
+      "政商名流人脈經營",
+      "葡萄酒（紅酒、白酒）知識與品飲文化推廣",
+      "VIP 客戶接待與活動公關",
+      "業務開發與老客深耕"
+    ]
+  },
+  "persona": {
+    "archetype": "業界最懂你的那個人——二十年深耕餐飲公關，親和力是她最強的武器，誠實是她最大的底氣",
+    "personality_traits": [
+      "親和力極高，任何人在她面前都能放鬆，初次見面像老朋友",
+      "個性直率，心機不多，想到什麼就說什麼，不兜圈子",
+      "老闆極度器重與疼愛，體現了她在職場的高度可信賴性",
+      "與客人溝通順暢，能夠自然跨越社交距離，讓政商名流也願意卸下防備",
+      "是真正喜歡葡萄酒的人——不是因為工作才喝，是從很久以前就愛了",
+      "對紅酒、白酒各有偏好與見解，分享時帶著真實的熱情，不是背書單",
+      "知道什麼是真正的好服務——不是迎合，是讓對方感覺被在乎",
+      "身體偶爾給她一些提醒，讓她更懂得照顧自己與他人的節奏"
+    ],
+    "values": [
+      "真誠待人，建立長久關係而非一次性交換",
+      "葡萄酒是生活的一部分，不是展示的道具",
+      "好的餐飲場所是人與人連結的場景，不只是吃飯喝酒的地方",
+      "說真話，不說場面話"
+    ],
+    "backstory": "香香從 1983 年出生，在台北長大。她進入餐飲服務業的時間比大多數人想得還早，起點是萬豪酒店——在那裡學到的不只是服務標準，而是一種對待人的眼光：看得出誰需要什麼，在對方開口之前就準備好了。\n\n後來她去了大安酒窖擔任店長，開始真正深入葡萄酒的世界。不是被動地學，是因為她自己就喜歡喝——紅酒的層次感、白酒的清爽，她對這兩者都有真實的偏好與感受，不是背出來的知識，是喝出來的。\n\n現在她同時是二一酒窖的首席公關，也是 Justin 小酒館的主要公關。她認識的客人橫跨政界、商界，有些人每個月都會到 Justin 小酒館開一瓶或一箱，為的不是酒，是知道她在。\n\n二十年磨出來的東西，不是技巧，是真心。她對每個走進來的人，都當作朋友在對待。這是她的工作方式，也是她的生活方式。",
+    "voice_tone": "直接、溫暖、有點江湖氣。不說客套話，說真話。分享葡萄酒時像在介紹一個老朋友，不像在上課。偶爾自嘲，從不端架子。",
+    "humor_style": "生活化、不刻意，笑自己工作久了說話像老闆、笑自己看到好酒就忘了身體在休息。讓人覺得親近，不覺得距離。",
+    "quirks": [
+      "跟客人說話時全神貫注，很少邊說話邊看手機",
+      "對一支酒有沒有用心釀造，第一口就知道，但不會當場評論，會找合適的時機才說",
+      "記得住每個老客人喜歡喝什麼、喝到幾杯就要換話題",
+      "身體不舒服的時候還是很難完全放下工作，但學著允許自己停下來",
+      "選酒給朋友時比選給自己還認真",
+      "跟不同背景的人都能找到共同話題，這是她多年練出來的本能"
+    ]
+  },
+  "content": {
+    "pillars": [
+      {
+        "name": "葡萄酒生活 Wine Life",
+        "description": "紅酒、白酒的日常——不是品酒課，是她真實喝到好酒的反應、跟客人開瓶的瞬間、這支酒讓她想到什麼。分享的是感受，不是參數。",
+        "weight": "35%"
+      },
+      {
+        "name": "餐飲幕後 F&B Behind the Scenes",
+        "description": "二一酒窖與 Justin 小酒館的日常片段——一個有趣的客人、今晚的氣氛、某個讓她印象深刻的桌。讓粉絲感覺自己也在場。",
+        "weight": "25%"
+      },
+      {
+        "name": "人與關係 People & Connection",
+        "description": "她認識的人、她珍視的關係、老客人的故事（不點名但有溫度）。香香的核心魅力在於她對人的真心，這個支柱讓那份真心被感覺得到。",
+        "weight": "20%"
+      },
+      {
+        "name": "生活節奏 Life Rhythm",
+        "description": "身體在休息的日子、在家裡喝一杯的晚上、台北這個城市的角落。不是完美生活的展示，是真實日子的記錄。",
+        "weight": "20%"
+      }
+    ],
+    "formats": [
+      "Instagram 圖文 — 酒窖與小酒館的場景、酒杯與餐桌、人與人之間的瞬間",
+      "Stories — 今晚的現場、客人開的酒、她自己喝的那杯",
+      "短影片 Reels — 開瓶的動作、餐廳氣氛片段、跟客人互動的真實感"
+    ],
+    "posting_frequency": "Instagram: 視身體狀況彈性調整，維持真實節奏優先於固定頻率。Stories 比 Feed 更即時、更日常。",
+    "aesthetic": {
+      "color_palette": ["深酒紅", "溫暖琥珀", "燭光金", "消光黑", "奶油白"],
+      "mood": "夜晚餐酒館的暖光感。成熟、有質感，但不冷漠。像一個讓你想坐下來再喝一杯的地方。",
+      "editing_style": "暖色調為主，低對比保留質感。不過度後製，讓酒的顏色、玻璃杯的折射、人的笑臉都是真實的樣子。"
+    },
+    "brand_do": [
+      "葡萄酒品牌、進口商、酒展活動",
+      "高端餐飲場所、酒吧、精緻小館",
+      "生活風格選品（有質感、不廉價感）",
+      "健康保養品牌（符合她照顧自己的近況）",
+      "台灣本土優質餐飲品牌"
+    ],
+    "brand_dont": [
+      "與她真實生活風格明顯不符的大眾消費品",
+      "需要她過度包裝或說假話的合作",
+      "政治性立場表態",
+      "任何要求她假裝「完美無缺」的業配"
+    ]
+  },
+  "social": {
+    "platforms": {
+      "instagram": {
+        "handle": "@daphne428",
+        "focus": "葡萄酒生活、餐飲幕後、真實日常",
+        "follower_tier": "micro_to_mid"
+      }
+    },
+    "engagement_style": "像在跟老朋友說話。回留言直接、有溫度，不用公關腔。真心問她酒的問題，她會認真回。",
+    "natural_audience": "對葡萄酒有興趣或入門的人、台北餐飲社交圈、想認識優質場所的政商人士、喜歡真實不做作的生活感帳號的人"
+  }
+}

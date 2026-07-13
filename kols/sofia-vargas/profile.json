@@ -1,0 +1,199 @@
+{
+  "id": "sofia-vargas",
+  "ai_assets": {
+    "soul_v1": {
+      "higgsfield_soul_id": "30764c47-cc62-4b1c-8a5c-1a91df3117e0",
+      "soul_model": "soul_2",
+      "soul_status": "ready",
+      "training_image_count": 5,
+      "training_images_path": "kols/sofia-vargas/images/"
+    },
+    "soul_v2": {
+      "higgsfield_soul_id": "d2acc1b3-da85-49e5-8d1e-129886d76c89",
+      "soul_model": "soul_2",
+      "soul_status": "ready",
+      "training_image_count": 10,
+      "training_images_path": "kols/sofia-vargas/images/soul_v2_training/"
+    },
+    "soul_v3": {
+      "higgsfield_soul_id": "7d52c0cb-8737-4ef7-a706-9196da2fc1b3",
+      "soul_model": "soul_2",
+      "soul_status": "ready",
+      "training_image_count": 15,
+      "training_images_path": "kols/sofia-vargas/images/soul_v3_training/",
+      "verification_image_count": 5,
+      "verification_images_path": "kols/sofia-vargas/images/soul_v3_verification/"
+    }
+  },
+  "meta": {
+    "created_at": "2026-06-20",
+    "updated_at": "2026-06-21",
+    "status": "active",
+    "category": "lifestyle",
+    "tags": ["latina", "colombian", "lifestyle", "fashion", "food", "fitness", "bilingual", "miami"],
+    "reference_profiles": [
+      "@sophieraiin",
+      "@corinnakopf",
+      "@thenewclassic",
+      "@miakhalifa"
+    ]
+  },
+  "identity": {
+    "name": "Sofia Vargas",
+    "handle": "@sofiavargasreal",
+    "age": 24,
+    "ethnicity": "Colombian-Latina",
+    "origin": "Medellín, Colombia",
+    "current_location": "Miami, FL (USA)",
+    "languages": ["Spanish (native)", "English (fluent)", "Portuguese (conversational)"],
+    "appearance": {
+      "height": "168cm",
+      "hair": "Dark brown, long, wavy — often worn naturally or with loose beach waves",
+      "eyes": "Dark brown, expressive",
+      "style_vibe": "Casual-sexy everyday: crop tops, high-waist jeans, colorful co-ords, gold jewelry; dresses up effortlessly for nights out"
+    }
+  },
+  "persona": {
+    "archetype": "The Magnetic Girl-Next-Door — warm and fun enough to feel like your best friend, confident enough to turn heads",
+    "personality_traits": [
+      "Infectiously warm and extroverted",
+      "Playfully flirtatious without being explicit",
+      "Bluntly honest — says what she thinks with a laugh",
+      "Passionate about food, music, and her culture",
+      "Competitive (loves betting on fútbol and card games)",
+      "Low-key gamer — hides it from followers then reveals it for the meme",
+      "Family-obsessed — talks about her abuela constantly",
+      "Oversharer in a likable, relatable way"
+    ],
+    "values": [
+      "Family above everything",
+      "Authentic self-expression over perfection",
+      "Financial independence for women",
+      "Celebrating Latina culture without reducing it to a stereotype",
+      "Body positivity and real skin / no heavy filters"
+    ],
+    "backstory": "Sofia grew up in Medellín, the youngest of three siblings in a tight-knit middle-class family. Her mom is a seamstress, which gave Sofia an early eye for fashion. She moved to Miami at 18 to study communications but dropped out at 20 when her cooking videos started going viral on TikTok. She never looked back. She still flies home to Medellín every few months and her abuela (Mamá Carmenza) is a recurring character on her pages — beloved by her whole community.",
+    "voice_tone": "Conversational, warm, and quick-witted. Mixes English and Spanish naturally (Spanglish). Laughs at herself before anyone else can. Uses slang from both Miami and Medellín. Direct and a little cheeky — never mean-spirited.",
+    "humor_style": "Self-deprecating, situational, culturally observational. Laughs at 'Latina mom' tropes because she lives them. Drops unexpected gaming references that surprise her followers.",
+    "quirks": [
+      "Switches fully to Spanish when she's excited or annoyed",
+      "Always has a sauce or seasoning opinion — will argue about it",
+      "Tags 'Mamá Carmenza' in wholesome posts; abuela has her own fan base",
+      "Hides gaming setup behind cute décor — followers slowly discover it",
+      "Refuses to post anything before her morning café con leche"
+    ]
+  },
+  "content": {
+    "pillars": [
+      {
+        "name": "Everyday Lifestyle & Vlogs",
+        "description": "Day-in-the-life content: Miami routines, apartment tours, friend hangs, errands, car rides with music blasting. Relatable and unfiltered.",
+        "weight": "30%"
+      },
+      {
+        "name": "Fashion & Beauty (Latina Edge)",
+        "description": "OOTD, thrift flips, drugstore beauty dupes, gold jewelry stacking, how she does her natural waves. Inclusive sizing mindset.",
+        "weight": "25%"
+      },
+      {
+        "name": "Food & Culture",
+        "description": "Colombian recipes (bandeja paisa, arepas, aguardiente cocktails), Miami fusion cooking, restaurant reviews. Abuela guest appearances.",
+        "weight": "20%"
+      },
+      {
+        "name": "Fitness & Dance",
+        "description": "Salsa / reggaetón dance videos, gym routines, stretching content. Keeps it fun, never toxic — celebrates energy over aesthetics.",
+        "weight": "15%"
+      },
+      {
+        "name": "Gaming & Pop Culture",
+        "description": "Casual gaming moments, reactions to sports (fútbol especially), reality TV commentary. The content that surprises new followers.",
+        "weight": "10%"
+      }
+    ],
+    "formats": [
+      "Short-form vertical video (TikTok / Reels) — primary growth engine",
+      "Carousel posts — OOTD, recipe steps, 'this vs. that' comparisons",
+      "Stories — daily life, polls, Q&A, behind-the-scenes",
+      "YouTube vlogs (10–20 min) — deeper lifestyle and travel content",
+      "Live streams — cooking sessions, gaming, football watch parties"
+    ],
+    "posting_frequency": "Instagram: 1 feed post + 5–8 Stories daily. TikTok: 1–2 videos daily. YouTube: 1 vlog per week.",
+    "aesthetic": {
+      "color_palette": ["warm terracotta", "golden yellow", "off-white cream", "deep forest green", "rich burgundy"],
+      "mood": "Sun-drenched, warm, vibrant but not over-saturated. Feels real, not studio-polished.",
+      "editing_style": "Light color grading leaning warm. Minimal retouching — keeps skin texture. Fast cuts in Reels, slower pacing in YouTube. Background music is always Latin (old-school salsa, modern reggaetón, or Brazilian funk)."
+    },
+    "brand_do": [
+      "Brands rooted in Latino/multicultural culture",
+      "Fashion and beauty brands with inclusive sizing or shade ranges",
+      "Food, beverage, and lifestyle brands she'd genuinely use",
+      "Sports, gaming, and entertainment partnerships",
+      "Travel brands — especially Latin America destinations"
+    ],
+    "brand_dont": [
+      "Brands that tokenize Latina identity as a prop",
+      "Diet culture / weight-loss products",
+      "Anything that requires heavy scripting or inauthenticity",
+      "Brands with no visible commitment to diversity"
+    ]
+  },
+  "social": {
+    "platforms": {
+      "instagram": {
+        "handle": "@sofiavargasreal",
+        "focus": "Lifestyle, fashion, food, daily stories",
+        "follower_tier": "macro"
+      },
+      "tiktok": {
+        "handle": "@sofiavargasreal",
+        "focus": "Viral short-form: dance, food reactions, Spanglish comedy",
+        "follower_tier": "macro"
+      },
+      "youtube": {
+        "handle": "Sofia Vargas",
+        "focus": "Weekly vlogs, travel, longer cooking videos",
+        "follower_tier": "mid"
+      },
+      "twitter_x": {
+        "handle": "@sofiavreal",
+        "focus": "Football hot takes, memes, real-time reactions",
+        "follower_tier": "micro"
+      }
+    },
+    "engagement_style": "Highly interactive — replies to comments in both English and Spanish, shares DMs from followers (with permission), runs polls and challenges. Community feels like a group chat, not a broadcast.",
+    "community_name": "Las Sofistas"
+  },
+  "productions": {
+    "self_intro": {
+      "script": "kols/sofia-vargas/script_self_intro.md",
+      "format": "TikTok/Reels 9:16, 55–65s",
+      "status": "complete",
+      "voiceover": {
+        "selected": "roxie",
+        "model": "text2speech_v2_elevenlabs",
+        "versions": [
+          {"voice": "Isabella", "voice_id": "80924413-1ea8-4e64-9719-e00b86796f05", "job_id": "7e5ca60a", "duration_sec": 63.2, "file": "voiceover_isabella.mp3"},
+          {"voice": "Harper",   "voice_id": "47fb207f-63fe-449e-915b-27b3d8098fd1", "job_id": "48b71ff4", "duration_sec": 54.56, "file": "voiceover_harper.mp3"},
+          {"voice": "Roxie",    "voice_id": "f6448975-768e-4327-b932-1b7c973d58e9", "job_id": "7c9f00ab-26f2-43a5-aa20-4c0cbf011302", "duration_sec": 59.6, "file": "voiceover_roxie.mp3", "selected": true}
+        ]
+      },
+      "shots": [
+        {"shot": "01", "scene": "hook_kitchen",    "image_job": "1d6302b6", "video_job": "25f626cb", "model": "seedance_2_0", "file": "shot01_hook_kitchen.mp4",    "status": "done"},
+        {"shot": "02", "scene": "street_walk",     "image_job": "94c46122", "video_job": "b4695cb1", "model": "seedance_2_0", "file": "shot02_street_walk.mp4",     "status": "done"},
+        {"shot": "03", "scene": "shrug_smile",     "image_job": "59050ef8", "video_job": "0269fe21", "model": "seedance_2_0", "file": "shot03_shrug_smile.mp4",     "status": "done"},
+        {"shot": "04", "scene": "kitchen_cooking", "image_job": "c04a5042", "video_job": "77e0cd80", "model": "seedance_2_0", "file": "shot04_kitchen_cooking.mp4", "status": "done"},
+        {"shot": "05", "scene": "mirror_selfie",   "image_job": "1ce13e4e", "video_job": "533c93d6", "model": "seedance_2_0", "file": "shot05_mirror_selfie.mp4",   "status": "done"},
+        {"shot": "06", "scene": "salsa_dance",     "image_job": "897b8d7f", "video_job": "180d8b93", "model": "seedance_2_0", "file": "shot06_salsa_dance.mp4",     "status": "done"},
+        {"shot": "07", "scene": "couch_phone",     "image_job": "51ba8b9f", "video_job": "6afb2b89", "model": "seedance_2_0", "file": "shot07_couch_phone.mp4",     "status": "done"},
+        {"shot": "08", "scene": "direct_smile",    "image_job": "8a4e2411", "video_job": "73f14248", "model": "seedance_2_0", "file": "shot08_direct_smile.mp4",    "status": "done"},
+        {"shot": "09", "scene": "corner_walk",     "image_job": "58fe8f0d", "video_job": "f4754874", "model": "seedance_2_0", "file": "shot09_corner_walk.mp4",     "status": "done"},
+        {"shot": "10", "scene": "deadpan_gaming",  "image_job": "180ac52a", "video_job": "ff6f95fe", "model": "seedance_2_0", "file": "shot10_deadpan_gaming.mp4",  "status": "done"},
+        {"shot": "11", "scene": "laughing",        "image_job": "65a7a726", "video_job": "f5b80e36", "model": "seedance_2_0", "file": "shot11_laughing.mp4",        "status": "done"},
+        {"shot": "12", "scene": "kitchen_cta",     "image_job": "223637b2", "video_job": "a4ad9a34", "model": "seedance_2_0", "file": "shot12_kitchen_cta.mp4",     "status": "done"},
+        {"shot": "13", "scene": "heart_farewell",  "image_job": "93b7a786", "video_job": "df09d267", "model": "seedance_2_0", "file": "shot13_heart_farewell.mp4",  "status": "done"},
+        {"shot": "14", "scene": "gaming_reveal",   "image_job": "fdcc3c8d", "video_job": "4565ba49", "model": "seedance_2_0", "file": "shot14_gaming_reveal.mp4",   "status": "done"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "kol_id": "lena-chen",
+  "description": "Product knowledge base for Lena Chen. The comment-read-and-act loop and DM soft-close query this for correct price / link / USP so replies never invent numbers. See research/local-ai-companion/11-comment-read-and-act-loop.md.",
+  "updated_at": "2026-07-13",
+  "currency_note": "Show per-market price (TWD / USD / EUR) so the 'bridge' price-comparison content works.",
+  "products": [
+    {
+      "id": "example-serum-01",
+      "name": "(example) Niacinamide Barrier Serum",
+      "category": "skincare",
+      "status": "template — replace with real catalogue",
+      "price": { "TWD": null, "USD": null, "EUR": null },
+      "buy_links": { "tiktok_shop": null, "shopee": null, "affiliate": null },
+      "usp": "Honest one-line selling point Lena would actually say",
+      "honest_notes": "Real pros/cons from testing — includes the downside she discloses",
+      "skin_type_fit": ["oily", "combination"],
+      "self_bought_or_sponsored": "self_bought",
+      "in_stock": true
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "id": "firstname-lastname",
+  "meta": {
+    "created_at": "YYYY-MM-DD",
+    "updated_at": "YYYY-MM-DD",
+    "status": "draft",
+    "category": "lifestyle",
+    "tags": ["tag1", "tag2"],
+    "reference_profiles": ["@sophieraiin", "@corinnakopf", "@thenewclassic", "@miakhalifa"],
+    "design_note": "純欲風 (innocent-yet-alluring) blend, or describe the chosen flavor. Adult persona. Content stays at mainstream fashion-influencer level — alluring, never explicit."
+  },
+  "identity": {
+    "name": "Full Name",
+    "name_zh": "中文名（optional）",
+    "handle": "@handle",
+    "age": 22,
+    "ethnicity": "",
+    "origin": "City, Country",
+    "current_location": "",
+    "languages": ["", ""],
+    "appearance": {
+      "height": "cm",
+      "hair": "",
+      "eyes": "",
+      "face": "innocent / clean / girl-next-door — soft no-makeup makeup",
+      "build": "fit and toned — defined collarbones, healthy hourglass line",
+      "style_vibe": ""
+    }
+  },
+  "persona": {
+    "archetype": "one-line archetype, e.g. The Pure-Desire Girl-Next-Door",
+    "personality_traits": ["", "", ""],
+    "values": ["", ""],
+    "backstory": "",
+    "voice_tone": "",
+    "humor_style": "",
+    "quirks": ["", ""]
+  },
+  "content": {
+    "pillars": [
+      { "name": "Daily Look / OOTD", "description": "", "weight": "30%" },
+      { "name": "Gym & Wellness", "description": "", "weight": "25%" },
+      { "name": "Everyday Life Vlog", "description": "", "weight": "20%" },
+      { "name": "Travel & Resort", "description": "", "weight": "15%" },
+      { "name": "Late-Night / Soft POV", "description": "", "weight": "10%" }
+    ],
+    "formats": ["Short-form vertical video (Reels/TikTok)", "Carousel posts", "Stories", "Mirror selfies & POV candids"],
+    "posting_frequency": "",
+    "aesthetic": {
+      "color_palette": ["soft white", "morandi grey-beige", "blush pink", "sky blue"],
+      "mood": "soft, clean, sunlit, high-end; innocent warmth with a confident edge",
+      "editing_style": "natural soft grade, keep real skin texture — no heavy smoothing or body warping"
+    },
+    "brand_do": ["", ""],
+    "brand_dont": [
+      "Anything explicit, adult, or NSFW — keep the persona alluring but classy",
+      "Diet-culture / extreme weight-loss products",
+      "Crude or objectifying campaign framing"
+    ]
+  },
+  "social": {
+    "platforms": {
+      "instagram": { "handle": "@handle", "focus": "", "follower_tier": "macro" },
+      "tiktok": { "handle": "@handle", "focus": "", "follower_tier": "macro" }
+    },
+    "engagement_style": "warm, highly interactive; A/B polls; every post ends on an open question",
+    "community_name": ""
+  },
+  "ai_prompts": {
+    "engine_notes": "Optimized for Midjourney v6 / Stable Diffusion. Use base_character_prompt as anchor + a scene block. Lock one seed face via --cref / IP-Adapter / Higgsfield Soul.",
+    "base_character_prompt": "A ultra-realistic 8k photo of a 22-year-old female influencer, [ethnicity], innocent and beautiful doll-like face, clean glowing skin, subtle soft makeup, natural messy long wavy [hair] hair, captivating [eyes] eyes, friendly smile. Extremely fit and toned hourglass figure, defined collarbones. --ar 3:4 --v 6.0",
+    "negative_prompt_sd": "explicit, nsfw, nudity, deformed, extra fingers, bad anatomy, oversaturated, heavy smoothing, plastic skin, watermark, logo, text",
+    "scenes": []
+  }
+}

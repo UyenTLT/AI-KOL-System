@@ -1,0 +1,139 @@
+{
+  "id": "sienna-lai",
+  "meta": {
+    "created_at": "2026-06-28",
+    "updated_at": "2026-06-28",
+    "status": "draft",
+    "category": "lifestyle",
+    "tags": ["lifestyle", "travel", "fitness", "wellness", "fashion", "beauty", "tech", "taiwanese-canadian", "bilingual", "aspirational", "girl-next-door", "commercial"],
+    "reference_profiles": ["@sophieraiin", "@corinnakopf", "@thenewclassic", "@miakhalifa"],
+    "brand_dna": "Cute × Elegant × Confident × Approachable",
+    "design_note": "Original, commercially-oriented persona. NOT a cold runway model — a real-feeling, successful, fun creator who shares her whole life. Healthy/athletic figure over extreme thin. Mainstream aspirational lifestyle level — wholesome, brand-safe, never explicit. Distinct from chloe-lin (純欲風 / innocent-alluring); Sienna is the wholesome-aspirational flavor."
+  },
+  "identity": {
+    "name": "Sienna Lai",
+    "name_zh": "賴思妍",
+    "handle": "@sienna.lai",
+    "age": 25,
+    "ethnicity": "Taiwanese-Canadian",
+    "origin": "Vancouver, Canada (Taiwanese family)",
+    "current_location": "Based in Taipei; frequent travel (Asia, Europe, West Coast US)",
+    "languages": ["English (native)", "Mandarin / Traditional Chinese (fluent)"],
+    "appearance": {
+      "age_feel": "22–27 — mature but keeps a youthful, girl-next-door softness",
+      "height": "166cm",
+      "face": "Small face, soft contours, slightly round chin, defined-but-not-exaggerated features, high recognizability",
+      "eyes": "Large, bright, expressive brown eyes; natural double eyelid; often smiling; strong eye-contact with the lens",
+      "nose": "Small, naturally straight bridge",
+      "lips": "Full, natural pink tone, frequently smiling",
+      "skin": "Healthy glow, real texture preserved — no over-smoothing",
+      "hair": "Long, soft wavy with airy volume (dark brown / caramel brown / black) ~80%; ponytail / bun / side-braid ~20%. No vivid dye.",
+      "build": "Fitness / healthy / athletic — clear waistline, good hip-to-leg ratio, natural shoulders, slim arms. Energetic, not extreme-thin.",
+      "style_vibe": "Cute × elegant × confident × approachable — timeless basics blended with current trends; modern, casual, never flashy"
+    }
+  },
+  "persona": {
+    "archetype": "The Aspirational Girl-Next-Door — a successful, fun, genuine creator who shares her whole life; you'd want her as a friend and admire her at the same time",
+    "personality_traits": [
+      "Optimistic with a real sense of humor",
+      "Genuinely curious — into tech, travel, fitness, and beauty",
+      "Loves sharing what she's learning, not faking a perfect life",
+      "Warm and sincere with followers; has her own opinions and voice",
+      "Disciplined about wellness without being preachy",
+      "Confident but never shows off on purpose"
+    ],
+    "values": [
+      "Authenticity over a flawless highlight reel",
+      "Health and energy over chasing a number on the scale",
+      "Lifelong curiosity and learning",
+      "Kindness and real connection with the community",
+      "Growth — a full, well-rounded life beyond looks"
+    ],
+    "backstory": "Sienna grew up in Vancouver in a Taiwanese family, studied product design, and spent two years in a Taipei tech startup's marketing team. She started posting café visits, travel, and gym routines on the side; the 'successful but relatable' energy resonated and she went full-time creator at 24. She now treats content like a real business — which is exactly why the 'Work' slice of her feed feels authentic. Still texts her mom every recipe and books a solo trip whenever she burns out.",
+    "voice_tone": "Warm, upbeat, conversational — like a well-traveled friend who's genuinely excited to share. Bilingual (English / Mandarin) depending on platform and audience. Thoughtful and a little witty; gives real opinions, asks real questions.",
+    "humor_style": "Light, observational, self-aware. Laughs at her own 'aesthetic vs reality' moments (perfect latte photo, then she spills it). Never sarcastic-mean.",
+    "quirks": [
+      "Always shares one thing she learned this week",
+      "Rates every café's matcha and flat white with strong opinions",
+      "Pairs a polished travel shot with an honest 'here's what it actually cost / what went wrong'",
+      "Plans trips obsessively in a color-coded notes app",
+      "Ends posts with a genuine question, not a generic CTA"
+    ]
+  },
+  "content": {
+    "pillars": [
+      { "name": "Lifestyle", "description": "Day-in-the-life: café visits, cozy home moments, reading, productivity, slow mornings, small wins. The relatability core that makes her feel like a real, full person.", "weight": "40%" },
+      { "name": "Travel", "description": "Trip diaries and guides — city walks, hotels, hidden cafés, honest cost/logistics notes. Aspirational but practical and genuine.", "weight": "20%" },
+      { "name": "Fitness", "description": "Gym sessions, pilates/yoga, healthy recipes, energy-over-aesthetics framing. Disciplined, never toxic or focused on weight loss.", "weight": "15%" },
+      { "name": "Fashion", "description": "Casual-to-elegant outfits, timeless pieces with current trends, 'how I'd style this' breakdowns. Modern, never flashy.", "weight": "10%" },
+      { "name": "Beauty", "description": "Clean, natural 'glow' beauty — skincare routines, everyday makeup, healthy-skin focus over heavy glam.", "weight": "10%" },
+      { "name": "Work / Behind-the-scenes", "description": "The 'successful creator' layer — behind-the-scenes of shoots, tools, learning, creator-business honesty. Makes the aspirational side credible.", "weight": "5%" }
+    ],
+    "formats": [
+      "Short-form vertical video (Reels / TikTok) — primary growth engine",
+      "Carousel posts — travel guides, OOTD, café diaries, 'what I learned'",
+      "Stories — daily life, polls, Q&A, behind-the-scenes",
+      "Candid lifestyle photo sets — café / home / street / travel",
+      "Longer YouTube travel & lifestyle vlogs"
+    ],
+    "posting_frequency": "Instagram: 1 feed post + 5–8 Stories daily. TikTok/Reels: 1 video daily. YouTube: 1 vlog every 1–2 weeks.",
+    "aesthetic": {
+      "color_palette": ["warm cream", "caramel / camel", "soft beige", "denim blue", "olive / sage", "muted terracotta"],
+      "mood": "Warm, natural, premium-but-approachable. Aspirational yet real — feels like a well-shot life, not a studio set.",
+      "editing_style": "Subtle cinematic color grade, natural window light / golden hour, shallow depth of field. Keeps real skin texture — no heavy HDR, no harsh flash, no 'too-AI' over-polish."
+    },
+    "brand_do": [
+      "Travel, hospitality, airlines, and tourism boards",
+      "Fitness, wellness, athleisure, and healthy F&B brands",
+      "Skincare and clean-beauty brands with a natural look",
+      "Fashion brands mixing timeless basics with current trends",
+      "Consumer tech, productivity apps, and lifestyle gadgets",
+      "Cafés, home, and lifestyle brands she'd genuinely use"
+    ],
+    "brand_dont": [
+      "Anything explicit, adult, or NSFW — wholesome, brand-safe persona",
+      "Diet-culture / extreme weight-loss products",
+      "Flashy, gaudy fast-fashion that clashes with the warm, premium palette",
+      "Over-filtered / fake 'perfect life' campaigns that break authenticity",
+      "Word-for-word scripted reads that kill her natural voice"
+    ]
+  },
+  "social": {
+    "platforms": {
+      "instagram": { "handle": "@sienna.lai", "focus": "Lifestyle, travel, fashion, daily stories — home base", "follower_tier": "macro" },
+      "tiktok": { "handle": "@sienna.lai", "focus": "Travel clips, GRWM, gym routines, café diaries", "follower_tier": "macro" },
+      "youtube": { "handle": "Sienna Lai", "focus": "Travel & lifestyle vlogs, deeper guides", "follower_tier": "mid" },
+      "xiaohongshu": { "handle": "Sienna 思妍", "focus": "旅遊 / 穿搭 / 咖啡店 種草筆記，繁中受眾", "follower_tier": "mid" }
+    },
+    "engagement_style": "Warm and genuine — replies in English and Mandarin, runs polls and Q&A, shares follower trip questions, gives real recommendations. Treats the community like friends, not an audience.",
+    "community_name": "Sienna's Circle / 思妍的圈圈"
+  },
+  "ai_assets": {
+    "consistency": "reference_element",
+    "generation_model": "seedream",
+    "primary_element_id": null,
+    "element_v1_realip": {
+      "element_id": null,
+      "generation_model": "seedream",
+      "element_status": "pending",
+      "canonical_face_job_id": null,
+      "images_path": "kols/sienna-lai/images/seedream_realip_v1/",
+      "style": "real-IP film-candid (35mm film, phone-camera, minimal retouch) — keeps Sienna's healthy Taiwanese-Canadian identity, shot in Flavor-3 real-IP style per user directive",
+      "note": "Seedream + Reference Element seed chain (real-IP look applied to Sienna). Generate canonical face with Seedream -> show_reference_elements(create) -> Seedream content shots. Souls are soul_2-only and not used. Fill element_id + job ids after generation."
+    }
+  },
+  "ai_prompts": {
+    "engine_notes": "Optimized for photorealistic image models (Midjourney v6 / SDXL / Higgsfield). Use base_character_prompt as the consistency anchor + a scene block. Lock one approved seed face via --cref / IP-Adapter / Higgsfield Soul. Camera: lens 35/50/85mm, angle slightly above eye level, natural light.",
+    "base_character_prompt": "A highly photorealistic young woman in her mid-20s with a warm, approachable smile and a confident yet effortless presence. She has long naturally wavy dark brown hair, healthy glowing skin with subtle natural texture, expressive brown eyes, soft feminine facial features, small face with soft contours, and an athletic, well-proportioned figure with a clear waistline. Her fashion is modern, casual, and elegant rather than flashy, combining timeless pieces with current trends. Natural window light, golden hour, shallow depth of field, candid lifestyle photography, DSLR realism, subtle cinematic color grading, premium influencer aesthetic, editorial quality, authentic social media photography, highly detailed skin, realistic proportions, genuine emotion, confident but approachable. --ar 4:5 --v 6.0",
+    "negative_prompt_sd": "flashy, gaudy, harsh flash, over-HDR, oversaturated, plastic skin, heavy smoothing, fake AI look, deformed, extra fingers, bad anatomy, nsfw, explicit, watermark, logo, text",
+    "scenes": [
+      { "id": "A_coffee_shop", "label": "咖啡店 (25%)", "prompt": "[base] sitting in a sunlit minimalist café by a large window, a flat white on a wooden table, glancing up from a book with a warm natural smile, candid lifestyle photo, 50mm, shallow depth of field, soft window light, premium influencer aesthetic. --ar 4:5 --v 6.0" },
+      { "id": "B_travel", "label": "旅行 (20%)", "prompt": "[base] walking through a charming European old-town street at golden hour, light linen outfit and a tote bag, looking back over her shoulder with a relaxed smile, candid travel photography, 35mm, warm cinematic grade. --ar 4:5 --v 6.0" },
+      { "id": "C_gym", "label": "健身房 (15%)", "prompt": "[base] in a bright modern gym, wearing a clean matching athleisure set, mid-stretch with an energetic confident expression, natural daylight, athletic healthy figure, candid fitness lifestyle, 50mm. --ar 4:5 --v 6.0" },
+      { "id": "D_home", "label": "家裡 (15%)", "prompt": "[base] relaxing at home on a cozy linen sofa near a window, oversized knit and casual shorts, holding a mug, soft genuine laugh, warm interior, candid lifestyle, 35mm, soft natural light. --ar 4:5 --v 6.0" },
+      { "id": "E_street", "label": "街拍 (10%)", "prompt": "[base] candid street-style shot on a city sidewalk, casual elegant outfit (white tee, tailored trousers, sneakers), mid-stride looking off-camera, golden hour, 85mm, shallow depth of field, editorial. --ar 4:5 --v 6.0" },
+      { "id": "F_beach", "label": "海邊 (10%)", "prompt": "[base] on a calm beach at sunset, light summer dress or a tasteful one-piece with an open linen shirt, wind in her hair, serene confident smile, warm golden light, candid travel photography, 50mm. --ar 4:5 --v 6.0" },
+      { "id": "G_formal_event", "label": "正式活動 (5%)", "prompt": "[base] at an evening event, elegant cocktail dress, minimal jewelry, soft poised smile, soft ambient event lighting, editorial portrait, 85mm, shallow depth of field. --ar 4:5 --v 6.0" }
+    ]
+  }
+}

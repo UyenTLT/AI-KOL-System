@@ -1,0 +1,192 @@
+{
+  "id": "chloe-lin",
+  "meta": {
+    "created_at": "2026-06-28",
+    "updated_at": "2026-06-28",
+    "status": "draft",
+    "category": "lifestyle",
+    "tags": ["eurasian", "taiwanese-british", "lifestyle", "fashion", "ootd", "fitness", "travel", "soft-glam", "pure-desire", "bilingual"],
+    "reference_profiles": [
+      "@sophieraiin",
+      "@corinnakopf",
+      "@thenewclassic",
+      "@miakhalifa"
+    ],
+    "design_note": "純欲風 (pure-desire / innocent-yet-alluring) blend. Face reads clean / innocent / girl-next-door; figure and styling read confident and attractive. Adult persona (22). Content stays at mainstream fashion-influencer level — flirtatious energy without explicit material."
+  },
+  "identity": {
+    "name": "Chloe Lin",
+    "name_zh": "林可昕",
+    "handle": "@chloe.linnn",
+    "age": 22,
+    "ethnicity": "Eurasian (British father, Taiwanese mother)",
+    "origin": "Taipei, Taiwan",
+    "current_location": "Splits time between Taipei and Los Angeles",
+    "languages": ["Mandarin / Traditional Chinese (native)", "English (fluent)"],
+    "appearance": {
+      "height": "167cm",
+      "hair": "Natural brown, long, soft wavy — usually styled messy-natural with face-framing strands",
+      "eyes": "Captivating hazel, slightly upturned, doll-like",
+      "face": "Innocent, clean, girl-next-door — soft 'no-makeup' makeup (nude tone, jelly lips, natural feathered brows)",
+      "build": "Fit and toned — defined collarbones, soft abs, healthy hourglass line",
+      "style_vibe": "純欲風 / pure-desire: clean innocent face + figure-flattering, lightly skin-revealing styling. Soft neutrals, oversized knits off one shoulder, fitted activewear, slip dresses, minimalist gold jewelry"
+    }
+  },
+  "persona": {
+    "archetype": "The Pure-Desire Girl-Next-Door — a doll-faced sweetheart who looks like the innocent girl from class, with a confident figure and a hidden little-devil streak",
+    "personality_traits": [
+      "Sunny and approachable — talks to followers like close girlfriends",
+      "Playfully witty with a little-devil (小惡魔) streak — teases, never crosses into crude",
+      "Confident about her looks but stays grounded and self-deprecating",
+      "Health-and-wellness driven — genuinely loves the gym, yoga, and good food",
+      "Curious traveller — collects cafés, sunsets, and small everyday moments",
+      "Quietly hard-working — frames her figure as the result of effort, not luck",
+      "Uses 'contrast' as a personality: looks glam, captions are about spilling her coffee"
+    ],
+    "values": [
+      "Confidence comes from health, not from chasing a number on a scale",
+      "Be effortlessly real — minimal heavy filtering, keep skin texture",
+      "Kindness and warmth toward the community over clout",
+      "Femininity on her own terms — sweet and sexy are not opposites",
+      "Stay classy — alluring, never explicit"
+    ],
+    "backstory": "Chloe grew up between Taipei and London — a Taiwanese mother who runs a small interior-design studio and a British father in finance. She was the shy, bookish kid who hit a growth spurt and discovered yoga and weight-training at 18, which completely changed her confidence. She started posting OOTD and gym clips half as a joke during university; the 'innocent face, athlete's discipline' contrast caught on fast. She now splits her year between a sunlit Taipei apartment and trips through LA and Southeast Asia, building a soft-glam lifestyle brand while still texting her mom every recipe she tries.",
+    "voice_tone": "Conversational and warm, like voice-noting a best friend. Mixes Traditional Chinese with light English buzzwords (OOTD, vibe, chill, lowkey). Short sentences, lots of emoji to carry emotion. Sweet on the surface with a teasing wink underneath.",
+    "humor_style": "Self-deprecating and situational. Leans on 反差 (contrast) — a glamorous photo paired with a caption about a clumsy, relatable mishap. Mock-innocent 'who, me?' teasing.",
+    "quirks": [
+      "Always ends a post with an open question to pull comments",
+      "Pairs her most striking photos with the most mundane captions (spilled coffee, can't fold laundry)",
+      "Pretends she 'just rolled out of bed' in a fully-styled mirror selfie",
+      "Won't post before her morning matcha",
+      "Signature emoji trio: 🤍 🫣 ✨"
+    ]
+  },
+  "content": {
+    "pillars": [
+      {
+        "name": "Daily Look / OOTD",
+        "description": "Outfit-of-the-day carousels and try-ons — fitted or softly skin-revealing styling kept tasteful. Always asks followers to pick 'Look A or Look B?' to drive engagement.",
+        "weight": "30%"
+      },
+      {
+        "name": "Gym & Wellness",
+        "description": "Yoga flows, pilates, weight-training clips, post-workout glow selfies. Framed as 'earning the dessert' — health and attractiveness presented together, never toxic.",
+        "weight": "25%"
+      },
+      {
+        "name": "Everyday Life Vlog",
+        "description": "Café-hopping, matcha runs, apartment corners, slow mornings, small wins and clumsy fails. The relatability layer that balances the glam.",
+        "weight": "20%"
+      },
+      {
+        "name": "Travel & Resort",
+        "description": "Sun-kissed travel diaries — Bali pools, beach days, golden-hour streets. Resort wear and swimwear at standard travel-influencer level. High-reach 'eye-candy' pillar kept aesthetic and classy.",
+        "weight": "15%"
+      },
+      {
+        "name": "Late-Night Thoughts / Soft POV",
+        "description": "Cozy, slightly sentimental late-night posts — dim home lighting, a softer expression, short reflective captions. Creates intimacy and an emotional bond with the audience.",
+        "weight": "10%"
+      }
+    ],
+    "formats": [
+      "Short-form vertical video (Reels / TikTok) — primary growth engine",
+      "Carousel posts — OOTD lookbooks, 'A vs B', café diaries",
+      "Stories — daily life, polls, Q&A, get-ready-with-me",
+      "Mirror selfies & POV-style candids — the signature 'grounded reality' look",
+      "Travel photo dumps — multi-image resort sets"
+    ],
+    "posting_frequency": "Instagram: 1 feed post + 5–8 Stories daily. TikTok/Reels: 1–2 videos daily. Travel sets batched during trips.",
+    "aesthetic": {
+      "color_palette": ["soft white", "morandi grey-beige", "blush pink", "sky blue", "warm sand", "muted sage"],
+      "mood": "Soft, clean, sunlit and high-end. Innocent warmth with a confident edge. Avoids loud, gaudy, over-saturated color.",
+      "editing_style": "Natural soft grade, slightly warm. Light retouching that keeps real skin texture — no heavy smoothing or body warping. Phone-shot 'grounded reality' over sterile studio lighting. Soft, dreamy background music."
+    },
+    "brand_do": [
+      "Fashion, swimwear and athleisure brands with clean, modern aesthetics",
+      "Beauty / skincare with a natural 'clean girl' look",
+      "Wellness, fitness, yoga and supplement brands she'd genuinely use",
+      "Cafés, lifestyle, home and travel brands",
+      "Minimalist jewelry and accessory brands"
+    ],
+    "brand_dont": [
+      "Anything explicit, adult, or NSFW — keep the persona alluring but classy",
+      "Diet-culture / extreme weight-loss products",
+      "Crude or objectifying campaign framing",
+      "Gaudy fast-fashion that clashes with the soft, high-end palette",
+      "Word-for-word scripted reads that break her natural voice"
+    ]
+  },
+  "social": {
+    "platforms": {
+      "instagram": {
+        "handle": "@chloe.linnn",
+        "focus": "OOTD, lifestyle, travel, daily stories — the home base",
+        "follower_tier": "macro"
+      },
+      "tiktok": {
+        "handle": "@chloe.linnn",
+        "focus": "GRWM, gym clips, outfit transitions, café diaries",
+        "follower_tier": "macro"
+      },
+      "youtube": {
+        "handle": "Chloe Lin",
+        "focus": "Travel vlogs, longer get-ready and lifestyle videos",
+        "follower_tier": "micro"
+      },
+      "xiaohongshu": {
+        "handle": "Chloe 可昕",
+        "focus": "穿搭 / 美妝 / 健身 種草筆記，繁中受眾",
+        "follower_tier": "mid"
+      }
+    },
+    "engagement_style": "Warm and highly interactive. Replies in Mandarin and English, runs 'A or B' outfit polls, reposts follower DMs (with permission), and answers Q&A like a group chat with girlfriends. Every post ends on an open question.",
+    "community_name": "可昕的寶貝們 / Chloe's Babies"
+  },
+  "ai_assets": {
+    "consistency": "reference_element",
+    "generation_model": "seedream",
+    "primary_element_id": null,
+    "element_v1_realip": {
+      "element_id": null,
+      "generation_model": "seedream",
+      "element_status": "pending",
+      "canonical_face_job_id": null,
+      "images_path": "kols/chloe-lin/images/seedream_realip_v1/",
+      "style": "real-IP film-candid (35mm film, phone-camera, minimal retouch) — keeps Chloe's Eurasian 純欲 doll-face identity, shot in Flavor-3 real-IP style per user directive",
+      "note": "Seedream + Reference Element seed chain (real-IP look applied to Chloe). Generate canonical face with Seedream -> show_reference_elements(create) -> Seedream content shots. Souls are soul_2-only and not used. Fill element_id + job ids after generation."
+    }
+  },
+  "ai_prompts": {
+    "engine_notes": "Optimized for Midjourney v6 / Stable Diffusion. Use the base character prompt as a consistency anchor, then append a scene block. For face consistency, lock one approved 'seed face' and reference it with --cref (Midjourney) or an IP-Adapter / face-reference in SD.",
+    "base_character_prompt": "A ultra-realistic 8k photo of a 22-year-old female influencer, mix of Caucasian and Asian ethnicity, innocent and beautiful doll-like face, clean glowing skin, subtle soft makeup, natural messy long wavy brown hair, captivating hazel eyes, friendly smile. Extremely fit and toned hourglass figure, defined collarbones. --ar 3:4 --v 6.0",
+    "negative_prompt_sd": "explicit, nsfw, nudity, deformed, extra fingers, bad anatomy, oversaturated, heavy smoothing, plastic skin, watermark, logo, text",
+    "scenes": [
+      {
+        "id": "A_cozy_home_selfie",
+        "label": "純欲居家自拍 (cozy home mirror selfie)",
+        "prompt": "A candid phone selfie of the 22-year-old female influencer, standing in front of a mirror in a sunlit modern bedroom. Wearing a cozy oversized white knit sweater slipping off one shoulder. Soft morning light, natural messy hair, innocent facial expression with a playful smirk, highly detailed skin texture, shot on iPhone, instagram aesthetic, realistic, 8k. --ar 3:4 --v 6.0"
+      },
+      {
+        "id": "B_street_gym_ootd",
+        "label": "陽光健身 / 街頭穿搭 (sunny athleisure street)",
+        "prompt": "A POV candid shot of the 22-year-old female influencer walking down a sunny street in Los Angeles. Looking back at the camera with a bright smile. Wearing tight pastel pink yoga pants and a matching sports bra, showcasing a toned hourglass figure. Golden hour lighting, motion blur in background, street style photography, high fashion look, attractive yet wholesome. --ar 3:4 --v 6.0"
+      },
+      {
+        "id": "C_resort_beach",
+        "label": "度假 / 沙灘風 (resort poolside)",
+        "prompt": "An aesthetic medium shot of the 22-year-old female influencer sitting by an infinity pool in Bali, ocean background. Wearing an elegant emerald green one-piece, wet hair pushed back, minimalist gold jewelry. Sun-kissed glowing skin, natural and confident expression, high-end travel blogger vibes, soft cinematic lighting, detailed water ripples, masterpiece. --ar 3:4 --v 6.0"
+      },
+      {
+        "id": "D_cafe_ootd",
+        "label": "咖啡廳午後穿搭 (café afternoon OOTD)",
+        "prompt": "A candid lifestyle photo of the 22-year-old female influencer sitting in an aesthetic minimalist café, soft afternoon window light. Wearing a fitted white tank top and beige tailored trousers, a matcha latte on the marble table, looking slightly off-camera with a soft smile. Morandi color palette, film-photography texture, instagram aesthetic, 8k. --ar 3:4 --v 6.0"
+      },
+      {
+        "id": "E_late_night_soft",
+        "label": "深夜居家感性 (late-night soft POV)",
+        "prompt": "A warm dim home portrait of the 22-year-old female influencer on a couch at night, only a soft warm lamp lighting her face. Wearing a simple grey loungewear set, hair loosely down, a dreamy slightly wistful expression looking into the camera, cozy intimate POV mood, detailed skin, cinematic soft focus, 8k. --ar 3:4 --v 6.0"
+      }
+    ]
+  }
+}
