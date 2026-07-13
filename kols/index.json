@@ -94,6 +94,18 @@
       "role": "R2-active-seller",
       "markets": ["taiwan", "americas", "europe"],
       "path": "kols/lena-chen/"
+    },
+    {
+      "id": "lin-wanqing",
+      "name": "Lin Wan-Ching (林晚晴)",
+      "handle": "@wanching.slow",
+      "category": "lifestyle",
+      "ethnicity": "Taiwanese",
+      "status": "draft",
+      "created_at": "2026-07-13",
+      "role": "R1-soft-seller",
+      "markets": ["taiwan", "japan-affinity"],
+      "path": "kols/lin-wanqing/"
     }
   ]
 }

@@ -32,6 +32,7 @@ Buildup_KOL/
 | [mika-tran](kols/mika-tran/) | Mika Tran | 生活風格（真實 IP 風格 / Real-IP Sexy） | 越南裔美國人 | draft |
 | [jax-calloway](kols/jax-calloway/) | Jax Calloway | 生活風格（Male Real-IP，首個男性 KOL） | 美國白人 | draft |
 | [lena-chen](kols/lena-chen/) | Lena Chen（陳語彤） | 甜妹賣貨 KOC（R2 Active Seller，台/美/歐市場） | 歐亞混血（台美） | draft |
+| [lin-wanqing](kols/lin-wanqing/) | Lin Wan-Ching（林晚晴） | 溫柔知性慢生活（F6，R1 Soft-Seller，film-candid 自然美） | 台灣人 | draft |
 
 ---
 

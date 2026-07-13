@@ -1,0 +1,20 @@
+{
+  "kol_id": "lin-wanqing",
+  "description": "Product knowledge base for Lin Wan-Ching (R1 soft-seller). Replies query this for correct price/link/USP; tone stays 'sharing', never pushy. See research/local-ai-companion/11-comment-read-and-act-loop.md.",
+  "updated_at": "2026-07-13",
+  "products": [
+    {
+      "id": "example-toner-01",
+      "name": "(example) Gentle Hydrating Toner",
+      "category": "skincare",
+      "status": "template — replace with real catalogue",
+      "price": { "TWD": null, "USD": null },
+      "buy_links": { "affiliate": null, "shopee": null },
+      "usp": "Gentle one-line she would actually say",
+      "honest_notes": "How long she used it, what she likes, one honest caveat",
+      "skin_type_fit": ["dry", "sensitive"],
+      "self_bought_or_sponsored": "self_bought",
+      "in_stock": true
+    }
+  ]
+}
