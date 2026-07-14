@@ -141,12 +141,19 @@
         "soul_id": { "type": ["string", "null"] },
         "voice": {
           "type": "object",
-          "description": "Voice identity for this KOL (see research/local-ai-companion/10-local-voice-stack.md)",
+          "description": "Voice identity for this KOL. Production path = fine-tuned GPT-SoVITS on CUDA (see tools/tts_train/ and research/local-ai-companion/10-local-voice-stack.md).",
+          "additionalProperties": true,
           "properties": {
+            "engine": { "type": "string", "description": "e.g. gpt-sovits, cosyvoice2, say (fallback)" },
             "voice_id": { "type": ["string", "null"] },
-            "reference_audio": { "type": ["string", "null"], "description": "Path to the reference sample used for cloning" },
-            "engine_offline": { "type": "string", "description": "High-quality TTS for video, e.g. F5-TTS-Vietnamese / IndexTTS-2" },
-            "engine_realtime": { "type": "string", "description": "Low-latency TTS for live/DM, e.g. CosyVoice2 / GPT-SoVITS" },
+            "reference_audio": { "type": ["string", "null"], "description": "Path to the reference clip (also the inference prompt for GPT-SoVITS)" },
+            "reference_text": { "type": "string", "description": "Exact transcript of reference_audio (GPT-SoVITS prompt_text)" },
+            "reference_lang": { "type": "string", "description": "Language of the reference clip, e.g. zh / en" },
+            "gpt_weights": { "type": ["string", "null"], "description": "Fine-tuned GPT-SoVITS GPT weights (.ckpt)" },
+            "sovits_weights": { "type": ["string", "null"], "description": "Fine-tuned GPT-SoVITS SoVITS weights (.pth)" },
+            "api": { "type": "string", "description": "GPT-SoVITS api_v2 URL, e.g. http://127.0.0.1:9880" },
+            "engine_offline": { "type": "string", "description": "High-quality TTS for video (legacy note)" },
+            "engine_realtime": { "type": "string", "description": "Low-latency TTS for live/DM, e.g. CosyVoice2" },
             "post_processing": { "type": "string", "description": "e.g. RVC for timbre unification" },
             "notes": { "type": "string" }
           }

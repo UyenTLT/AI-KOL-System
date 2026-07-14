@@ -5,3 +5,13 @@
 # Editor
 .vscode/
 *.swp
+
+# Python
+__pycache__/
+*.pyc
+
+# Local-only reports (kept out of version control)
+reports/
+
+# Talking-web generated clips
+tools/talking_web/_out/
