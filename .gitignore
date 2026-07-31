@@ -33,10 +33,3 @@ kols/*/voice/raw/
 kols/*/voice/work/
 kols/*/voice/dataset/*.wav
 
-# PENDING RIGHTS DECISION — not published.
-# This dataset was derived from a podcast recording while testing the crawl pipeline, so its
-# .list/manifest contain a real person's transcripts. That conflicts with the synthetic-only
-# voice policy (CUDA_SETUP.md section I), so it is excluded until someone confirms the rights.
-# Delete these two lines to publish it, or delete kols/sofia-vargas/voice/ to drop it.
-kols/sofia-vargas/voice/
-
