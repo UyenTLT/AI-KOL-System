@@ -1,7 +1,22 @@
 # Tools — Local KOL Content Generation
 
-Local-first, free tooling to turn a KOL's static profile + photos into content, running
-on a Mac (Apple Silicon). See `research/local-ai-companion/` for the full stack rationale.
+Local-first, free tooling to turn a KOL's static profile + photos into content. See
+`research/local-ai-companion/` for the full stack rationale.
+
+| Tool | What it does |
+|---|---|
+| [`dashboard/`](dashboard/) | **Live pipeline tracker** — one page showing where every KOL stands, plus service + GPU state. Start here. |
+| [`voice_crawl/`](voice_crawl/) | Voice data → GPT-SoVITS training set → headless fine-tune. Crawl real audio or synthesize a bootstrap timbre. |
+| [`livetalking/`](livetalking/) | Realtime lip-synced avatar speaking in the KOL's cloned voice. |
+| [`tts_train/`](tts_train/) | `tts_client.py` (the TTS HTTP client used by the apps) + RVC timbre conversion. |
+| [`talking_web/`](talking_web/) | Simple type-to-speak web app. |
+| `vlog_app.py` | Photo → vertical 9:16 vlog (Ken Burns + captions). |
+
+Quick status check:
+
+```bash
+python tools/dashboard/server.py     # http://127.0.0.1:8770
+```
 
 ## `vlog_app.py` — Photo-vlog generator (MVP)
 

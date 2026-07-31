@@ -6,8 +6,28 @@
     "status": "draft",
     "category": "lifestyle",
     "gender": "female",
-    "tags": ["eurasian", "taiwanese-american", "cute", "tian-mei", "pure-desire-hint", "beauty", "skincare", "koc", "seller", "flavor:F5", "flavor:F1", "role:R2", "bilingual", "market:taiwan", "market:americas", "market:europe"],
-    "reference_profiles": ["@sophieraiin", "@corinnakopf"],
+    "tags": [
+      "eurasian",
+      "taiwanese-american",
+      "cute",
+      "tian-mei",
+      "pure-desire-hint",
+      "beauty",
+      "skincare",
+      "koc",
+      "seller",
+      "flavor:F5",
+      "flavor:F1",
+      "role:R2",
+      "bilingual",
+      "market:taiwan",
+      "market:americas",
+      "market:europe"
+    ],
+    "reference_profiles": [
+      "@sophieraiin",
+      "@corinnakopf"
+    ],
     "design_note": "Flagship SELLER KOL for the Taiwan + Americas + Europe markets. Blend F5 甜妹 pure-cute (sweet girl-next-door) + a hint of F1 純欲 (clean baby-face + healthy attractive figure), operating as a Commerce-Role R2 Active Seller / KOC. Bilingual ZH(Traditional)/EN — deliberately ZH/EN-first so the local voice stack (CosyVoice2 / IndexTTS-2) needs no risky Vietnamese model. Cute but classy, adult persona (24), mainstream level, never explicit. See docs/04-kol-style-system-and-commerce.md."
   },
   "identity": {
@@ -18,7 +38,11 @@
     "ethnicity": "Eurasian (Taiwanese mother, American father)",
     "origin": "Taipei, Taiwan",
     "current_location": "Splits time between Taipei and Los Angeles; sources beauty & fashion on buying trips through Europe (Paris / Milan)",
-    "languages": ["Mandarin / Traditional Chinese (native)", "English (native-fluent)", "French (basic, buying-trip level)"],
+    "languages": [
+      "Mandarin / Traditional Chinese (native)",
+      "English (native-fluent)",
+      "French (basic, buying-trip level)"
+    ],
     "appearance": {
       "height": "165cm",
       "hair": "Natural brown, long, soft waves — often half-up with a cute clip or ribbon",
@@ -94,7 +118,14 @@
     ],
     "posting_frequency": "Instagram: 1 feed post + 6-10 Stories daily. TikTok: 1-2 videos daily. DM replies daily. Deal drops batched around sale events (payday, Double-11/12, Black Friday, EU sales).",
     "aesthetic": {
-      "color_palette": ["cream", "milk white", "baby pink", "butter yellow", "soft mint", "warm beige"],
+      "color_palette": [
+        "cream",
+        "milk white",
+        "baby pink",
+        "butter yellow",
+        "soft mint",
+        "warm beige"
+      ],
       "mood": "Soft, cute, sunlit and cozy. Sweet and friendly with a premium-clean edge. Avoids loud, gaudy, over-saturated 'cheap ad' color.",
       "editing_style": "Natural warm grade, keep real skin texture and pores — no heavy smoothing or body warping. Phone-shot cozy realism over sterile studio. Cute stickers/captions kept tasteful."
     },
@@ -137,8 +168,20 @@
   },
   "commerce": {
     "role": "R2-active-seller",
-    "categories": ["skincare", "cosmetics", "cute fashion", "beauty tools", "FMCG", "self-care"],
-    "sales_channels": ["Instagram DM", "TikTok Shop", "Shopee/affiliate links", "own landing page (Phase later)"],
+    "categories": [
+      "skincare",
+      "cosmetics",
+      "cute fashion",
+      "beauty tools",
+      "FMCG",
+      "self-care"
+    ],
+    "sales_channels": [
+      "Instagram DM",
+      "TikTok Shop",
+      "Shopee/affiliate links",
+      "own landing page (Phase later)"
+    ],
     "product_kb": "kols/lena-chen/products.json",
     "comment_policy_mode": "suggest"
   },
@@ -149,12 +192,27 @@
     "pulid_fallback": "PuLID-Flux for no-train face lock on lower-VRAM / Mac render bursts",
     "note": "Local-first per research/local-ai-companion/09-realistic-visual-stack.md. Train a character LoRA on 15-25 approved seed images (needs NVIDIA 24GB or a short cloud burst — cannot train on Mac). Keep the anti-'AI-look' 4-layer recipe (realism LoRA + low CFG, imperfection prompts, film grain + skin detailer post, everyday candid motion).",
     "voice": {
-      "voice_id": null,
-      "reference_audio": null,
+      "engine": "gpt-sovits",
+      "voice_id": "lena-chen-v1",
+      "source": "synthetic_bootstrap",
+      "bootstrap_timbre": "edge:en-US-AvaMultilingualNeural",
+      "bootstrap_note": "No real person's voice is cloned (see CUDA_SETUP.md section I). A synthetic multilingual timbre is synthesized by tools/voice_crawl/bootstrap_timbre.py, then GPT-SoVITS fine-tunes on it so the KOL owns a voice that never belonged to anybody. One timbre covers ZH + EN.",
+      "dataset_list": "kols/lena-chen/voice/dataset/lena-chen.list",
+      "reference_audio": "kols/lena-chen/voice/ref.wav",
+      "reference_text": "如果你在這瓶香水跟貴婦品牌那支之間猶豫，我會選平價的那款，原因很簡單。",
+      "reference_lang": "zh",
+      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/lena-chen-e12.ckpt",
+      "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/lena-chen_e8_s496.pth",
+      "api": "http://127.0.0.1:9880",
+      "fallback_voice": "en-US-AvaMultilingualNeural",
+      "status": "finetuned",
       "engine_offline": "IndexTTS-2 (ZH/EN, emotion + duration control) for high-quality video voiceover",
       "engine_realtime": "CosyVoice2 (ZH/EN native, ~150ms first-packet, streaming) for DM/live replies",
       "post_processing": "RVC for timbre unification across engines (one reference voice)",
-      "notes": "Sweet, bright, mid-high pitched, warm and friendly, bilingual ZH/EN from one reference sample. ZH/EN-first design avoids the Vietnamese-model licensing risk flagged in research/local-ai-companion/10-local-voice-stack.md. CosyVoice2 is Apache-2.0 and native to LiveTalking for the later realtime phase."
+      "notes": "Sweet, bright, mid-high pitched, warm and friendly, bilingual ZH/EN from one reference sample. ZH/EN-first design avoids the Vietnamese-model licensing risk flagged in research/local-ai-companion/10-local-voice-stack.md. CosyVoice2 is Apache-2.0 and native to LiveTalking for the later realtime phase.",
+      "dataset_minutes": 28.7,
+      "dataset_clips": 304,
+      "gsv_version": "v2Pro"
     }
   },
   "ai_prompts": {

@@ -90,6 +90,52 @@ speak(kol_id, text, lang, wav_path)   # GPT-SoVITS if TTS_API reachable, else sa
 ```
 Set `TTS_API=http://127.0.0.1:9880` in the environment on the GPU box.
 
+## 8. Additional helper scripts
+
+### Dataset building → moved to `tools/voice_crawl/`
+
+`audio_pipeline.py`, `voice_pipeline.py` and `podcast_to_trainset.py` were three
+near-identical wrappers (download → mp3 → normalize 32k mono → `data_prep.py`) and have
+been **removed**. They cut audio into fixed-duration chunks, which slices words in half,
+keeps background music, and blends every speaker in a recording into one "voice".
+
+Use `tools/voice_crawl/` instead — it slices on sentence/pause boundaries from word-level
+ASR timestamps and gates every clip through measured QC:
+
+```bash
+# crawl audio you have rights to
+python tools/voice_crawl/crawl.py <kol_id> --url "<podcast or video URL>"
+
+# or the no-real-person path: synthesize a timbre, then lock it
+python tools/voice_crawl/corpus_builder.py --minutes 30 -o kols/<id>/voice/corpus.txt
+python tools/voice_crawl/bootstrap_timbre.py <kol_id> \
+    --voice en-US-AvaMultilingualNeural --text-file kols/<id>/voice/corpus.txt
+
+# then fine-tune headlessly (replaces the WebUI click-through in §3)
+GPT-SoVITS\.venv\Scripts\python.exe tools\voice_crawl\train_gptsovits.py <kol_id>
+```
+
+See [`tools/voice_crawl/README.md`](../voice_crawl/README.md) for the full flow, the QC
+thresholds, and the Windows environment fixes (isolated venv, `numba<0.62`, ffmpeg-shared
+DLLs, single-GPU DDP patch).
+
+`data_prep.py` is kept: it is the simple resample+ASR path referenced by `CUDA_SETUP.md`.
+
+### `tools/tts_train/rvc_pipeline.py`
+
+This wrapper is a simple CLI for voice conversion via an installed `rvc` executable.
+
+Example:
+
+```bash
+python tools/tts_train/rvc_pipeline.py sofia-vargas \
+  --input "kols_sofia-vargas_raw voice.m4a" \
+  --speaker western \
+  --output converted_western.wav
+```
+
+Use this when you want to convert a raw voice sample into a different timbre or accent after you have an RVC model available.
+
 ## Evaluation
 
 - Speaker similarity (SIM) vs the reference, WER via ASR on the output, and a quick listen (MOS).

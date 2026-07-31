@@ -17,7 +17,10 @@ import os, sys, json, urllib.request, urllib.parse, subprocess
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 def _voice_cfg(kol_id):
-    prof = json.load(open(f"{ROOT}/kols/{kol_id}/profile.json"))
+    # encoding is required: profiles are UTF-8, but Windows `open()` defaults to
+    # the ANSI codepage (cp950 on zh-TW) and dies on the Chinese fields.
+    with open(f"{ROOT}/kols/{kol_id}/profile.json", encoding="utf-8") as fh:
+        prof = json.load(fh)
     return prof.get("ai_assets", {}).get("voice", {}) or {}
 
 def _get(api, path, params):
@@ -25,11 +28,38 @@ def _get(api, path, params):
     return urllib.request.urlopen(url, timeout=60).read()
 
 def _say_fallback(text, lang, out_wav, cfg):
-    voice = "Meijia" if lang == "zh" else "Samantha"
-    subprocess.run(["say", "-v", voice, "--file-format=WAVE",
-                    "--data-format=LEI16@22050", "-o", out_wav, text or "."],
-                   capture_output=True, text=True)
-    return os.path.exists(out_wav)
+    """Best-effort local TTS when the GPT-SoVITS API is down.
+
+    macOS `say` does not exist on Windows/Linux, so prefer edge-tts (already a
+    dependency of tools/voice_crawl) and only fall back to `say` on Darwin.
+    """
+    # 1) edge-tts: cross-platform, natural, and the same engine the bootstrap uses.
+    try:
+        import asyncio, edge_tts, tempfile
+        voice = cfg.get("fallback_voice") or (
+            "zh-TW-HsiaoChenNeural" if lang == "zh" else "en-US-AvaMultilingualNeural")
+        with tempfile.TemporaryDirectory() as td:
+            mp3 = os.path.join(td, "f.mp3")
+            asyncio.run(edge_tts.Communicate(text or ".", voice).save(mp3))
+            sys.path.insert(0, os.path.join(ROOT, "tools", "voice_crawl"))
+            import ffmpeg_util
+            from pathlib import Path
+            ffmpeg_util.to_mono_wav(Path(mp3), Path(out_wav), 32000, loudnorm=False)
+        if os.path.exists(out_wav) and os.path.getsize(out_wav) > 1000:
+            return True
+    except Exception as e:
+        print(f"[tts_client] edge-tts fallback failed ({e})")
+
+    # 2) macOS `say`, only where it exists.
+    if sys.platform == "darwin":
+        voice = "Meijia" if lang == "zh" else "Samantha"
+        subprocess.run(["say", "-v", voice, "--file-format=WAVE",
+                        "--data-format=LEI16@22050", "-o", out_wav, text or "."],
+                       capture_output=True, text=True)
+        return os.path.exists(out_wav)
+
+    print("[tts_client] no working fallback TTS on this platform")
+    return False
 
 def speak(kol_id, text, lang="zh", out_wav="out.wav"):
     cfg = _voice_cfg(kol_id)
