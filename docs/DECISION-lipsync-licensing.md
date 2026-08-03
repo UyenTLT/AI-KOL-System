@@ -1,6 +1,12 @@
-# Decision memo — lip-sync licensing
+# Decision memo — lip-sync & portrait-animation licensing
 
-**Question:** the lip-sync stack carries two licence constraints. Which option do we take?
+**Question:** the lip-sync stack carries licence constraints. Which option do we take?
+
+> **Update (2026-08-03) — this is a pattern, not a series of one-offs.** Every component
+> examined in this layer so far carries a research or non-commercial restriction, each with a
+> different documented remedy. That reframes the decision: it is not "fix this one tool", it is
+> "budget for one licence swap per component in the avatar layer, and check before adopting the
+> next one". See §*Systemic risk* below.
 
 **Recommendation: accept the watermark for now, and treat the *model* licence as the real
 commercial blocker — solved by switching model, not by paying for the wrapper.**
@@ -69,6 +75,28 @@ but we should behave as if it binds until told otherwise.
 | 2 | Have legal read MuseTalk's licence text | legal | If permissive, B is solved for ~NT$0 |
 | 3 | If (2) is clear: validate `-Model musetalk` on this GPU — quality, fps, VRAM | me | ~half a day; proves the migration before it is needed |
 | 4 | Keep the watermark on every output until (1) and (2) are answered | me | Already the case |
+| 5 | Treat "check the licence" as a gate on adopting any new model in this layer | me | Three for three so far; cheaper as a habit than as a retrofit |
+| 6 | If we adopt LivePortrait for facial motion: use the MediaPipe variant, not the stock InsightFace one | me | Keeps that component MIT/Apache instead of non-commercial |
+
+## Systemic risk — three for three
+
+| Component | What it does | Constraint | Documented remedy |
+|---|---|---|---|
+| **LiveTalking** | realtime serving + rendering | Apache-2.0, but README §7 requires its watermark on published video | accept it / commercial edition / change engine |
+| **wav2lip** | lip-sync model (in use now) | published weights are **research-licensed** | switch to MuseTalk — LiveTalking already supports it, so a flag change |
+| **LivePortrait** | facial motion (blink, head turn) — *evaluated, not yet adopted* | MIT code, but bundled **InsightFace detection models are non-commercial research only** | its LICENSE states the fix: replace InsightFace's detector. The community fork **ComfyUI-LivePortraitKJ** already substitutes **MediaPipe**, "ensuring the license remains under MIT and Apache 2.0" |
+
+Three components examined, three restrictions. The important read is not that any one of them is
+a problem — each has a known, cheap-ish fix — but that **this is normal for this class of model**,
+so it should be treated as a standing checklist item rather than a surprise:
+
+- **Check the licence before adopting a component**, not after building on it. That is why
+  LivePortrait was licence-checked before its ~2 GB of weights were downloaded, and why the
+  MuseTalk performance test is sequenced after legal, not before.
+- **Research/internal use is a different question from publishing.** Everything here is fine for
+  R&D and internal demos, which is what the current build is. The constraints bite at launch.
+- **Budget one swap per component.** MuseTalk for wav2lip; MediaPipe for InsightFace; a decision
+  for the watermark. None is large individually; together they are a work item worth naming.
 
 ## Scope note
 

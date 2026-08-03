@@ -45,3 +45,4 @@ kols/*/avatar/_frames/
 # and is specific to a deployment, not to the code. The audit trail belongs on the box
 # that made the decisions.
 kols/*/replies/
+/LivePortrait/
