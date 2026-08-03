@@ -212,9 +212,17 @@ def main() -> int:
             src = REPO / src
         if not src.is_file():
             raise SystemExit(f"video not found: {src}")
-        base_video = src
+        # Normalise fps and size. LiveTalking renders at FPS (25); a 30 fps source would
+        # otherwise play back slightly slow-motion, and a different frame size changes the
+        # avatar geometry from the rest of the pipeline.
+        base_video = work / "base_video.mp4"
+        print(f"  supplied clip: {src.name} -> normalising to {FRAME_W}x{FRAME_H} @ {FPS}fps")
+        subprocess.run([ffmpeg_bin(), "-y", "-hide_banner", "-loglevel", "error",
+                        "-i", str(src), "-r", str(FPS),
+                        "-vf", f"scale={FRAME_W}:{FRAME_H}:force_original_aspect_ratio=increase,"
+                               f"crop={FRAME_W}:{FRAME_H}",
+                        "-an", "-pix_fmt", "yuv420p", str(base_video)], check=True)
         n_frames = None
-        print(f"  using supplied clip: {base_video.name}")
     else:
         portrait = pick_portrait(args.kol_id, args.image)
         print(f"  portrait: {portrait.relative_to(REPO)}")

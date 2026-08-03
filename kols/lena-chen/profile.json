@@ -216,18 +216,21 @@
     },
     "avatar": {
       "engine": "livetalking-wav2lip",
-      "avatar_id": "lena-chen_v1",
-      "avatar_dir": "LiveTalking/data/avatars/lena-chen_v1",
+      "avatar_id": "lena-chen_v2",
+      "avatar_dir": "LiveTalking/data/avatars/lena-chen_v2",
       "source_portrait": "kols/lena-chen/images/soul_v1_training/01_portrait_frontal.png",
-      "base_clip": "kols/lena-chen/avatar/base_subtle.mp4",
-      "motion": "subtle (procedural drift + breathing zoom from a single still)",
-      "frames": 300,
+      "base_clip": "kols/lena-chen/avatar/base_liveportrait.mp4",
+      "motion": "LivePortrait facial animation (real blinks + head movement) driven by d19",
+      "frames": 210,
       "frame_size": "576x768",
       "face_size": "256x256",
       "fps": 25,
       "status": "working",
       "watermark_note": "LiveTalking burns a watermark into avatar frames AND every output frame. Its README requires published videos to carry it. Removing it is a licence/business decision, not a technical one.",
-      "improve_next": "Replace the procedural base clip with real facial motion (blinks, micro head turns) via LivePortrait or an image-to-video model, for a more natural look."
+      "improve_next": "Replace the procedural base clip with real facial motion (blinks, micro head turns) via LivePortrait or an image-to-video model, for a more natural look.",
+      "motion_note": "Measured 2 blink-like events in 8.3s (~14/min; natural is 15-20/min). The earlier procedural version had 0 blinks - it drifted the whole frame instead of moving the face.",
+      "previous": "lena-chen_v1 (procedural drift, kept for comparison)",
+      "licence_note": "LivePortrait code is MIT but its bundled InsightFace detection models are non-commercial research only. Fine for R&D; for commercial use replace the detector (the ComfyUI-LivePortraitKJ fork uses MediaPipe). See docs/DECISION-lipsync-licensing.md."
     }
   },
   "ai_prompts": {
