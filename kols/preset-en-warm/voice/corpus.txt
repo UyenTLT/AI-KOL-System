@@ -1,0 +1,323 @@
+# Bootstrap corpus - target 30 min, seed 20260730
+# 320 utterances, estimated 30.0 min of speech
+# Feed to: bootstrap_timbre.py <kol_id> --voice <v> --text-file <this file>
+Would you like to see me compare that mascara against the travel version side by side?
+Good morning everyone, today I want to talk about choosing a base because so many of you asked.
+Thank you all for the comments, I read every single one of them.
+The novel moves slowly, but the ending is genuinely devastating.
+I have been using that lip balm for four weeks now, and honestly it did nothing for me.
+Would you like to see me compare the moisturiser against the luxury one side by side?
+I have been using that highlighter for six weeks now, and honestly it is worth repurchasing.
+Good morning everyone, today I want to talk about affordable finds because so many of you asked.
+Good morning everyone, today I want to talk about hair care because so many of you asked.
+He argued that judges should never question a witness in that tone.
+Let me be blunt about that foundation: I will absolutely repurchase, mainly because the fragrance bothered me.
+It retails for one hundred and ten dollars in the States, but I found it for half the usual price.
+The hydration on that highlighter genuinely surprised me this month.
+Quick reminder: use a smaller amount of that mascara, otherwise it can sting slightly.
+Genuinely, I assumed that lip balm was overhyped, and then it turned out gentler than expected.
+If you are torn between the sheet mask and last year's formula, I would go with the first one.
+It retails for sixty eight dollars in the States, but I found it for thirty percent off.
+I have been using that lip balm for six weeks now, and honestly it did nothing for me.
+I have been using that highlighter for six weeks now, and honestly it did nothing for me.
+For today's morning routine I am wearing that lip balm, and the texture is light and easy to blend.
+The thunderstorm yesterday flooded the entire street up to our ankles.
+It retails for forty five dollars in the States, but I found it for buy one get one free.
+Before we start, let me quickly show you what came in the package this week.
+Roughly sixty percent of the messages I got were asking the exact same question.
+The wind at the winter shore is strong enough to make you walk sideways.
+Our teacher insisted that understanding matters far more than memorising.
+Roughly ninety percent of the messages I got were asking the exact same question.
+I have been using this brow pencil for twelve weeks now, and honestly it is fairly average.
+Genuinely, I assumed this brow pencil was overhyped, and then it broke me out immediately.
+For today's post workout routine I am wearing this brow pencil, and the texture is slightly sticky.
+For today's office commute I am wearing that mascara, and the texture is silky and never greasy.
+If you are torn between that highlighter and last year's formula, I would go with the first one.
+Roughly seventy five percent of the messages I got were asking the exact same question.
+I take the subway and then a bus, which is roughly fifty minutes.
+Genuinely, I assumed the moisturiser was overhyped, and then it genuinely impressed me.
+Statistics showed that over two thirds of respondents chose the first option.
+This is not a sponsored video; I paid nineteen dollars for this cleanser myself.
+The smell of garlic and ginger in hot oil made everyone hungry at once.
+Genuinely, I assumed this cleanser was overhyped, and then it turned out gentler than expected.
+Would you like to see me compare that highlighter against the travel version side by side?
+Global warming affects far more than simply how hot the summer gets.
+Genuinely, I assumed that highlighter was overhyped, and then it turned out gentler than expected.
+At six in the morning the park held nothing but a few restless sparrows.
+Quick reminder: use a smaller amount of this toner, otherwise it feels heavy by midday.
+I have been using this cleanser for three weeks now, and honestly it genuinely works.
+Quick reminder: use a smaller amount of this brow pencil, otherwise it can sting slightly.
+Let me be blunt about the moisturiser: I am still undecided about it, mainly because results took much too long.
+If you are torn between this cleanser and the travel version, I would go with the first one.
+Would you like to see me compare this serum against the drugstore version side by side?
+A lot of you asked whether this brow pencil works for combination skin, so here is my take.
+The longevity on this serum genuinely surprised me this month.
+This is not a sponsored video; I paid one hundred and ten dollars for this brow pencil myself.
+Would you like to see me compare this toner against the luxury one side by side?
+If you are torn between the moisturiser and the travel version, I would go with the first one.
+Quick reminder: use a smaller amount of this serum, otherwise it can sting slightly.
+For today's get ready with me I am wearing that foundation, and the texture is light and easy to blend.
+If you are torn between that highlighter and the luxury one, I would go with the first one.
+Quick reminder: use a smaller amount of that highlighter, otherwise it feels heavy by midday.
+A lot of you asked whether that highlighter works for sensitive skin, so here is my take.
+For today's date night look I am wearing this serum, and the texture is extremely watery.
+For today's post workout routine I am wearing that lip balm, and the texture is slightly sticky.
+Good morning everyone, today I want to talk about sun protection because so many of you asked.
+A lot of you asked whether the moisturiser works for dry skin, so here is my take.
+This is not a sponsored video; I paid sixty eight dollars for the sheet mask myself.
+Let me be blunt about the sunscreen: I will absolutely repurchase, mainly because the fragrance bothered me.
+I have been using that foundation for eight weeks now, and honestly it is worth repurchasing.
+Quick reminder: use a smaller amount of the sunscreen, otherwise it feels heavy by midday.
+For today's morning routine I am wearing this cleanser, and the texture is quite thick.
+Would you like to see me compare that highlighter against the refill size side by side?
+I have been using this serum for six weeks now, and honestly it is worth repurchasing.
+If you are torn between that mascara and last year's formula, I would go with the first one.
+Genuinely, I assumed the moisturiser was overhyped, and then it turned out gentler than expected.
+If you are torn between this serum and the luxury one, I would go with the first one.
+Genuinely, I assumed the sheet mask was overhyped, and then it turned out gentler than expected.
+A lot of you asked whether that foundation works for dry skin, so here is my take.
+Quick reminder: use a smaller amount of this cleanser, otherwise it can sting slightly.
+For today's date night look I am wearing that mascara, and the texture is silky and never greasy.
+Would you like to see me compare the sheet mask against the refill size side by side?
+Quick reminder: use a smaller amount of the sunscreen, otherwise it can sting slightly.
+Quick reminder: use a smaller amount of this toner, otherwise it will pill under makeup.
+A lot of you asked whether this cleanser works for oily skin, so here is my take.
+Roughly forty percent of the messages I got were asking the exact same question.
+Let me be blunt about the moisturiser: I would not buy it again, mainly because the fragrance bothered me.
+This is not a sponsored video; I paid twenty nine dollars for the sheet mask myself.
+A lot of you asked whether that mascara works for dry skin, so here is my take.
+Quick reminder: use a smaller amount of this cleanser, otherwise it will pill under makeup.
+Let me be blunt about that lip balm: I would not buy it again, mainly because the value is excellent.
+This is not a sponsored video; I paid sixty eight dollars for that foundation myself.
+A lot of you asked whether that highlighter works for combination skin, so here is my take.
+For today's post workout routine I am wearing the sunscreen, and the texture is extremely watery.
+It retails for nineteen dollars in the States, but I found it for buy one get one free.
+This is not a sponsored video; I paid twenty nine dollars for the moisturiser myself.
+I have been using this brow pencil for two weeks now, and honestly it is worth repurchasing.
+Quick reminder: use a smaller amount of that highlighter, otherwise it will pill under makeup.
+The coverage on this brow pencil genuinely surprised me this month.
+It retails for twenty nine dollars in the States, but I found it for half the usual price.
+Would you like to see me compare this serum against last year's formula side by side?
+Genuinely, I assumed this cleanser was overhyped, and then it genuinely impressed me.
+A lot of you asked whether that mascara works for sensitive skin, so here is my take.
+If you are torn between this toner and the luxury one, I would go with the first one.
+The blendability on the sheet mask genuinely surprised me this month.
+Let me be blunt about the sheet mask: I would not buy it again, mainly because the texture is far too heavy.
+It retails for nineteen dollars in the States, but I found it for just twelve dollars.
+Quick reminder: use a smaller amount of that foundation, otherwise it can sting slightly.
+I have been using that mascara for three weeks now, and honestly it is worth repurchasing.
+For today's morning routine I am wearing this brow pencil, and the texture is silky and never greasy.
+Quick reminder: use a smaller amount of this brow pencil, otherwise it will pill under makeup.
+For today's morning routine I am wearing this cleanser, and the texture is extremely watery.
+I have been using the sunscreen for twelve weeks now, and honestly it is worth repurchasing.
+If you are torn between the sunscreen and the drugstore version, I would go with the first one.
+A lot of you asked whether this cleanser works for dry skin, so here is my take.
+Quick reminder: use a smaller amount of this serum, otherwise it will pill under makeup.
+If you are torn between the moisturiser and last year's formula, I would go with the first one.
+It retails for forty five dollars in the States, but I found it for thirty percent off.
+For today's morning routine I am wearing the sheet mask, and the texture is slightly sticky.
+It retails for twenty nine dollars in the States, but I found it for just twelve dollars.
+A lot of you asked whether the sheet mask works for combination skin, so here is my take.
+A lot of you asked whether that lip balm works for oily skin, so here is my take.
+Quick reminder: use a smaller amount of that foundation, otherwise it feels heavy by midday.
+For today's office commute I am wearing that highlighter, and the texture is extremely watery.
+This is not a sponsored video; I paid sixty eight dollars for that lip balm myself.
+I have been using this brow pencil for eight weeks now, and honestly it is worth repurchasing.
+A lot of you asked whether the moisturiser works for combination skin, so here is my take.
+Quick reminder: use a smaller amount of the sheet mask, otherwise it can sting slightly.
+This is not a sponsored video; I paid nineteen dollars for that highlighter myself.
+The coverage on that highlighter genuinely surprised me this month.
+A lot of you asked whether that highlighter works for oily skin, so here is my take.
+Would you like to see me compare the sunscreen against last year's formula side by side?
+Let me be blunt about the moisturiser: I would not buy it again, mainly because results took much too long.
+This is not a sponsored video; I paid twenty nine dollars for that foundation myself.
+This is not a sponsored video; I paid forty five dollars for that highlighter myself.
+For today's get ready with me I am wearing the sunscreen, and the texture is light and easy to blend.
+Genuinely, I assumed this brow pencil was overhyped, and then it genuinely impressed me.
+Let me be blunt about this brow pencil: I am still undecided about it, mainly because the value is excellent.
+For today's morning routine I am wearing the moisturiser, and the texture is silky and never greasy.
+Let me be blunt about that highlighter: I would not buy it again, mainly because the texture is far too heavy.
+This is not a sponsored video; I paid sixty eight dollars for this toner myself.
+Would you like to see me compare the sunscreen against the refill size side by side?
+This is not a sponsored video; I paid forty five dollars for this toner myself.
+Quick reminder: use a smaller amount of that mascara, otherwise it will pill under makeup.
+I have been using that lip balm for twelve weeks now, and honestly it genuinely works.
+If you are torn between that highlighter and the refill size, I would go with the first one.
+This is not a sponsored video; I paid twenty nine dollars for this toner myself.
+Genuinely, I assumed that highlighter was overhyped, and then it broke me out immediately.
+For today's get ready with me I am wearing the moisturiser, and the texture is extremely watery.
+Would you like to see me compare this brow pencil against last year's formula side by side?
+A lot of you asked whether this cleanser works for combination skin, so here is my take.
+Let me be blunt about this serum: I would not buy it again, mainly because the ingredient list is solid.
+Genuinely, I assumed that mascara was overhyped, and then it turned out gentler than expected.
+Good morning everyone, today I want to talk about seasonal skincare because so many of you asked.
+A lot of you asked whether that lip balm works for acne prone skin, so here is my take.
+If you are torn between the sheet mask and the drugstore version, I would go with the first one.
+Genuinely, I assumed that foundation was overhyped, and then it genuinely impressed me.
+A lot of you asked whether this serum works for acne prone skin, so here is my take.
+Genuinely, I assumed this serum was overhyped, and then it genuinely impressed me.
+It retails for one hundred and ten dollars in the States, but I found it for thirty percent off.
+This is not a sponsored video; I paid forty five dollars for that lip balm myself.
+For today's date night look I am wearing that lip balm, and the texture is light and easy to blend.
+The blendability on that lip balm genuinely surprised me this month.
+Let me be blunt about that lip balm: I am still undecided about it, mainly because the value is excellent.
+A lot of you asked whether this serum works for oily skin, so here is my take.
+This is not a sponsored video; I paid sixty eight dollars for that mascara myself.
+For today's get ready with me I am wearing this serum, and the texture is silky and never greasy.
+This is not a sponsored video; I paid twenty nine dollars for that lip balm myself.
+A lot of you asked whether the sunscreen works for sensitive skin, so here is my take.
+For today's date night look I am wearing that highlighter, and the texture is light and easy to blend.
+Genuinely, I assumed that lip balm was overhyped, and then it broke me out immediately.
+For today's post workout routine I am wearing that mascara, and the texture is extremely watery.
+If you are torn between that foundation and the travel version, I would go with the first one.
+A lot of you asked whether this toner works for oily skin, so here is my take.
+The coverage on this serum genuinely surprised me this month.
+If you are torn between the moisturiser and the refill size, I would go with the first one.
+For today's get ready with me I am wearing that mascara, and the texture is extremely watery.
+This is not a sponsored video; I paid one hundred and ten dollars for the sheet mask myself.
+Genuinely, I assumed the sunscreen was overhyped, and then it broke me out immediately.
+Quick reminder: use a smaller amount of that lip balm, otherwise it will pill under makeup.
+This is not a sponsored video; I paid sixty eight dollars for the sunscreen myself.
+For today's get ready with me I am wearing that lip balm, and the texture is light and easy to blend.
+For today's date night look I am wearing that highlighter, and the texture is quite thick.
+Let me be blunt about this brow pencil: I will absolutely repurchase, mainly because the ingredient list is solid.
+Would you like to see me compare the moisturiser against the refill size side by side?
+For today's date night look I am wearing that highlighter, and the texture is slightly sticky.
+Would you like to see me compare this serum against the travel version side by side?
+Quick reminder: use a smaller amount of that lip balm, otherwise it can sting slightly.
+I have been using that highlighter for three weeks now, and honestly it did nothing for me.
+Quick reminder: use a smaller amount of this brow pencil, otherwise it feels heavy by midday.
+I have been using this serum for three weeks now, and honestly I was pleasantly surprised.
+Let me be blunt about that lip balm: I am still undecided about it, mainly because the ingredient list is solid.
+It retails for twenty nine dollars in the States, but I found it for buy one get one free.
+Would you like to see me compare the sunscreen against the luxury one side by side?
+I have been using the moisturiser for two weeks now, and honestly it did nothing for me.
+Let me be blunt about this serum: I would not buy it again, mainly because the fragrance bothered me.
+Would you like to see me compare that highlighter against the luxury one side by side?
+For today's get ready with me I am wearing that mascara, and the texture is quite thick.
+A lot of you asked whether that highlighter works for acne prone skin, so here is my take.
+I have been using this serum for eight weeks now, and honestly it genuinely works.
+Let me be blunt about that foundation: I would not buy it again, mainly because results took much too long.
+For today's office commute I am wearing this cleanser, and the texture is light and easy to blend.
+I have been using that foundation for four weeks now, and honestly it genuinely works.
+Let me be blunt about this cleanser: I am still undecided about it, mainly because results took much too long.
+I have been using the sunscreen for six weeks now, and honestly it genuinely works.
+A lot of you asked whether the moisturiser works for acne prone skin, so here is my take.
+A lot of you asked whether that foundation works for sensitive skin, so here is my take.
+If you are torn between this brow pencil and the luxury one, I would go with the first one.
+It retails for nineteen dollars in the States, but I found it for thirty percent off.
+Would you like to see me compare this toner against the refill size side by side?
+For today's date night look I am wearing this toner, and the texture is extremely watery.
+If you are torn between that foundation and the refill size, I would go with the first one.
+For today's morning routine I am wearing that highlighter, and the texture is silky and never greasy.
+For today's get ready with me I am wearing this brow pencil, and the texture is silky and never greasy.
+This is not a sponsored video; I paid twenty nine dollars for this cleanser myself.
+This is not a sponsored video; I paid one hundred and ten dollars for that mascara myself.
+Would you like to see me compare this toner against last year's formula side by side?
+Genuinely, I assumed this serum was overhyped, and then it broke me out immediately.
+For today's date night look I am wearing this cleanser, and the texture is extremely watery.
+A lot of you asked whether that foundation works for acne prone skin, so here is my take.
+A lot of you asked whether this toner works for dry skin, so here is my take.
+A lot of you asked whether the sunscreen works for oily skin, so here is my take.
+The hydration on the sheet mask genuinely surprised me this month.
+If you are torn between that mascara and the drugstore version, I would go with the first one.
+Would you like to see me compare this serum against the luxury one side by side?
+For today's morning routine I am wearing this toner, and the texture is slightly sticky.
+A lot of you asked whether that lip balm works for combination skin, so here is my take.
+Genuinely, I assumed the sheet mask was overhyped, and then it genuinely impressed me.
+Let me be blunt about this brow pencil: I will absolutely repurchase, mainly because the texture is far too heavy.
+Let me be blunt about that foundation: I am still undecided about it, mainly because the texture is far too heavy.
+Would you like to see me compare that mascara against the luxury one side by side?
+A lot of you asked whether the sunscreen works for acne prone skin, so here is my take.
+Let me be blunt about this cleanser: I would not buy it again, mainly because the fragrance bothered me.
+It retails for sixty eight dollars in the States, but I found it for half the usual price.
+A lot of you asked whether that mascara works for acne prone skin, so here is my take.
+Let me be blunt about this brow pencil: I would not buy it again, mainly because the fragrance bothered me.
+A lot of you asked whether this brow pencil works for sensitive skin, so here is my take.
+This is not a sponsored video; I paid nineteen dollars for the sheet mask myself.
+For today's morning routine I am wearing that highlighter, and the texture is slightly sticky.
+The hydration on the sunscreen genuinely surprised me this month.
+For today's office commute I am wearing that lip balm, and the texture is light and easy to blend.
+A lot of you asked whether that mascara works for combination skin, so here is my take.
+For today's office commute I am wearing this cleanser, and the texture is extremely watery.
+Let me be blunt about the sunscreen: I will absolutely repurchase, mainly because the value is excellent.
+Would you like to see me compare this cleanser against the travel version side by side?
+I have been using that mascara for six weeks now, and honestly it genuinely works.
+If you are torn between that foundation and the luxury one, I would go with the first one.
+Would you like to see me compare the sheet mask against the drugstore version side by side?
+If you are torn between this serum and the refill size, I would go with the first one.
+For today's office commute I am wearing this cleanser, and the texture is silky and never greasy.
+I have been using the sheet mask for two weeks now, and honestly I was pleasantly surprised.
+Would you like to see me compare that highlighter against the drugstore version side by side?
+I have been using this cleanser for twelve weeks now, and honestly it genuinely works.
+For today's date night look I am wearing the moisturiser, and the texture is silky and never greasy.
+For today's get ready with me I am wearing that mascara, and the texture is light and easy to blend.
+The coverage on this toner genuinely surprised me this month.
+I have been using that highlighter for eight weeks now, and honestly I was pleasantly surprised.
+For today's date night look I am wearing this toner, and the texture is light and easy to blend.
+Let me be blunt about that mascara: I will absolutely repurchase, mainly because the value is excellent.
+I have been using that lip balm for eight weeks now, and honestly it is worth repurchasing.
+If you are torn between the sunscreen and last year's formula, I would go with the first one.
+It retails for sixty eight dollars in the States, but I found it for just twelve dollars.
+This is not a sponsored video; I paid nineteen dollars for that lip balm myself.
+A lot of you asked whether the sheet mask works for acne prone skin, so here is my take.
+A lot of you asked whether that highlighter works for dry skin, so here is my take.
+Let me be blunt about the sheet mask: I would not buy it again, mainly because the value is excellent.
+For today's post workout routine I am wearing the moisturiser, and the texture is light and easy to blend.
+If you are torn between that foundation and last year's formula, I would go with the first one.
+Let me be blunt about that mascara: I would not buy it again, mainly because the ingredient list is solid.
+I have been using that lip balm for six weeks now, and honestly I was pleasantly surprised.
+I have been using that mascara for twelve weeks now, and honestly it did nothing for me.
+For today's office commute I am wearing that foundation, and the texture is extremely watery.
+It retails for forty five dollars in the States, but I found it for half the usual price.
+I have been using this brow pencil for two weeks now, and honestly I was pleasantly surprised.
+It retails for sixty eight dollars in the States, but I found it for buy one get one free.
+The longevity on that foundation genuinely surprised me this month.
+The blendability on this cleanser genuinely surprised me this month.
+For today's post workout routine I am wearing this brow pencil, and the texture is light and easy to blend.
+For today's get ready with me I am wearing this cleanser, and the texture is extremely watery.
+If you are torn between that mascara and the refill size, I would go with the first one.
+Let me be blunt about the sunscreen: I am still undecided about it, mainly because the ingredient list is solid.
+Genuinely, I assumed this cleanser was overhyped, and then it broke me out immediately.
+I have been using that foundation for six weeks now, and honestly it is worth repurchasing.
+Genuinely, I assumed that mascara was overhyped, and then it genuinely impressed me.
+For today's post workout routine I am wearing the moisturiser, and the texture is slightly sticky.
+The blendability on the sunscreen genuinely surprised me this month.
+Let me be blunt about this toner: I am still undecided about it, mainly because results took much too long.
+I have been using that highlighter for four weeks now, and honestly it is fairly average.
+The hydration on that mascara genuinely surprised me this month.
+It retails for nineteen dollars in the States, but I found it for half the usual price.
+I have been using this cleanser for eight weeks now, and honestly it genuinely works.
+The hydration on this toner genuinely surprised me this month.
+A lot of you asked whether the sheet mask works for dry skin, so here is my take.
+If you are torn between that mascara and the luxury one, I would go with the first one.
+Quick reminder: use a smaller amount of this serum, otherwise it feels heavy by midday.
+A lot of you asked whether that lip balm works for dry skin, so here is my take.
+For today's date night look I am wearing the sheet mask, and the texture is light and easy to blend.
+I have been using this toner for six weeks now, and honestly it did nothing for me.
+The blendability on that foundation genuinely surprised me this month.
+Genuinely, I assumed that lip balm was overhyped, and then it genuinely impressed me.
+This is not a sponsored video; I paid one hundred and ten dollars for that foundation myself.
+Let me be blunt about this toner: I will absolutely repurchase, mainly because the fragrance bothered me.
+I have been using this toner for six weeks now, and honestly it is worth repurchasing.
+Let me be blunt about that mascara: I am still undecided about it, mainly because the fragrance bothered me.
+The coverage on that foundation genuinely surprised me this month.
+Would you like to see me compare the moisturiser against the travel version side by side?
+It retails for one hundred and ten dollars in the States, but I found it for just twelve dollars.
+Would you like to see me compare the sheet mask against the luxury one side by side?
+Would you like to see me compare this brow pencil against the luxury one side by side?
+I have been using this serum for six weeks now, and honestly it did nothing for me.
+This is not a sponsored video; I paid one hundred and ten dollars for that lip balm myself.
+The hydration on this cleanser genuinely surprised me this month.
+Would you like to see me compare that lip balm against the luxury one side by side?
+Let me be blunt about that mascara: I would not buy it again, mainly because results took much too long.
+The hydration on that foundation genuinely surprised me this month.
+Would you like to see me compare that foundation against last year's formula side by side?
+If you are torn between that lip balm and the travel version, I would go with the first one.
+If you are torn between this brow pencil and last year's formula, I would go with the first one.
+I have been using that highlighter for six weeks now, and honestly it is fairly average.
+I have been using the sunscreen for two weeks now, and honestly it is fairly average.
+Would you like to see me compare this cleanser against the drugstore version side by side?
+If you are torn between that highlighter and the drugstore version, I would go with the first one.
+A lot of you asked whether the moisturiser works for sensitive skin, so here is my take.
+I have been using that mascara for six weeks now, and honestly it did nothing for me.

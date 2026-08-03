@@ -50,9 +50,27 @@ needs it to match the audio and hand-typing it is the most common cause of a bad
 python tools/studio/voice_studio.py clone ref.wav "Hello there" -o out.wav
 ```
 
-> Only clone a voice you have the right to use. A **fine-tuned** voice (20–30 min of audio,
-> ~25 min of compute — see `tools/voice_crawl`) sounds markedly better than zero-shot, which
-> is why the two flagship characters use it.
+> Only clone a voice you have the right to use. A **fine-tuned** voice sounds markedly better
+> than zero-shot, which is why every studio character is fine-tuned.
+
+### Upgrading a voice from zero-shot to fine-tuned
+
+One command does corpus → bootstrap → fine-tune, invoking each stage with the correct
+interpreter (the corpus/bootstrap stages need the repo venv for edge-tts; training needs the
+GPT-SoVITS venv for `numpy<2` — mixing them up is the easiest way to waste half an hour):
+
+```powershell
+.venv\Scripts\python.exe tools\voice_crawl\build_voice.py preset-en-warm `
+    --edge-voice en-US-EmmaMultilingualNeural --lang en --minutes 30
+```
+
+It creates a minimal `profile.json` if the id is new, so a plain voice preset does not need a
+whole KOL persona invented for it. Presets are deliberately **not** added to
+`kols/index.json`, so they work with every tool while staying out of the KOL roster.
+
+The studio then **detects** the new weights on disk — `is_finetuned()` checks the profile and
+the files, so a character upgrades from zero-shot to fine-tuned with no edit here and no risk
+of a hardcoded label drifting out of step with reality.
 
 ## 3. Character
 

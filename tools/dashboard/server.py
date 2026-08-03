@@ -892,7 +892,7 @@ def render_studio(st: dict) -> str:
                  'still works.</div>')
 
     opts, samples = "", {}
-    for c in vsx.CHARACTERS:
+    for c in vsx.characters():
         tag = "fine-tuned" if c["kind"] == "finetuned" else "zero-shot"
         opts += (f'<option value="{esc(c["id"])}" data-lang="{c["lang"]}">'
                  f'{esc(c["name"])} — {vsx.LANGS[c["lang"]]} ({tag})</option>')
@@ -904,7 +904,7 @@ def render_studio(st: dict) -> str:
         f'<div style="margin-top:6px"><span class="tag">{esc(vsx.LANGS[c["lang"]])}</span> '
         f'<span class="tag {"ok" if c["kind"]=="finetuned" else ""}">'
         f'{"fine-tuned" if c["kind"]=="finetuned" else "zero-shot"}</span></div></div>'
-        for c in vsx.CHARACTERS)
+        for c in vsx.characters())
 
     default_script = vsx.CHARACTERS[0]["sample"]
 

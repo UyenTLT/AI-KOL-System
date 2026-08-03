@@ -1,0 +1,32 @@
+{
+  "id": "preset-en-warm",
+  "meta": {
+    "created_at": "2026-08-03",
+    "status": "voice_preset",
+    "kind": "voice_preset",
+    "design_note": "A Voice Studio preset, not a KOL persona. Deliberately not listed in kols/index.json so it stays out of the roster."
+  },
+  "identity": {
+    "name": "Chloe",
+    "languages": [
+      "English (native)"
+    ]
+  },
+  "ai_assets": {
+    "voice": {
+      "engine": "gpt-sovits",
+      "voice_id": "preset-en-warm-v1",
+      "source": "synthetic_bootstrap",
+      "bootstrap_timbre": "edge:en-US-EmmaMultilingualNeural",
+      "reference_lang": "en",
+      "status": "dataset_ready_pending_finetune",
+      "api": "http://127.0.0.1:9880",
+      "fallback_voice": "en-US-EmmaMultilingualNeural",
+      "dataset_list": "kols/preset-en-warm/voice/dataset/preset-en-warm.list",
+      "reference_audio": "kols/preset-en-warm/voice/ref.wav",
+      "reference_text": "Let me be blunt about this brow pencil: I will absolutely repurchase, mainly because the ingredient list is solid.",
+      "dataset_clips": 320,
+      "dataset_minutes": 28.0
+    }
+  }
+}

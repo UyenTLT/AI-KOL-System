@@ -1,0 +1,7 @@
+{
+  "voice": "en-US-EmmaMultilingualNeural",
+  "backend": "edge",
+  "accepted": 320,
+  "candidates": 320,
+  "accepted_minutes": 27.98
+}

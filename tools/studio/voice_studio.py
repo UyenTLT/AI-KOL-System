@@ -84,8 +84,35 @@ PRESET_REF_TEXT = {
 LANGS = {"en": "English", "zh": "Chinese (Taiwan Mandarin)"}
 
 
+def is_finetuned(cid: str) -> bool:
+    """True when this character has usable fine-tuned weights on disk.
+
+    Derived rather than hardcoded, so a preset upgrades from zero-shot to fine-tuned the
+    moment `build_voice.py` finishes — no edit to this file, and no risk of the declared
+    `kind` drifting out of step with reality.
+    """
+    p = REPO / "kols" / cid / "profile.json"
+    if not p.is_file():
+        return False
+    try:
+        v = (json.loads(p.read_text(encoding="utf-8")).get("ai_assets") or {}).get("voice") or {}
+    except Exception:
+        return False
+    sov, gpt = v.get("sovits_weights"), v.get("gpt_weights")
+    return bool(sov and gpt and (REPO / sov).is_file() and (REPO / gpt).is_file())
+
+
 def char_by_id(cid: str) -> dict | None:
-    return next((c for c in CHARACTERS if c["id"] == cid), None)
+    c = next((c for c in CHARACTERS if c["id"] == cid), None)
+    if c is not None:
+        c = dict(c)
+        c["kind"] = "finetuned" if is_finetuned(cid) else "zeroshot"
+    return c
+
+
+def characters() -> list[dict]:
+    """The character list with `kind` resolved against what is actually on disk."""
+    return [char_by_id(c["id"]) for c in CHARACTERS]
 
 
 # ------------------------------------------------------------------ api_v2 glue
@@ -140,10 +167,16 @@ def voice_config(cid: str) -> dict:
     if c["kind"] == "finetuned":
         prof = json.loads((REPO / "kols" / cid / "profile.json").read_text(encoding="utf-8"))
         v = (prof.get("ai_assets") or {}).get("voice") or {}
-        if not v.get("sovits_weights"):
-            raise RuntimeError(f"{cid} has no fine-tuned weights yet")
+        # A fine-tuned voice speaks best from its OWN reference clip; fall back to the
+        # preset clip if the profile somehow lacks one.
+        ref = v.get("reference_audio")
+        if ref and (REPO / ref).is_file():
+            ref_audio, ref_text = _abs(ref), v.get("reference_text", "")
+        else:
+            w, t = ensure_preset(cid)
+            ref_audio, ref_text = str(w), t
         return {"sovits": _abs(v["sovits_weights"]), "gpt": _abs(v["gpt_weights"]),
-                "ref_audio": _abs(v["reference_audio"]), "ref_text": v["reference_text"],
+                "ref_audio": ref_audio, "ref_text": ref_text,
                 "ref_lang": v.get("reference_lang", c["lang"])}
     ref_wav, ref_txt = ensure_preset(cid)
     return {"sovits": _abs(BASE_SOVITS), "gpt": _abs(BASE_GPT),
@@ -444,7 +477,7 @@ def main() -> int:
 
     if args.cmd == "list":
         print(f"api_v2: {'UP' if api_alive() else 'DOWN'}  ({TTS_API})\n")
-        for c in CHARACTERS:
+        for c in characters():
             tag = "fine-tuned" if c["kind"] == "finetuned" else "zero-shot"
             print(f"  {c['id']:18s} {LANGS[c['lang']]:26s} {tag:11s} {c['name']}")
             print(f"                     {c['blurb']}")
