@@ -1,0 +1,7 @@
+{
+  "voice": "en-US-AriaNeural",
+  "backend": "edge",
+  "accepted": 320,
+  "candidates": 320,
+  "accepted_minutes": 31.19
+}

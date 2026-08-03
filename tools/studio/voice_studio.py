@@ -51,26 +51,31 @@ BASE_SOVITS = ("GPT-SoVITS/GPT_SoVITS/pretrained_models/gsv-v2final-pretrained/"
 BASE_GPT = ("GPT-SoVITS/GPT_SoVITS/pretrained_models/gsv-v2final-pretrained/"
             "s1bert25hz-5kh-longer-epoch=12-step=369668.ckpt")
 
-# The five characters. Two are fine-tuned KOL voices (best quality); three are zero-shot
-# presets whose reference clip is synthesised once by edge-tts and then reused.
+# The five characters: 3 English, 2 Taiwan Mandarin. All five are fine-tuned on ~30 min of
+# audio, which sounds markedly more natural than zero-shot. `kind` is NOT stored here — it is
+# derived from what is on disk by is_finetuned(), so a voice cannot be mislabelled.
+# `edge_voice` is the timbre each was bootstrapped from, and is also the zero-shot fallback
+# if its weights are ever missing.
 CHARACTERS = [
-    {"id": "sofia-vargas", "name": "Sofia Vargas", "lang": "en", "kind": "finetuned",
-     "blurb": "Warm Latina lifestyle host — fine-tuned voice",
+    {"id": "sofia-vargas", "name": "Sofia Vargas", "lang": "en",
+     "edge_voice": "es-MX-DaliaNeural",
+     "blurb": "Warm Latin-American host, honest-review energy",
      "sample": "Honestly, this is my favourite thing I have tried all month."},
-    {"id": "lena-chen", "name": "Lena Chen 陳語彤", "lang": "zh", "kind": "finetuned",
-     "blurb": "甜妹賣貨 KOC — 台灣國語，fine-tuned voice",
+    {"id": "lena-chen", "name": "Lena Chen 陳語彤", "lang": "zh",
+     "edge_voice": "en-US-AvaMultilingualNeural",
+     "blurb": "甜妹賣貨 KOC — 台灣國語，甜亮語調",
      "sample": "大家好，今天分享一個好物，我自己真的用過才敢說。"},
-    {"id": "preset-en-warm", "name": "Chloe (EN, warm)", "lang": "en", "kind": "zeroshot",
+    {"id": "preset-en-warm", "name": "Chloe (EN, warm)", "lang": "en",
      "edge_voice": "en-US-EmmaMultilingualNeural",
-     "blurb": "Calm, friendly English narrator",
+     "blurb": "Calm, friendly English narrator — good for explainers",
      "sample": "Let me walk you through what is actually inside the box."},
-    {"id": "preset-en-bright", "name": "Ava (EN, bright)", "lang": "en", "kind": "zeroshot",
+    {"id": "preset-en-bright", "name": "Ava (EN, bright)", "lang": "en",
      "edge_voice": "en-US-AriaNeural",
-     "blurb": "Upbeat English presenter, good for hooks",
+     "blurb": "Upbeat English presenter — good for hooks",
      "sample": "Okay, this one genuinely surprised me — and I did not expect that."},
-    {"id": "preset-zhtw", "name": "Hsiao-Yu 小雨 (zh-TW)", "lang": "zh", "kind": "zeroshot",
+    {"id": "preset-zhtw", "name": "Hsiao-Yu 小雨 (zh-TW)", "lang": "zh",
      "edge_voice": "zh-TW-HsiaoYuNeural",
-     "blurb": "台灣國語女聲，自然口語",
+     "blurb": "台灣國語女聲，自然口語 — 適合日常口播",
      "sample": "這款我用了三週，質地清爽，夏天也不會悶。"},
 ]
 

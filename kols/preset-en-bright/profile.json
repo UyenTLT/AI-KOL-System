@@ -1,5 +1,5 @@
 {
-  "id": "preset-en-warm",
+  "id": "preset-en-bright",
   "meta": {
     "created_at": "2026-08-03",
     "status": "voice_preset",
@@ -7,7 +7,7 @@
     "design_note": "A Voice Studio preset, not a KOL persona. Deliberately not listed in kols/index.json so it stays out of the roster."
   },
   "identity": {
-    "name": "Chloe",
+    "name": "Ava",
     "languages": [
       "English (native)"
     ]
@@ -15,21 +15,21 @@
   "ai_assets": {
     "voice": {
       "engine": "gpt-sovits",
-      "voice_id": "preset-en-warm-v1",
+      "voice_id": "preset-en-bright-v1",
       "source": "synthetic_bootstrap",
-      "bootstrap_timbre": "edge:en-US-EmmaMultilingualNeural",
+      "bootstrap_timbre": "edge:en-US-AriaNeural",
       "reference_lang": "en",
       "status": "finetuned",
       "api": "http://127.0.0.1:9880",
-      "fallback_voice": "en-US-EmmaMultilingualNeural",
-      "dataset_list": "kols/preset-en-warm/voice/dataset/preset-en-warm.list",
-      "reference_audio": "kols/preset-en-warm/voice/ref.wav",
+      "fallback_voice": "en-US-AriaNeural",
+      "dataset_list": "kols/preset-en-bright/voice/dataset/preset-en-bright.list",
+      "reference_audio": "kols/preset-en-bright/voice/ref.wav",
       "reference_text": "Let me be blunt about this brow pencil: I will absolutely repurchase, mainly because the ingredient list is solid.",
       "dataset_clips": 320,
-      "dataset_minutes": 28.0,
+      "dataset_minutes": 31.2,
       "gsv_version": "v2Pro",
-      "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/preset-en-warm_e8_s520.pth",
-      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/preset-en-warm-e16.ckpt"
+      "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/preset-en-bright_e8_s512.pth",
+      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/preset-en-bright-e16.ckpt"
     }
   }
 }

@@ -1,0 +1,36 @@
+{
+  "id": "preset-zhtw",
+  "meta": {
+    "created_at": "2026-08-03",
+    "status": "voice_preset",
+    "kind": "voice_preset",
+    "design_note": "A Voice Studio preset, not a KOL persona. Deliberately not listed in kols/index.json so it stays out of the roster."
+  },
+  "identity": {
+    "name": "Hsiao-Yu",
+    "languages": [
+      "Mandarin / Traditional Chinese (native)",
+      "English (fluent)"
+    ]
+  },
+  "ai_assets": {
+    "voice": {
+      "engine": "gpt-sovits",
+      "voice_id": "preset-zhtw-v1",
+      "source": "synthetic_bootstrap",
+      "bootstrap_timbre": "edge:zh-TW-HsiaoYuNeural",
+      "reference_lang": "zh",
+      "status": "finetuned",
+      "api": "http://127.0.0.1:9880",
+      "fallback_voice": "zh-TW-HsiaoYuNeural",
+      "dataset_list": "kols/preset-zhtw/voice/dataset/preset-zhtw.list",
+      "reference_audio": "kols/preset-zhtw/voice/ref.wav",
+      "reference_text": "你們想看我拿這款防曬跟開架的版本做對比嗎？想要連結留言跟我說一聲。",
+      "dataset_clips": 279,
+      "dataset_minutes": 35.9,
+      "gsv_version": "v2Pro",
+      "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/preset-zhtw_e8_s456.pth",
+      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/preset-zhtw-e16.ckpt"
+    }
+  }
+}

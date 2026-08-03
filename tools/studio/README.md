@@ -8,15 +8,35 @@ party, and there is no per-character API cost.
 
 ## 1. Text to speech
 
-Five characters — **3 English, 2 Taiwan Mandarin**:
+Five characters — **3 English, 2 Taiwan Mandarin**. All five are **fine-tuned**, which sounds
+markedly more natural than zero-shot:
 
-| Character | Language | Voice |
-|---|---|---|
-| Sofia Vargas | English | **fine-tuned** (30.2 min corpus) |
-| Lena Chen 陳語彤 | Taiwan Mandarin | **fine-tuned** (28.7 min corpus) |
-| Chloe (EN, warm) | English | zero-shot |
-| Ava (EN, bright) | English | zero-shot |
-| Hsiao-Yu 小雨 | Taiwan Mandarin | zero-shot |
+| Character | Language | Corpus | Bootstrapped from |
+|---|---|---|---|
+| Sofia Vargas | English | 30.2 min | es-MX-Dalia (Latin-American accent) |
+| Lena Chen 陳語彤 | Taiwan Mandarin | 28.7 min | en-US-AvaMultilingual |
+| Chloe (EN, warm) | English | 28.0 min | en-US-EmmaMultilingual |
+| Ava (EN, bright) | English | 31.2 min | en-US-Aria |
+| Hsiao-Yu 小雨 | Taiwan Mandarin | 35.9 min | zh-TW-HsiaoYu |
+
+Verified after fine-tuning — all five are distinct speakers, and all five transcribe back
+accurately (ERes2NetV2 speaker verification, against a same-speaker baseline of 0.919):
+
+| | similarity |
+|---|---|
+| same character, different line (baseline) | 0.919 |
+| cross-character mean | 0.691 |
+| **closest pair** — lena-chen vs preset-zhtw | **0.852** |
+
+⚠️ **The two Taiwan Mandarin voices are the closest pair** (0.852 against a 0.919 baseline —
+distinguishable, but much closer than any other pair). Both are young female zh-TW timbres, so
+this is expected rather than a bug. If a script needs two *clearly* different Mandarin voices
+in the same video, rebuild one from a more contrasting timbre:
+
+```powershell
+.venv\Scripts\python.exe tools\voice_crawl\build_voice.py preset-zhtw-alt `
+    --edge-voice zh-TW-YunJheNeural --lang zh      # male, maximal contrast
+```
 
 Controls: **speed** 0.6–1.5× (`speed_factor`), **volume** −12…+9 dB, **language**
 (auto / English / Taiwan Mandarin), and a **script** box.
