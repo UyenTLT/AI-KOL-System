@@ -1,0 +1,7 @@
+{
+  "voice": "es-MX-DaliaNeural",
+  "backend": "edge",
+  "accepted": 320,
+  "candidates": 320,
+  "accepted_minutes": 30.18
+}

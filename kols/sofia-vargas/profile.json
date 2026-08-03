@@ -23,6 +23,74 @@
       "training_images_path": "kols/sofia-vargas/images/soul_v3_training/",
       "verification_image_count": 5,
       "verification_images_path": "kols/sofia-vargas/images/soul_v3_verification/"
+    },
+    "voice": {
+      "engine": "gpt-sovits",
+      "voice_id": "sofia-vargas-v1",
+      "source": "synthetic_bootstrap",
+      "bootstrap_timbre": "edge:es-MX-DaliaNeural",
+      "bootstrap_note": "Latin-American Spanish timbre reading English. Chosen by measurement: es-CO (Colombian, matching her nationality) mangled English at 68% ASR word-overlap, turning 'I have tried all month' into 'Yabetra Hidalmont'; es-MX reads the same line cleanly at 95%. No real person's voice is cloned.",
+      "language_limitation": "She is Spanish-native, but GPT-SoVITS supports zh/en/ja/ko/yue only - NOT Spanish. Her voice is therefore English with a Latin-American accent. A genuinely Spanish-speaking KOL would need a different engine (XTTS-v2 or F5-TTS).",
+      "dataset_list": "kols/sofia-vargas/voice/dataset/sofia-vargas.list",
+      "reference_audio": "kols/sofia-vargas/voice/ref.wav",
+      "reference_text": "Let me be blunt about the moisturiser: I am still undecided about it, mainly because results took much too long.",
+      "reference_lang": "en",
+      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/sofia-vargas-e16.ckpt",
+      "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/sofia-vargas_e8_s520.pth",
+      "api": "http://127.0.0.1:9880",
+      "fallback_voice": "es-MX-DaliaNeural",
+      "status": "finetuned",
+      "dataset_clips": 320,
+      "dataset_minutes": 30.2,
+      "language_decision": {
+        "decided": "2026-08-03",
+        "choice": "English only, for now",
+        "rationale": "GPT-SoVITS ships text frontends for zh/en/ja/ko/yue only. The blocker is the grapheme-to-phoneme frontend, NOT the acoustic model or the licence — so Spanish is addable, not impossible. English was chosen for now because it is clean on licence and works today, and her profile already lists English as fluent.",
+        "deferred_options": [
+          {
+            "option": "TTS -> RVC (recommended if Spanish becomes a requirement)",
+            "how": "edge-tts es-CO speaks native Colombian Spanish, then RVC converts the timbre to her voice identity. Already the documented design in research/local-ai-companion/10-local-voice-stack.md (per-language routing, with sofia-vargas as the worked example) and tools/tts_train/rvc_pipeline.py exists for it.",
+            "licence": "RVC is MIT-style - clean",
+            "caveat": "That doc's own warning: RVC normalises timbre but is not guaranteed perfect."
+          },
+          {
+            "option": "Add a Spanish g2p frontend to GPT-SoVITS",
+            "how": "Spanish orthography is highly phonetic and espeak-ng already covers it.",
+            "licence": "GPT-SoVITS code is MIT - cleanest long term",
+            "caveat": "Real engineering work on the text frontend."
+          },
+          {
+            "option": "XTTS-v2 (17 languages, one voice)",
+            "licence": "CPML NON-COMMERCIAL - already ruled out by the project's own engine table",
+            "caveat": "Rejected on licence, not capability."
+          },
+          {
+            "option": "F5-TTS + Spanish fine-tune",
+            "licence": "code MIT / weights CC-BY-NC - must self-train to use commercially"
+          },
+          {
+            "option": "Recast the persona as English-primary",
+            "how": "A Colombian-American creating in English is coherent and is exactly what the engine supports cleanly. The project already made this same call for Vietnamese (see lena-chen's meta.design_note).",
+            "caveat": "A persona decision, not an engineering one - and the cheapest of all."
+          }
+        ]
+      },
+      "gsv_version": "v2Pro"
+    },
+    "avatar": {
+      "engine": "livetalking-wav2lip",
+      "avatar_id": "sofia-vargas_v1",
+      "avatar_dir": "LiveTalking/data/avatars/sofia-vargas_v1",
+      "source_video": "kols/sofia-vargas/videos/self_intro/shot08_direct_smile.mp4",
+      "motion": "real footage (her own video shot, direct-to-camera) - no synthesis needed",
+      "frames": 101,
+      "frame_size": "576x768",
+      "face_size": "256x256",
+      "fps": 25,
+      "status": "working",
+      "note": "Built from real video, unlike lena-chen who had only stills and needed LivePortrait. Source is 720x1280 (9:16); build_avatar normalises to the 576x768 avatar geometry, verified not to clip her face.",
+      "improve_next": "The shot is only ~4s, so the idle loop repeats noticeably. Concatenating several of her 14 shots would look like hard cuts; a longer single direct-to-camera take is the real fix.",
+      "watermark_note": "LiveTalking burns its watermark into avatar frames and every output frame; its README requires it on published video. See docs/DECISION-lipsync-licensing.md."
     }
   },
   "meta": {
@@ -30,7 +98,16 @@
     "updated_at": "2026-06-21",
     "status": "active",
     "category": "lifestyle",
-    "tags": ["latina", "colombian", "lifestyle", "fashion", "food", "fitness", "bilingual", "miami"],
+    "tags": [
+      "latina",
+      "colombian",
+      "lifestyle",
+      "fashion",
+      "food",
+      "fitness",
+      "bilingual",
+      "miami"
+    ],
     "reference_profiles": [
       "@sophieraiin",
       "@corinnakopf",
@@ -45,7 +122,11 @@
     "ethnicity": "Colombian-Latina",
     "origin": "Medellín, Colombia",
     "current_location": "Miami, FL (USA)",
-    "languages": ["Spanish (native)", "English (fluent)", "Portuguese (conversational)"],
+    "languages": [
+      "Spanish (native)",
+      "English (fluent)",
+      "Portuguese (conversational)"
+    ],
     "appearance": {
       "height": "168cm",
       "hair": "Dark brown, long, wavy — often worn naturally or with loose beach waves",
@@ -120,7 +201,13 @@
     ],
     "posting_frequency": "Instagram: 1 feed post + 5–8 Stories daily. TikTok: 1–2 videos daily. YouTube: 1 vlog per week.",
     "aesthetic": {
-      "color_palette": ["warm terracotta", "golden yellow", "off-white cream", "deep forest green", "rich burgundy"],
+      "color_palette": [
+        "warm terracotta",
+        "golden yellow",
+        "off-white cream",
+        "deep forest green",
+        "rich burgundy"
+      ],
       "mood": "Sun-drenched, warm, vibrant but not over-saturated. Feels real, not studio-polished.",
       "editing_style": "Light color grading leaning warm. Minimal retouching — keeps skin texture. Fast cuts in Reels, slower pacing in YouTube. Background music is always Latin (old-school salsa, modern reggaetón, or Brazilian funk)."
     },
@@ -173,26 +260,157 @@
         "selected": "roxie",
         "model": "text2speech_v2_elevenlabs",
         "versions": [
-          {"voice": "Isabella", "voice_id": "80924413-1ea8-4e64-9719-e00b86796f05", "job_id": "7e5ca60a", "duration_sec": 63.2, "file": "voiceover_isabella.mp3"},
-          {"voice": "Harper",   "voice_id": "47fb207f-63fe-449e-915b-27b3d8098fd1", "job_id": "48b71ff4", "duration_sec": 54.56, "file": "voiceover_harper.mp3"},
-          {"voice": "Roxie",    "voice_id": "f6448975-768e-4327-b932-1b7c973d58e9", "job_id": "7c9f00ab-26f2-43a5-aa20-4c0cbf011302", "duration_sec": 59.6, "file": "voiceover_roxie.mp3", "selected": true}
+          {
+            "voice": "Isabella",
+            "voice_id": "80924413-1ea8-4e64-9719-e00b86796f05",
+            "job_id": "7e5ca60a",
+            "duration_sec": 63.2,
+            "file": "voiceover_isabella.mp3"
+          },
+          {
+            "voice": "Harper",
+            "voice_id": "47fb207f-63fe-449e-915b-27b3d8098fd1",
+            "job_id": "48b71ff4",
+            "duration_sec": 54.56,
+            "file": "voiceover_harper.mp3"
+          },
+          {
+            "voice": "Roxie",
+            "voice_id": "f6448975-768e-4327-b932-1b7c973d58e9",
+            "job_id": "7c9f00ab-26f2-43a5-aa20-4c0cbf011302",
+            "duration_sec": 59.6,
+            "file": "voiceover_roxie.mp3",
+            "selected": true
+          }
         ]
       },
       "shots": [
-        {"shot": "01", "scene": "hook_kitchen",    "image_job": "1d6302b6", "video_job": "25f626cb", "model": "seedance_2_0", "file": "shot01_hook_kitchen.mp4",    "status": "done"},
-        {"shot": "02", "scene": "street_walk",     "image_job": "94c46122", "video_job": "b4695cb1", "model": "seedance_2_0", "file": "shot02_street_walk.mp4",     "status": "done"},
-        {"shot": "03", "scene": "shrug_smile",     "image_job": "59050ef8", "video_job": "0269fe21", "model": "seedance_2_0", "file": "shot03_shrug_smile.mp4",     "status": "done"},
-        {"shot": "04", "scene": "kitchen_cooking", "image_job": "c04a5042", "video_job": "77e0cd80", "model": "seedance_2_0", "file": "shot04_kitchen_cooking.mp4", "status": "done"},
-        {"shot": "05", "scene": "mirror_selfie",   "image_job": "1ce13e4e", "video_job": "533c93d6", "model": "seedance_2_0", "file": "shot05_mirror_selfie.mp4",   "status": "done"},
-        {"shot": "06", "scene": "salsa_dance",     "image_job": "897b8d7f", "video_job": "180d8b93", "model": "seedance_2_0", "file": "shot06_salsa_dance.mp4",     "status": "done"},
-        {"shot": "07", "scene": "couch_phone",     "image_job": "51ba8b9f", "video_job": "6afb2b89", "model": "seedance_2_0", "file": "shot07_couch_phone.mp4",     "status": "done"},
-        {"shot": "08", "scene": "direct_smile",    "image_job": "8a4e2411", "video_job": "73f14248", "model": "seedance_2_0", "file": "shot08_direct_smile.mp4",    "status": "done"},
-        {"shot": "09", "scene": "corner_walk",     "image_job": "58fe8f0d", "video_job": "f4754874", "model": "seedance_2_0", "file": "shot09_corner_walk.mp4",     "status": "done"},
-        {"shot": "10", "scene": "deadpan_gaming",  "image_job": "180ac52a", "video_job": "ff6f95fe", "model": "seedance_2_0", "file": "shot10_deadpan_gaming.mp4",  "status": "done"},
-        {"shot": "11", "scene": "laughing",        "image_job": "65a7a726", "video_job": "f5b80e36", "model": "seedance_2_0", "file": "shot11_laughing.mp4",        "status": "done"},
-        {"shot": "12", "scene": "kitchen_cta",     "image_job": "223637b2", "video_job": "a4ad9a34", "model": "seedance_2_0", "file": "shot12_kitchen_cta.mp4",     "status": "done"},
-        {"shot": "13", "scene": "heart_farewell",  "image_job": "93b7a786", "video_job": "df09d267", "model": "seedance_2_0", "file": "shot13_heart_farewell.mp4",  "status": "done"},
-        {"shot": "14", "scene": "gaming_reveal",   "image_job": "fdcc3c8d", "video_job": "4565ba49", "model": "seedance_2_0", "file": "shot14_gaming_reveal.mp4",   "status": "done"}
+        {
+          "shot": "01",
+          "scene": "hook_kitchen",
+          "image_job": "1d6302b6",
+          "video_job": "25f626cb",
+          "model": "seedance_2_0",
+          "file": "shot01_hook_kitchen.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "02",
+          "scene": "street_walk",
+          "image_job": "94c46122",
+          "video_job": "b4695cb1",
+          "model": "seedance_2_0",
+          "file": "shot02_street_walk.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "03",
+          "scene": "shrug_smile",
+          "image_job": "59050ef8",
+          "video_job": "0269fe21",
+          "model": "seedance_2_0",
+          "file": "shot03_shrug_smile.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "04",
+          "scene": "kitchen_cooking",
+          "image_job": "c04a5042",
+          "video_job": "77e0cd80",
+          "model": "seedance_2_0",
+          "file": "shot04_kitchen_cooking.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "05",
+          "scene": "mirror_selfie",
+          "image_job": "1ce13e4e",
+          "video_job": "533c93d6",
+          "model": "seedance_2_0",
+          "file": "shot05_mirror_selfie.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "06",
+          "scene": "salsa_dance",
+          "image_job": "897b8d7f",
+          "video_job": "180d8b93",
+          "model": "seedance_2_0",
+          "file": "shot06_salsa_dance.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "07",
+          "scene": "couch_phone",
+          "image_job": "51ba8b9f",
+          "video_job": "6afb2b89",
+          "model": "seedance_2_0",
+          "file": "shot07_couch_phone.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "08",
+          "scene": "direct_smile",
+          "image_job": "8a4e2411",
+          "video_job": "73f14248",
+          "model": "seedance_2_0",
+          "file": "shot08_direct_smile.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "09",
+          "scene": "corner_walk",
+          "image_job": "58fe8f0d",
+          "video_job": "f4754874",
+          "model": "seedance_2_0",
+          "file": "shot09_corner_walk.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "10",
+          "scene": "deadpan_gaming",
+          "image_job": "180ac52a",
+          "video_job": "ff6f95fe",
+          "model": "seedance_2_0",
+          "file": "shot10_deadpan_gaming.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "11",
+          "scene": "laughing",
+          "image_job": "65a7a726",
+          "video_job": "f5b80e36",
+          "model": "seedance_2_0",
+          "file": "shot11_laughing.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "12",
+          "scene": "kitchen_cta",
+          "image_job": "223637b2",
+          "video_job": "a4ad9a34",
+          "model": "seedance_2_0",
+          "file": "shot12_kitchen_cta.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "13",
+          "scene": "heart_farewell",
+          "image_job": "93b7a786",
+          "video_job": "df09d267",
+          "model": "seedance_2_0",
+          "file": "shot13_heart_farewell.mp4",
+          "status": "done"
+        },
+        {
+          "shot": "14",
+          "scene": "gaming_reveal",
+          "image_job": "fdcc3c8d",
+          "video_job": "4565ba49",
+          "model": "seedance_2_0",
+          "file": "shot14_gaming_reveal.mp4",
+          "status": "done"
+        }
       ]
     }
   }

@@ -243,6 +243,32 @@ SoVITS e8 + GPT e12) — one timbre, both languages:
 
 ---
 
+## Measured cost of adding a KOL
+
+From the second KOL built (`sofia-vargas`), end to end:
+
+| Stage | Time | Attended? |
+|---|---|---|
+| Corpus generation (320 utterances) | ~4 min | no |
+| Bootstrap synthesis + QC (320 clips, 30.2 min of audio) | ~12 min | no |
+| Data prep + SoVITS 8 epochs + GPT 16 epochs | **7.8 min** | no |
+| Avatar build from a video | ~1 min | no |
+| Choosing the timbre, reviewing output, wiring the profile | ~30 min | **yes** |
+
+So roughly **25 min of compute and about half an hour of attention** per KOL — the limit is
+review, not hardware. The first one took days because of the environment problems now
+documented here.
+
+Two gotchas the second KOL exposed, both fixed:
+
+- **BERT features are produced only for Chinese rows.** An English-only dataset legitimately
+  yields zero `.pt` files, so the step-1 check now derives its expectation from the actual ZH
+  row count instead of demanding at least one.
+- **Language support is a text-frontend limit, not a model or licence limit.** GPT-SoVITS ships
+  g2p frontends for zh/en/ja/ko/yue only. A Spanish-native KOL therefore gets an English voice
+  today; the options (and why English was chosen for now) are recorded in her
+  `profile.json → ai_assets.voice.language_decision`.
+
 ## 3. Realtime lip-synced avatar (LiveTalking)
 
 Working — see [`tools/livetalking/README.md`](../livetalking/README.md).

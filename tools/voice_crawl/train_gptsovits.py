@@ -276,9 +276,15 @@ def main() -> int:
         run_step("1/6 text -> phonemes + BERT",
                  "GPT_SoVITS/prepare_datasets/1-get-text.py",
                  {**common, "bert_pretrained_dir": BERT_DIR}, py)
-        # BERT features exist only for ZH rows (EN uses ARPAbet, word2ph=None),
-        # so require at least one rather than one per clip.
-        expect_outputs("step 1 (BERT)", out / "3-bert", 1, "*.pt")
+        # BERT features are produced ONLY for Chinese rows — English uses ARPAbet and
+        # word2ph=None, so an English-only dataset legitimately yields zero .pt files.
+        # Requiring >=1 unconditionally wrongly failed the first English-only KOL.
+        n_zh = sum(1 for r in rows
+                   if len(r.split("|")) == 4 and r.split("|")[2].upper() in ("ZH", "YUE"))
+        if n_zh:
+            expect_outputs(f"step 1 (BERT, {n_zh} ZH rows)", out / "3-bert", 1, "*.pt")
+        else:
+            print("  ok: no ZH rows -> no BERT features expected (English-only dataset)")
         expect_outputs("step 1 (phonemes)", out, 1, "2-name2text-*.txt")
 
         run_step("2/6 audio -> HuBERT features",
