@@ -15,9 +15,46 @@ Any interpreter works (repo `.venv`, either engine venv, or system python).
 | `/` | Dashboard — pipeline stages, overview counts, service + GPU health, KOL roster |
 | `/kol/<id>` | **Data browser** — reference clip, training clips with playable audio + transcripts, images, videos |
 | `/demo` | **Live avatar demo** — connect, type text, watch it speak in the cloned voice |
+| `/replies` | **Approve-before-send queue** — the AI drafts, a human approves, edits or rejects |
 | `/api/state` | Whole state as JSON |
 | `/api/kol/<id>` | One KOL's detail as JSON |
+| `/api/reply/queue?kol=<id>` | Queue state as JSON |
 | `/media?path=…` | Read-only media, restricted to the repo (see security note) |
+
+## Reply queue (`/replies`)
+
+Every profile carries `comment_policy_mode: "suggest"` — the AI drafts, a human approves,
+only then does anything reach a follower. Nothing enforced that until now: the chat path
+spoke the model's output the instant it was generated. This is the enforcement.
+
+Paste what a follower said → **Draft reply** → review → *Approve*, *Approve & speak*, or
+*Reject*. Approved text can be edited first.
+
+Why it matters, measured rather than assumed: `qwen2.5:7b`, given the rules explicitly in its
+prompt, still denied being AI, invented a price of 「二百九十九美元」, offered to negotiate a
+deal privately, and fell for an "ignore all previous instructions" jailbreak. Intent
+directives plus code-level guards took that to zero violations — but "zero on eight tests" is
+not a licence to auto-post.
+
+**An edited reply is re-checked.** A human can paste in a price just as easily as a model can
+invent one; verified that an edit containing 「只要 $299，link in bio!」 is blocked, not sent.
+The link guard distinguishes *claiming* a link exists from promising to look one up
+(「我會去查一下價格和連結」 passes — it is the honest answer).
+
+Storage is one append-only JSONL per KOL (`kols/<id>/replies/queue.jsonl`): auditable,
+diffable, no database, survives a crash mid-review. It is gitignored — the decision trail
+belongs on the machine that made the decisions, not in the repo.
+
+CLI equivalent, for scripting or a cron-driven inbox:
+
+```bash
+python tools/dashboard/reply_queue.py draft   lena-chen "這罐多少錢？"
+python tools/dashboard/reply_queue.py list    lena-chen
+python tools/dashboard/reply_queue.py approve lena-chen <id> --speak
+```
+
+"Approve & speak" needs a live avatar session — open `/demo` and press Connect first,
+otherwise it approves without speaking and tells you so.
 
 ## Live demo (`/demo`)
 

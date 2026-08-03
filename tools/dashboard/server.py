@@ -33,6 +33,7 @@ import json
 import mimetypes
 import shutil
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -43,6 +44,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 LIVETALKING = "http://127.0.0.1:8010"
+# reply_queue lives beside this file and imports persona_brain from tools/livetalking/
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 SERVICES = [
     {"key": "gpt_sovits", "name": "GPT-SoVITS api_v2", "url": "http://127.0.0.1:9880/docs",
@@ -465,6 +468,34 @@ function preset(s){$('txt').value=s;}
 """
 
 
+JS_REPLIES = """
+const $=id=>document.getElementById(id);
+async function post(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  return r.json();
+}
+async function makeDraft(){
+  const kol=$('kol').value, msg=$('msg').value.trim();
+  if(!msg) return;
+  $('mkbtn').disabled=true; $('mkbtn').textContent='drafting…';
+  try{ await post('/api/reply/draft',{kol_id:kol,message:msg}); location.reload(); }
+  catch(e){ alert('draft failed: '+e.message); $('mkbtn').disabled=false;
+            $('mkbtn').textContent='Draft reply'; }
+}
+async function decide(kol,id,action,speak){
+  const ta=document.querySelector(`textarea[data-id="${id}"]`);
+  const body={kol_id:kol,id:id,action:action};
+  if(ta && action!=='reject') body.text=ta.value;
+  if(speak) body.speak=true;
+  const res=await post('/api/reply/decide',body);
+  if(res.status==='blocked'){ alert('Blocked by the rule check: '+(res.violations||[]).join(', ')
+    +'\\nEdit the text and try again.'); }
+  location.reload();
+}
+"""
+
+
 def page(title: str, body: str, js: str = "") -> str:
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -477,7 +508,8 @@ def topbar(subtitle: str, extra: str = "") -> str:
             f'gap:14px;flex-wrap:wrap;margin-bottom:6px">'
             f'<div><h1>AI-KOL System</h1><p class="sub">{subtitle}</p></div>'
             f'<div class="nav"><a class="btn" href="/">Dashboard</a>'
-            f'<a class="btn" href="/demo">Live demo</a>{extra}'
+            f'<a class="btn" href="/demo">Live demo</a>'
+            f'<a class="btn" href="/replies">Reply queue</a>{extra}'
             f'<button class="btn" onclick="toggleTheme()">theme</button></div></div>')
 
 
@@ -664,6 +696,92 @@ def render_kol(d: dict) -> str:
     return page(f'{d["name"]} — AI-KOL', body)
 
 
+def render_replies(st: dict, kol_id: str) -> str:
+    """Review screen for the approve-before-send queue."""
+    import reply_queue as rq
+
+    items = rq.load_all(kol_id)
+    counts = rq.stats(kol_id)
+    mode = rq.policy_mode(kol_id)
+    voiced = [k["id"] for k in st["kols"] if k["voice"]["sovits"]] or [kol_id]
+
+    opts = "".join(f'<option value="{esc(k)}"{" selected" if k == kol_id else ""}>{esc(k)}</option>'
+                   for k in [k["id"] for k in st["kols"]])
+
+    badge = {"pending": "warn", "approved": "ok", "rejected": "", "blocked": "bad"}
+    cards = ""
+    for r in items[:40]:
+        stt = r.get("status", "pending")
+        text = r.get("final_text") or r.get("draft") or ""
+        vio = r.get("violations") or []
+        when = datetime.fromtimestamp(r.get("created", 0)).strftime("%m-%d %H:%M") \
+            if r.get("created") else ""
+        actions = ""
+        if stt in ("pending", "blocked"):
+            actions = (
+                f'<div class="nav" style="margin-top:8px">'
+                f'<button class="btn pri" onclick="decide(\'{esc(kol_id)}\',\'{esc(r["id"])}\',\'edit\',false)">'
+                f'Approve</button>'
+                f'<button class="btn" onclick="decide(\'{esc(kol_id)}\',\'{esc(r["id"])}\',\'edit\',true)">'
+                f'Approve &amp; speak</button>'
+                f'<button class="btn" onclick="decide(\'{esc(kol_id)}\',\'{esc(r["id"])}\',\'reject\',false)">'
+                f'Reject</button></div>')
+        body_field = (f'<textarea data-id="{esc(r["id"])}" rows="3">{esc(text)}</textarea>'
+                      if stt in ("pending", "blocked")
+                      else f'<div style="margin-top:6px">{esc(text)}</div>')
+        vio_html = (f'<div class="tag bad" style="margin-top:6px">rule check: '
+                    f'{esc(", ".join(vio))} — edit before approving</div>') if vio else ""
+        cards += (
+            f'<div class="panel pad" style="margin-bottom:10px">'
+            f'<div class="svc" style="justify-content:space-between">'
+            f'<div><span class="tag {badge.get(stt, "")}">{esc(stt)}</span> '
+            f'<span class="mono muted">{esc(r["id"])}</span> '
+            f'<span class="muted" style="font-size:12px">{esc(when)}</span></div></div>'
+            f'<div style="margin-top:8px"><span class="muted" style="font-size:12px">'
+            f'follower asked</span><div>{esc(r.get("follower", ""))}</div></div>'
+            f'<div style="margin-top:8px"><span class="muted" style="font-size:12px">'
+            f'drafted reply</span>{body_field}</div>'
+            f'{vio_html}{actions}</div>')
+
+    if not cards:
+        cards = ('<div class="panel pad muted">No drafts yet. Paste a follower comment above '
+                 'to generate one.</div>')
+
+    stat_cards = "".join(
+        f'<div class="panel pad stat"><div class="n">{counts.get(k, 0)}</div>'
+        f'<div class="l">{esc(k)}</div></div>'
+        for k in ("pending", "blocked", "approved", "rejected"))
+
+    body = f"""<div class="wrap">
+{topbar('Approve-before-send — the AI drafts, a human decides')}
+<div class="panel pad" style="margin-top:14px;border-color:var(--accent)">
+  <b>policy_mode: {esc(mode)}</b> — nothing here reaches a follower until someone approves it.
+  <div class="muted" style="font-size:12px;margin-top:4px">
+  Tested: a 7B model given these rules still denied being AI, invented a price, and fell for a
+  jailbreak. Drafts are rule-checked, and an <i>edited</i> reply is re-checked too — a human can
+  paste in a price by accident just as easily.</div>
+</div>
+<h2>New draft</h2>
+<div class="panel pad">
+  <div class="nav" style="margin-bottom:8px">
+    <select id="kol" class="btn" onchange="location.href='/replies?kol='+this.value">{opts}</select>
+    <span class="muted" style="font-size:12px">voice trained: {esc(", ".join(voiced))}</span>
+  </div>
+  <textarea id="msg" rows="2" placeholder="Paste what the follower said…"></textarea>
+  <div class="nav" style="margin-top:8px">
+    <button class="btn pri" id="mkbtn" onclick="makeDraft()">Draft reply</button>
+  </div>
+</div>
+<h2>Queue</h2>
+<div class="grid g4">{stat_cards}</div>
+<div style="margin-top:14px">{cards}</div>
+<footer>Append-only log at <span class="mono">kols/{esc(kol_id)}/replies/queue.jsonl</span> —
+every draft and decision is recorded, so the review trail is auditable.<br>
+"Approve &amp; speak" needs a live avatar session: open the demo and press Connect first.</footer>
+</div>"""
+    return page("Reply queue — AI-KOL", body, JS_REPLIES)
+
+
 def render_demo(st: dict) -> str:
     lt = next((x for x in st["services"] if x["key"] == "livetalking"), {})
     gsv = next((x for x in st["services"] if x["key"] == "gpt_sovits"), {})
@@ -801,10 +919,51 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": f"LiveTalking unreachable: {type(exc).__name__}",
                         "hint": "start it with tools/livetalking/run_livetalking.ps1 <kol_id>"}, 502)
 
+    def _body(self) -> dict:
+        n = int(self.headers.get("Content-Length") or 0)
+        if not n:
+            return {}
+        try:
+            return json.loads(self.rfile.read(n))
+        except Exception:
+            return {}
+
+    def _reply_api(self, path: str):
+        import reply_queue as rq
+        b = self._body()
+        kol = b.get("kol_id") or "lena-chen"
+        try:
+            if path == "/api/reply/draft":
+                msg = (b.get("message") or "").strip()
+                if not msg:
+                    self._json({"error": "message is required"}, 400)
+                    return
+                self._json(rq.create_draft(kol, msg))
+            elif path == "/api/reply/decide":
+                action = b.get("action") or "approve"
+                sid = None
+                if b.get("speak"):
+                    sid = rq._livetalking_session()
+                rec = rq.decide(kol, b.get("id", ""), action,
+                                final_text=b.get("text"),
+                                reviewer=b.get("reviewer", "dashboard"),
+                                note=b.get("note", ""), sessionid=sid)
+                if b.get("speak") and not sid:
+                    rec["speak_detail"] = "no live avatar session — approved but not spoken"
+                self._json(rec)
+            else:
+                self._json({"error": "unknown reply endpoint"}, 404)
+        except KeyError as exc:
+            self._json({"error": str(exc)}, 404)
+        except Exception as exc:
+            self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
+
     def do_POST(self):
         path = self.path.split("?")[0].rstrip("/") or "/"
         if path.startswith("/lt/"):
             self._proxy_lt(path)
+        elif path.startswith("/api/reply/"):
+            self._reply_api(path)
         else:
             self._json({"error": "not found"}, 404)
 
@@ -828,6 +987,14 @@ class Handler(BaseHTTPRequestHandler):
                     self._html(render_kol(d))
                 else:
                     self._html('<p>unknown KOL — <a href="/">back to roster</a></p>', 404)
+            elif path == "/replies":
+                kol = urllib.parse.parse_qs(parsed.query).get("kol", ["lena-chen"])[0]
+                self._html(render_replies(collect(), kol))
+            elif path == "/api/reply/queue":
+                import reply_queue as rq
+                kol = urllib.parse.parse_qs(parsed.query).get("kol", ["lena-chen"])[0]
+                self._json({"kol_id": kol, "policy_mode": rq.policy_mode(kol),
+                            "stats": rq.stats(kol), "items": rq.load_all(kol)})
             elif path == "/demo":
                 self._html(render_demo(collect()))
             elif path == "/":

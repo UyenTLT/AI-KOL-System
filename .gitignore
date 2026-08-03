@@ -40,3 +40,8 @@ kols/*/avatar/frame.png
 kols/*/avatar/base_static.mp4
 kols/*/avatar/_frames/
 
+
+# Reply-queue log: operational state (draft/approve/reject decisions), grows over time
+# and is specific to a deployment, not to the code. The audit trail belongs on the box
+# that made the decisions.
+kols/*/replies/

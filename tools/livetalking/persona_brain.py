@@ -109,9 +109,17 @@ _PRICE_RE = re.compile(
     r"|\d[\d,\.]*\s*(?:" + _CUR + r")"      # 299 dollars / 299元
     r"|[" + ns + r"]{2,}\s*(?:" + _CUR + r"))",  # spelled-out Chinese numerals
     re.IGNORECASE)
-_LINK_RE = re.compile(r"https?://|www\.|link in|bio link"
-                      r"|連結裡|链接里"      # "in the link"
-                      r"|購物連結|购物链接", re.IGNORECASE)
+_LNK = "連結|连结|链接|鏈接"   # "link", all four spellings
+# Only *claiming a link exists* is a violation. Saying she will go and find one is normal
+# and frequent ("我會去查一下價格和連結"), so a bare mention must not trip this.
+_LINK_RE = re.compile(
+    r"https?://|www\."
+    r"|link (?:in|is|below|here)|bio link|check my bio|swipe up"
+    rf"|(?:{_LNK})\s*(?:在|放|裡|里|如下|來了|来了)"        # "the link is/at/in…"
+    rf"|(?:我|私)\s*(?:放|給你|给你|傳|传)\s*(?:{_LNK})"    # "I'll put/send you the link"
+    rf"|購物(?:{_LNK})|购物(?:{_LNK})"                      # "shopping link"
+    rf"|(?:我)?\s*(?:放|貼|贴)\s*(?:{_LNK})",              # "I'll post the link"
+    re.IGNORECASE)
 _AI_DENIAL_RE = re.compile(
     r"我(?:當然|当然|真的|確實)?(?:也)?"
     r"是(?:個|个)?真(?:人|实)"                # "I am a real person"
