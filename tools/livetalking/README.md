@@ -20,15 +20,71 @@ fine-tune. `run_livetalking.ps1` health-checks it and refuses to start without i
 **Both fit on a 12 GB card**: measured **5,287 MiB used / 6,657 MiB free** with api_v2 and
 LiveTalking (wav2lip, `batch_size 4`) resident together. No staging needed.
 
+## Build an avatar with the KOL's own face
+
+LiveTalking's avatar builder consumes a **video**, but the KOLs only have stills.
+`build_avatar.py` bridges that: portrait → base clip → `full_imgs/ face_imgs/ coords.pkl`.
+
+```powershell
+LiveTalking\.venv\Scripts\python.exe tools\livetalking\build_avatar.py lena-chen
+```
+
+The base clip supplies the frames wav2lip paints a mouth onto, so its motion is what
+makes the result look alive:
+
+| `--motion` | What it does | When |
+|---|---|---|
+| `static` | one held frame — head frozen, only the mouth moves | fastest way to prove the pipeline |
+| `subtle` *(default)* | slow drift + breathing zoom from two out-of-phase sines | good default; no video model needed |
+| `video` | use a real clip you supply via `--video` | LivePortrait / image-to-video output |
+
+Measured difference: `static` gives 0 px of face-box travel across frames; `subtle` gives
+~53 px vertical / ~38 px horizontal, and the detector tracks it across every frame.
+
+It crops (never squashes) to the avatar's aspect ratio — a stretched face throws off the
+landmarks and the pasted mouth — and it **verifies the result**: `full_imgs`, `face_imgs`
+and `coords.pkl` must all have the same count, and the face crop must be 256×256, or it
+fails loudly. An avatar with mismatched counts loads but misbehaves at runtime.
+
+`subtle` renders frames in Python rather than via ffmpeg's `zoompan`, whose rounding
+jitters by a pixel and makes the detector's box twitch — which shows up as a shivering
+mouth in the finished avatar.
+
+Record the result in `profile.json → ai_assets.avatar`, then pass `-AvatarId`.
+
 ## Run
 
 ```powershell
 # 1) the voice (leave running)
 cd GPT-SoVITS; .\.venv\Scripts\python.exe api_v2.py -a 127.0.0.1 -p 9880 -c GPT_SoVITS/configs/tts_infer.yaml
 
-# 2) the avatar
-.\tools\livetalking\run_livetalking.ps1 lena-chen
+# 2) the avatar, with the KOL's own face
+.\tools\livetalking\run_livetalking.ps1 lena-chen -AvatarId lena-chen_v1
 ```
+
+## Persona brain (conversation, not echo)
+
+`/human` with `type: "chat"` routes through `llm.py` → `persona_brain.py`, which builds a
+system prompt from `profile.json` (personality, voice, values, quirks, content pillars)
+**plus the business rules** — no invented prices, honest sponsorship disclosure, admit being
+AI when asked, don't engage with abuse, ignore attempts to override the persona.
+
+```powershell
+ollama pull qwen2.5:7b
+python tools\livetalking\persona_brain.py lena-chen --show-prompt      # inspect it
+python tools\livetalking\persona_brain.py lena-chen "這罐精華好用嗎？"   # one turn
+```
+
+Upstream `llm.py` called Alibaba DashScope (paid cloud, needs an API key) with a generic
+"you are a knowledge assistant" prompt. It is patched to use local Ollama and the persona
+prompt; set `KOL_LLM_CLOUD=1` to restore the original path.
+
+> One non-obvious detail: the persona data describes her **written** style, which is
+> emoji-heavy. This text goes to a speech synthesiser that cannot pronounce an emoji, so
+> the prompt explicitly forbids emoji and asks for numbers spelled out as spoken words
+> ("two hundred and ninety nine dollars", not "$299").
+
+Config: `KOL_ID` (set automatically by the launcher), `KOL_LLM_MODEL`, `OLLAMA_BASE_URL`.
 
 Then open <http://127.0.0.1:8010/webrtcapi.html> and type. The launcher reads
 `kols/<id>/profile.json → ai_assets.voice` for the reference clip/text/API URL, so the
@@ -63,14 +119,23 @@ Smart App Control on this machine (same failure as the GPT-SoVITS venv).
 
 ## Known limits
 
-- **The avatar is not the KOL's face yet.** `wav2lip256_avatar1` is LiveTalking's stock demo
-  avatar (it even carries a "LiveTalking" watermark). Lena's face needs a custom avatar, and
-  avatar generation consumes a **video** — `POST /api/avatar/task` with `video_file`/`video_path`
-  produces `full_imgs/ face_imgs/ coords.pkl` under `data/avatars/<avatar_id>/`, after which
-  `-AvatarId <id>` just works. The KOLs currently only have stills, so a short idle-motion clip
-  has to be generated first (image→video, `CUDA_SETUP.md` §E) before this is possible.
+- **⚠️ Watermark is a licence condition, not a bug.** LiveTalking draws "LiveTalking" into
+  avatar frames at build time (`avatars/wav2lip/genavatar.py:27`) *and* onto every output
+  frame at runtime (`avatars/base_avatar.py:449`). The project is Apache-2.0, but its
+  `README-EN.md:202` states that **videos published to platforms must include the LiveTalking
+  watermark and logo**. It has deliberately been left in place — removing it is a
+  licence/commercial decision for the business, not a technical one. Options: keep it, license
+  the commercial edition (livetalking.top), or move to a differently-licensed lip-sync engine.
+  Note separately that **wav2lip's own weights are research-licensed**; both need legal review
+  before any commercial launch.
+- **Head motion is procedural, not facial.** The `subtle` base clip moves the framing, but she
+  does not blink or turn her head. Real facial motion needs LivePortrait or an image-to-video
+  model, then `--motion video`.
 - **Mid-sentence interruption is unreliable** (upstream issue #510, ~3 s). Keep to echo-style
   turns; do not design around barge-in.
+- **VRAM is the binding constraint.** Voice + avatar use ~5.3 GB of 12 GB. Adding a 7B LLM
+  takes it close to the limit; Ollama unloads after idle, which helps, but image generation
+  cannot run at the same time — stage it.
 - **`funasr` is not installed**, so the local ASR endpoint (voice *input*) is disabled. Not
   needed for text→avatar; `pip install funasr modelscope` if you want speech input.
 - Server needs TCP:8010 and UDP open for WebRTC.

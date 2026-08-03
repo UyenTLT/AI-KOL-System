@@ -178,6 +178,10 @@ def collect() -> dict:
         vcfg = (profile.get("ai_assets") or {}).get("voice") or {}
         vs = voice_state(kdir, kol_id)
         w = weights.get(kol_id, {})
+        acfg = (profile.get("ai_assets") or {}).get("avatar") or {}
+        # An avatar is only real if its frames exist on disk, not just in the profile.
+        adir = REPO / (acfg.get("avatar_dir") or "") if acfg.get("avatar_dir") else None
+        a_frames = len(list((adir / "face_imgs").glob("*"))) if adir and (adir / "face_imgs").is_dir() else 0
         kols.append({
             "id": kol_id,
             "name": entry.get("name") or kol_id,
@@ -202,6 +206,13 @@ def collect() -> dict:
                 "sovits": (w.get("sovits") or {}).get("file"),
                 "gpt": (w.get("gpt") or {}).get("file"),
             },
+            "avatar": {
+                "avatar_id": acfg.get("avatar_id"),
+                "motion": acfg.get("motion"),
+                "frames": a_frames,
+                "built": a_frames > 0,
+                "source_portrait": acfg.get("source_portrait"),
+            },
         })
 
     services = []
@@ -211,6 +222,7 @@ def collect() -> dict:
                          "up": up, "detail": detail})
 
     voiced = [k for k in kols if k["voice"]["sovits"] and k["voice"]["gpt"]]
+    avatared = [k for k in kols if k["avatar"]["built"]]
     return {
         "generated_at": datetime.now(timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"),
         "repo": str(REPO),
@@ -223,6 +235,8 @@ def collect() -> dict:
             "kols_with_dataset": sum(1 for k in kols if k["voice"]["clips"] > 0),
             "kols_voiced": len(voiced),
             "voiced_ids": [k["id"] for k in voiced],
+            "kols_avatared": len(avatared),
+            "avatared_ids": [k["id"] for k in avatared],
         },
     }
 
@@ -475,9 +489,9 @@ def render_dashboard(st: dict) -> str:
         f'<div class="panel pad stat"><div class="n">{v}</div><div class="l">{esc(l)}</div></div>'
         for v, l in [
             (s["kols_total"], "KOL personas"),
-            (s["kols_with_images"], "with seed images"),
             (s["kols_with_dataset"], "with voice dataset"),
             (s["kols_voiced"], "voice fine-tuned"),
+            (s.get("kols_avatared", 0), "avatar built (own face)"),
         ])
 
     svc = ""
@@ -508,8 +522,8 @@ def render_dashboard(st: dict) -> str:
          "face-lock LoRA still pending", "warn"),
         ("3 · Voice", f'{s["kols_voiced"]} fine-tuned',
          "GPT-SoVITS v2Pro, ZH+EN", "ok" if s["kols_voiced"] else "warn"),
-        ("4 · Lip-sync", "running" if lip.get("up") else "idle",
-         "stock avatar — KOL face pending", "ok" if lip.get("up") else "warn"),
+        ("4 · Lip-sync", f'{s.get("kols_avatared", 0)} avatar built',
+         "own face + own voice, wav2lip", "ok" if s.get("kols_avatared") else "warn"),
     ]
     steps_html = "".join(
         f'<div class="step"><div class="t"><span>{esc(t)}</span>'
@@ -530,6 +544,9 @@ def render_dashboard(st: dict) -> str:
         mins = v["minutes"]
         mins_txt = f'{mins:.1f}' if isinstance(mins, (int, float)) and mins else ("?" if v["clips"] else "—")
         langs = " ".join(f'{a}&nbsp;{b}' for a, b in (v.get("langs") or {}).items()) or "—"
+        av = k.get("avatar") or {}
+        atag = (f'<span class="tag ok">{esc(av["avatar_id"])}</span>' if av.get("built")
+                else '<span class="muted">—</span>')
         rows += (
             f'<tr><td><a href="/kol/{esc(k["id"])}" style="font-weight:600;text-decoration:none">'
             f'{esc(k["name"])}</a>'
@@ -541,6 +558,7 @@ def render_dashboard(st: dict) -> str:
             f'<td class="num">{v["clips"] or "—"}</td>'
             f'<td class="num">{mins_txt}</td>'
             f'<td class="mono">{langs}</td>'
+            f'<td>{atag}</td>'
             f'<td><a class="tag" href="/kol/{esc(k["id"])}">browse data →</a></td></tr>')
 
     qc = ""
@@ -562,7 +580,8 @@ def render_dashboard(st: dict) -> str:
 <h2>KOL roster <span class="muted" style="text-transform:none;letter-spacing:0">— click a name to browse its data</span></h2>
 <div class="panel scroll"><table>
 <thead><tr><th>KOL</th><th>Status</th><th class="num">Imgs</th><th class="num">Vids</th>
-<th>Voice</th><th class="num">Clips</th><th class="num">Min</th><th>Langs</th><th></th></tr></thead>
+<th>Voice</th><th class="num">Clips</th><th class="num">Min</th><th>Langs</th>
+<th>Avatar</th><th></th></tr></thead>
 <tbody>{rows}</tbody></table></div>
 {qc_section}
 <footer>Reads <span class="mono">kols/*/profile.json</span>,

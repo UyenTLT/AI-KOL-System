@@ -101,25 +101,25 @@ def build(st: dict, out: Path, cost: dict) -> Path:
 
     # 2 — executive summary -------------------------------------------------
     sl = slide_blank(prs)
-    header(sl, "Executive summary", "A KOL that speaks with her own voice — working today")
+    header(sl, "Executive summary", "A KOL with her own face, own voice, and her own answers")
     stat_row(sl, Inches(1.62), [
-        ("2 of 4", "pipeline layers complete", OK),
-        (f'{s["kols_voiced"]}', "voice built & verified", OK),
+        ("4 of 4", "pipeline layers now working", OK),
+        (f'{s.get("kols_avatared", 0)}', "avatar: own face + own voice", OK),
         ("NT$0", "software licence cost", OK),
         (f'{twd(run_month)}', "running cost / month", DEEP),
     ])
     bullets(sl, MARGIN, Inches(3.0), BODY_W, [
-        ("What works now: ",
-         "type any sentence and a talking avatar speaks it in a purpose-built voice, "
-         "in Chinese and English, in real time (0.7 s to first audio)."),
-        ("Built entirely on open-source models running locally. ",
+        ("A follower can ask a question and she answers it herself, out loud, on camera. ",
+         "Her own face, her own cloned voice, an answer written in her own persona — "
+         "generated locally in about two seconds."),
+        ("Built entirely on open-source models running on one PC. ",
          "No per-minute API fees, no data leaving the machine, no vendor lock-in."),
-        ("The voice is legally clean by design. ",
-         "It is synthesized, then fine-tuned — it never belonged to a real person, so "
-         "there is no likeness or consent exposure."),
-        ("Remaining gap is the face, not the voice. ",
-         "The avatar currently uses a stock demo face; giving it the KOL's own face is "
-         "next week's priority."),
+        ("Legally clean by design on the voice. ",
+         "It is synthesized then fine-tuned — it never belonged to a real person, so there "
+         "is no likeness or consent exposure."),
+        ("Two items need a management decision, not more engineering: ",
+         "the lip-sync tool's licence requires its watermark on published video, and the "
+         "AI must stay human-reviewed before it replies to real followers."),
     ], size=13, gap=Inches(0.7))
 
     # 3 — what was built ----------------------------------------------------
@@ -157,8 +157,8 @@ def build(st: dict, out: Path, cost: dict) -> Path:
          f'{s["kols_with_images"]}/{s["kols_total"]} started', WARN, "IN PROGRESS"),
         ("3 · Voice", "Cloned voice served as\nan internal API",
          "verified ZH + EN", OK, "COMPLETE"),
-        ("4 · Presence", "Lip-synced talking avatar,\nstreamable to OBS",
-         "stock face only", WARN, "IN PROGRESS"),
+        ("4 · Presence", "Lip-synced talking avatar\n+ persona brain (local LLM)",
+         "own face, own voice", OK, "COMPLETE"),
     ]
     gap = Inches(0.18)
     cw = int((BODY_W - gap * 3) / 4)
@@ -371,24 +371,26 @@ def build(st: dict, out: Path, cost: dict) -> Path:
     sl = slide_blank(prs)
     header(sl, "What needs improving", "Honest assessment of current limitations")
     items = [
-        ("The avatar is not the KOL's face", BAD,
-         "Highest priority. Uses a stock demo face today. Requires generating a short video "
-         "from a portrait before an avatar can be built."),
-        ("Only one KOL has a voice", WARN,
-         "9 of 10 personas are still silent. The pipeline is proven, so this is now routine "
-         "work rather than research."),
-        ("The avatar cannot think yet", WARN,
-         "It repeats what it is given. Connecting a local language model would let it answer "
-         "comments in character."),
-        ("Multi-speaker audio is unsafe", WARN,
-         "If we crawl a two-person podcast, the voices blend. Only single-speaker sources "
-         "should be used until speaker separation is added."),
-        ("Face consistency across images", WARN,
-         "Generated images do not yet hold a stable identity — needed before publishing "
-         "photo content at volume."),
-        ("Interruption handling is unreliable", MUTED,
-         "Cutting the avatar off mid-sentence is flaky upstream. Avoid designing live formats "
-         "that depend on it."),
+        ("The AI must stay human-reviewed before it talks to real followers", BAD,
+         "Tested against the rules we set it, a 7B model still denied being AI, invented a "
+         "price, and offered to negotiate a deal. Code-level guards now block all of that, "
+         "but keep replies in approve-before-send mode."),
+        ("Licence: the lip-sync tool requires its watermark on published video", BAD,
+         "A management decision, not a technical one: accept the watermark, license the "
+         "commercial edition, or change engine. The lip-sync model's own weights are also "
+         "research-licensed. Needs legal review before launch."),
+        ("Her head does not move naturally yet", WARN,
+         "Motion is a camera drift over one photo — she does not blink or turn. Real facial "
+         "motion needs an image-to-video model, which cannot share the GPU with the services."),
+        ("Only one of ten KOLs is fully built", WARN,
+         "The pipeline is proven and largely unattended now, so the rest is routine work "
+         "rather than research — roughly a day each including review."),
+        ("Face consistency across still images", WARN,
+         "Generated photos do not hold a stable identity yet — needed before publishing photo "
+         "content at volume."),
+        ("Multi-speaker audio, and live interruption", MUTED,
+         "Crawling a two-host podcast would blend voices (use single-speaker sources), and "
+         "cutting her off mid-sentence is unreliable upstream."),
     ]
     y = Inches(1.62)
     for title, col, body in items:
@@ -409,25 +411,26 @@ def build(st: dict, out: Path, cost: dict) -> Path:
                             f'(week of {monday.isoformat()})')
     rows = [
         ["Day", "Focus", "Deliverable", "Risk"],
-        [f'Mon\n{(monday).strftime("%m/%d")}', "Set up image-to-video generation",
-         "Tool installed, first test clip rendered from a portrait", ("Large download", WARN)],
-        [f'Tue\n{(monday+timedelta(1)).strftime("%m/%d")}', "Generate the KOL's idle-motion clip",
-         "A 20–30 s usable clip of Lena's face", ("Quality iteration", WARN)],
-        [f'Wed\n{(monday+timedelta(2)).strftime("%m/%d")}', "Build + test the custom avatar",
-         "Avatar speaking with Lena's face AND voice — the milestone", ("Low", OK)],
-        [f'Thu\n{(monday+timedelta(3)).strftime("%m/%d")}', "Connect the language model",
-         "Avatar answers a question in persona instead of repeating", ("Low", OK)],
-        [f'Fri\n{(monday+timedelta(4)).strftime("%m/%d")}', "Buffer · demo · write-up",
-         "Recorded demo video + updated docs", ("—", OK)],
+        [f'Mon\n{(monday).strftime("%m/%d")}', "Natural head motion (LivePortrait)",
+         "She blinks and turns her head instead of a camera drift", ("Model download", WARN)],
+        [f'Tue\n{(monday+timedelta(1)).strftime("%m/%d")}', "Second KOL end-to-end",
+         "A second character with her own face + voice, timed for estimating", ("Low", OK)],
+        [f'Wed\n{(monday+timedelta(2)).strftime("%m/%d")}', "Approve-before-send reply queue",
+         "Draft replies queued for human approval, not auto-sent", ("Low", OK)],
+        [f'Thu\n{(monday+timedelta(3)).strftime("%m/%d")}', "Stream to OBS + record a demo reel",
+         "Shareable demo video; output usable in a real broadcast", ("Medium", WARN)],
+        [f'Fri\n{(monday+timedelta(4)).strftime("%m/%d")}', "Buffer · docs · write-up",
+         "Updated docs + decision memo on the licence question", ("—", OK)],
     ]
     table(sl, MARGIN, Inches(1.66), BODY_W, rows,
           [Inches(1.0), Inches(3.4), Inches(6.0), Inches(1.49)], size=10.5, row_h=Inches(0.62))
     txbox(sl, MARGIN, Inches(5.3), BODY_W, Inches(1.4),
           f'Total {COST["hours_per_day"] * 5} hours. Friday is deliberately kept as buffer: '
-          "this project has shown that setup problems, not the actual work, are what consume "
-          "time. If Monday and Tuesday run clean, Friday moves forward to voicing a second KOL.\n\n"
-          "Milestone to judge the week by: Wednesday — an avatar with both the KOL's face and "
-          "her voice, which is the first genuinely presentable output.",
+          "this project has repeatedly shown that setup problems, not the actual work, consume "
+          "the time. If the week runs clean, Friday moves forward to a third KOL.\n\n"
+          "The one thing I need a decision on, not more work: whether to accept the lip-sync "
+          "tool's watermark condition, pay for its commercial edition, or switch engine. That "
+          "choice affects everything published afterwards, so it is cheaper to settle now.",
           size=12, color=MUTED)
 
     # 13 — roadmap ----------------------------------------------------------

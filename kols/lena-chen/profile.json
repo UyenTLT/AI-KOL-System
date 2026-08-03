@@ -213,6 +213,21 @@
       "dataset_minutes": 28.7,
       "dataset_clips": 304,
       "gsv_version": "v2Pro"
+    },
+    "avatar": {
+      "engine": "livetalking-wav2lip",
+      "avatar_id": "lena-chen_v1",
+      "avatar_dir": "LiveTalking/data/avatars/lena-chen_v1",
+      "source_portrait": "kols/lena-chen/images/soul_v1_training/01_portrait_frontal.png",
+      "base_clip": "kols/lena-chen/avatar/base_subtle.mp4",
+      "motion": "subtle (procedural drift + breathing zoom from a single still)",
+      "frames": 300,
+      "frame_size": "576x768",
+      "face_size": "256x256",
+      "fps": 25,
+      "status": "working",
+      "watermark_note": "LiveTalking burns a watermark into avatar frames AND every output frame. Its README requires published videos to carry it. Removing it is a licence/business decision, not a technical one.",
+      "improve_next": "Replace the procedural base clip with real facial motion (blinks, micro head turns) via LivePortrait or an image-to-video model, for a more natural look."
     }
   },
   "ai_prompts": {

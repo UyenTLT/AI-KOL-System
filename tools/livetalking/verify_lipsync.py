@@ -32,6 +32,9 @@ async def main() -> int:
     ap.add_argument("--text", default="大家好，我是 Lena。今天分享一個好物。")
     ap.add_argument("--seconds", type=float, default=12.0, help="how long to record")
     ap.add_argument("--out", default="lipsync_check.mp4")
+    ap.add_argument("--mode", default="echo", choices=["echo", "chat"],
+                    help="echo repeats --text verbatim; chat sends it to the persona LLM "
+                         "and the avatar speaks the generated reply")
     args = ap.parse_args()
 
     from aiortc import RTCPeerConnection, RTCSessionDescription
@@ -78,7 +81,8 @@ async def main() -> int:
     await asyncio.sleep(1.5)  # let media start flowing before speaking
 
     body = json.dumps({"sessionid": sessionid, "text": args.text,
-                       "type": "echo"}).encode()
+                       "type": args.mode}).encode()
+    print(f"  mode={args.mode}  text={args.text!r}", flush=True)
     req = urllib.request.Request(f"{args.host}/human", data=body,
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=60) as resp:

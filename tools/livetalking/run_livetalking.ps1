@@ -17,7 +17,8 @@ Param(
     [ValidateSet("wav2lip", "musetalk", "ultralight")][string]$Model = "wav2lip",
     [int]$ListenPort = 8010,
     [string]$TtsServer = "",
-    [int]$BatchSize = 4
+    [int]$BatchSize = 4,
+    [string]$LlmModel = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -82,6 +83,11 @@ if ($shared) { $env:PATH = "$($shared.DirectoryName);$env:PATH" }
 # bilingual KOL. prompt_lang must match the language spoken in the reference clip.
 $env:GSV_TEXT_LANG = "auto"
 $env:GSV_PROMPT_LANG = if ($voice.reference_lang) { $voice.reference_lang } else { "zh" }
+
+# Which persona the LLM should answer as (used by /human type=chat -> llm.py ->
+# tools/livetalking/persona_brain.py, which builds the prompt from profile.json).
+$env:KOL_ID = $KolId
+if ($LlmModel) { $env:KOL_LLM_MODEL = $LlmModel }
 
 Write-Host ""
 Write-Host "KOL        : $KolId" -ForegroundColor Cyan

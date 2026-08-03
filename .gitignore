@@ -33,3 +33,10 @@ kols/*/voice/raw/
 kols/*/voice/work/
 kols/*/voice/dataset/*.wav
 
+# Avatar build intermediates. base_subtle.mp4 IS tracked (it is small, and it is the
+# exact clip the avatar was built from — the built avatar itself is ~237 MB and lives
+# under the gitignored LiveTalking/, so without this clip the avatar is not reproducible).
+kols/*/avatar/frame.png
+kols/*/avatar/base_static.mp4
+kols/*/avatar/_frames/
+

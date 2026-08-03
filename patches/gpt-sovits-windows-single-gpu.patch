@@ -1,0 +1,153 @@
+diff --git a/GPT_SoVITS/AR/data/data_module.py b/GPT_SoVITS/AR/data/data_module.py
+index f360503..104e35c 100644
+--- a/GPT_SoVITS/AR/data/data_module.py
++++ b/GPT_SoVITS/AR/data/data_module.py
+@@ -50,25 +50,28 @@ class Text2SemanticDataModule(LightningDataModule):
+         )
+         batch_size = max(min(batch_size, len(self._train_dataset) // 4), 1)  # 防止不保存
+         sampler = DistributedBucketSampler(self._train_dataset, batch_size=batch_size)
++        # LOCAL PATCH: persistent_workers/prefetch_factor are only legal when
++        # num_workers > 0. On Windows num_workers is forced to 0 (spawned workers
++        # re-init CUDA inside the training process and segfault), and passing
++        # prefetch_factor alongside raises ValueError.
+         return DataLoader(
+             self._train_dataset,
+             batch_size=batch_size,
+             sampler=sampler,
+             collate_fn=self._train_dataset.collate,
+             num_workers=self.num_workers,
+-            persistent_workers=True,
+-            prefetch_factor=16,
++            **({"persistent_workers": True, "prefetch_factor": 16} if self.num_workers > 0 else {}),
+         )
+ 
+     def val_dataloader(self):
++        _val_workers = max(self.num_workers, 12) if self.num_workers > 0 else 0
+         return DataLoader(
+             self._dev_dataset,
+             batch_size=1,
+             shuffle=False,
+             collate_fn=self._train_dataset.collate,
+-            num_workers=max(self.num_workers, 12),
+-            persistent_workers=True,
+-            prefetch_factor=16,
++            num_workers=_val_workers,
++            **({"persistent_workers": True, "prefetch_factor": 16} if _val_workers > 0 else {}),
+         )
+ 
+     # 这个会使用到嘛？
+diff --git a/GPT_SoVITS/s1_train.py b/GPT_SoVITS/s1_train.py
+index 1176f0b..3c56530 100644
+--- a/GPT_SoVITS/s1_train.py
++++ b/GPT_SoVITS/s1_train.py
+@@ -108,6 +108,30 @@ def main(args):
+     logger = TensorBoardLogger(name=output_dir.stem, save_dir=output_dir)
+     os.environ["MASTER_ADDR"] = "localhost"
+     os.environ["USE_LIBUV"] = "0"
++    # LOCAL PATCH (pairs with the single-GPU "auto" strategy below): AR/data/
++    # bucket_sampler.py calls dist.get_world_size()/get_rank() whenever CUDA is
++    # available, without checking that a process group exists. DDPStrategy used to
++    # create that group for it; "auto" does not, so initialise a 1-process group
++    # here. This gives the sampler world_size=1 / rank=0 while keeping DDP's
++    # reducer (which segfaults on Windows gloo) out of the backward pass.
++    _single_gpu = (
++        torch.cuda.is_available()
++        and torch.cuda.device_count() <= 1
++        and os.environ.get("GSV_NO_DDP", "1") == "1"
++    )
++    if _single_gpu:
++        import random as _random
++
++        import torch.distributed as _dist
++
++        if not _dist.is_initialized():
++            os.environ.setdefault("MASTER_PORT", str(_random.randint(20000, 55555)))
++            _dist.init_process_group(
++                backend="gloo",
++                init_method="env://?use_libuv=False",
++                world_size=1,
++                rank=0,
++            )
+     trainer: Trainer = Trainer(
+         max_epochs=config["train"]["epochs"],
+         accelerator="gpu" if torch.cuda.is_available() else "cpu",
+@@ -117,8 +141,14 @@ def main(args):
+         devices=-1 if torch.cuda.is_available() else 1,
+         benchmark=False,
+         fast_dev_run=False,
++        # LOCAL PATCH: on a single GPU use Lightning's "auto" (non-distributed)
++        # strategy instead of DDP. Same reason as the s2_train patch: the DDP
++        # reducer with the Windows `gloo` backend segfaults (0xC0000005) in the
++        # backward pass. One device makes DDP a no-op anyway.
++        # Set GSV_NO_DDP=0 to force the original behaviour.
+         strategy=DDPStrategy(process_group_backend="nccl" if platform.system() != "Windows" else "gloo")
+         if torch.cuda.is_available()
++        and not (torch.cuda.device_count() <= 1 and os.environ.get("GSV_NO_DDP", "1") == "1")
+         else "auto",
+         precision=config["train"]["precision"],
+         logger=logger,
+diff --git a/GPT_SoVITS/s2_train.py b/GPT_SoVITS/s2_train.py
+index 333e6a0..a33ee40 100644
+--- a/GPT_SoVITS/s2_train.py
++++ b/GPT_SoVITS/s2_train.py
+@@ -116,15 +116,23 @@ def run(rank, n_gpus, hps):
+         shuffle=True,
+     )
+     collate_fn = TextAudioSpeakerCollate(version=hps.model.version)
++    # LOCAL PATCH: make DataLoader worker count configurable via GSV_NUM_WORKERS.
++    # Upstream hardcodes 5. On Windows these workers are spawned *inside* the
++    # already-spawned DDP process and each re-initialises a CUDA context, which
++    # segfaults (exit 0xC0000005) on the first iteration. Setting 0 keeps loading
++    # in-process. Default stays 5 so non-Windows behaviour is unchanged.
++    _num_workers = int(os.environ.get("GSV_NUM_WORKERS", "5"))
++    _loader_kwargs = {}
++    if _num_workers > 0:
++        _loader_kwargs = {"persistent_workers": True, "prefetch_factor": 3}
+     train_loader = DataLoader(
+         train_dataset,
+-        num_workers=5,
++        num_workers=_num_workers,
+         shuffle=False,
+         pin_memory=True,
+         collate_fn=collate_fn,
+         batch_sampler=train_sampler,
+-        persistent_workers=True,
+-        prefetch_factor=3,
++        **_loader_kwargs,
+     )
+     # if rank == 0:
+     #     eval_dataset = TextAudioSpeakerLoader(hps.data.validation_files, hps.data, val=True)
+@@ -196,9 +204,32 @@ def run(rank, n_gpus, hps):
+         betas=hps.train.betas,
+         eps=hps.train.eps,
+     )
+-    if torch.cuda.is_available():
++    # LOCAL PATCH: skip DDP on a single GPU (set GSV_NO_DDP=0 to force it back on).
++    # DDP with one process is semantically a no-op, but its reducer hooks into the
++    # backward pass; with the Windows `gloo` backend + find_unused_parameters=True
++    # that reducer segfaults (0xC0000005) on the first backward. Unwrapped
++    # single-GPU training is numerically identical here.
++    #
++    # _SingleGPUWrap keeps DDP's interface so the rest of this file is untouched:
++    # it exposes `.module` (used in 5 places) and, because `module` is a real
++    # submodule, state_dict keys keep the same `module.` prefix DDP produces --
++    # so saved checkpoints stay byte-compatible with the WebUI's.
++    class _SingleGPUWrap(torch.nn.Module):
++        def __init__(self, m):
++            super().__init__()
++            self.module = m
++
++        def forward(self, *a, **kw):
++            return self.module(*a, **kw)
++
++    _no_ddp = n_gpus <= 1 and os.environ.get("GSV_NO_DDP", "1") == "1"
++    if torch.cuda.is_available() and not _no_ddp:
+         net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
+         net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
++    elif torch.cuda.is_available():
++        print("[local] single GPU -> training without the DDP wrapper", flush=True)
++        net_g = _SingleGPUWrap(net_g)
++        net_d = _SingleGPUWrap(net_d)
+     else:
+         net_g = net_g.to(device)
+         net_d = net_d.to(device)
