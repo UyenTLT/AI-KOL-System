@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import mimetypes
+import re
 import shutil
 import subprocess
 import sys
@@ -44,8 +45,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 LIVETALKING = "http://127.0.0.1:8010"
-# reply_queue lives beside this file and imports persona_brain from tools/livetalking/
+# reply_queue lives beside this file; voice_studio in tools/studio/. Both import
+# persona_brain from tools/livetalking/, which they add to sys.path themselves.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "studio"))
 
 SERVICES = [
     {"key": "gpt_sovits", "name": "GPT-SoVITS api_v2", "url": "http://127.0.0.1:9880/docs",
@@ -496,6 +499,90 @@ async function decide(kol,id,action,speak){
 """
 
 
+JS_STUDIO = """
+const $=id=>document.getElementById(id);
+function tab(name){
+  ['tts','clone','character'].forEach(t=>{
+    $('tab-'+t).style.display = (t===name)?'block':'none';
+    $('btn-'+t).className = 'btn' + ((t===name)?' pri':'');
+  });
+}
+async function post(url,body){
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)});
+  const j=await r.json();
+  if(j.error) throw new Error(j.error);
+  return j;
+}
+function busy(id,on,label){const b=$(id);b.disabled=on;b.textContent=on?'working…':label;}
+function player(id,src){
+  $(id).innerHTML = '<audio controls autoplay style="width:100%" src="'+src+
+    '?t='+Date.now()+'"></audio><div style="margin-top:6px"><a class="tag" download href="'+
+    src+'">download wav</a></div>';
+}
+function charLang(){
+  const o=$('character').selectedOptions[0];
+  const lg=o?o.dataset.lang:'en';
+  $('lang').value = lg;
+  return lg;
+}
+async function speak(){
+  busy('btn-say',true,'Speak');
+  try{
+    const r=await post('/api/studio/say',{character:$('character').value,
+      text:$('script').value, speed:parseFloat($('speed').value),
+      volume_db:parseFloat($('vol').value), lang:$('lang').value});
+    player('out', r.url);
+  }catch(e){ alert('Synthesis failed:\\n'+e.message); }
+  busy('btn-say',false,'Speak');
+}
+async function makeScript(){
+  busy('btn-script',true,'Write script from scenario');
+  try{
+    const r=await post('/api/studio/script',{character:$('character').value,
+      scenario:$('scenario').value, seconds:parseInt($('secs').value)});
+    $('script').value=r.script;
+  }catch(e){ alert('Script generation failed:\\n'+e.message); }
+  busy('btn-script',false,'Write script from scenario');
+}
+async function doClone(){
+  const f=$('ref').files[0];
+  if(!f){ alert('Choose a reference audio file first (wav or mp3, 5-15 seconds).'); return; }
+  busy('btn-clone2',true,'Clone & speak');
+  try{
+    const fd=new FormData(); fd.append('file',f);
+    const up=await fetch('/api/studio/upload',{method:'POST',body:fd}).then(r=>r.json());
+    if(up.error) throw new Error(up.error);
+    $('reftext').value = up.transcript || $('reftext').value;
+    const r=await post('/api/studio/clone',{ref:up.path, ref_text:$('reftext').value,
+      ref_lang:up.language||'en', text:$('clonescript').value,
+      speed:parseFloat($('cspeed').value), volume_db:parseFloat($('cvol').value)});
+    player('cout', r.url);
+  }catch(e){ alert('Clone failed:\\n'+e.message); }
+  busy('btn-clone2',false,'Clone & speak');
+}
+async function genChar(){
+  busy('btn-char',true,'Generate character');
+  try{
+    const r=await post('/api/studio/character',{prompt:$('charprompt').value});
+    $('charout').textContent=JSON.stringify(r.character,null,2);
+    $('saverow').style.display='flex';
+    window.__char=r.character;
+  }catch(e){ alert('Generation failed:\\n'+e.message); }
+  busy('btn-char',false,'Generate character');
+}
+async function saveChar(){
+  const id=$('charid').value.trim();
+  if(!/^[a-z0-9-]{3,40}$/.test(id)){ alert('Use a lowercase id like "mia-lin".'); return; }
+  try{
+    const r=await post('/api/studio/save_character',{id:id,character:window.__char});
+    alert('Saved to '+r.path+'\\n\\nNext: build a voice with\\n  bootstrap_timbre.py '+id);
+  }catch(e){ alert('Save failed:\\n'+e.message); }
+}
+document.addEventListener('DOMContentLoaded',()=>{tab('tts');charLang();});
+"""
+
+
 def page(title: str, body: str, js: str = "") -> str:
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
@@ -508,6 +595,7 @@ def topbar(subtitle: str, extra: str = "") -> str:
             f'gap:14px;flex-wrap:wrap;margin-bottom:6px">'
             f'<div><h1>AI-KOL System</h1><p class="sub">{subtitle}</p></div>'
             f'<div class="nav"><a class="btn" href="/">Dashboard</a>'
+            f'<a class="btn" href="/studio">Voice Studio</a>'
             f'<a class="btn" href="/demo">Live demo</a>'
             f'<a class="btn" href="/replies">Reply queue</a>{extra}'
             f'<button class="btn" onclick="toggleTheme()">theme</button></div></div>')
@@ -782,6 +870,161 @@ every draft and decision is recorded, so the review trail is auditable.<br>
     return page("Reply queue — AI-KOL", body, JS_REPLIES)
 
 
+def render_studio(st: dict) -> str:
+    """TTS / voice-clone / character-creation studio."""
+    import voice_studio as vsx
+
+    gsv = next((x for x in st["services"] if x["key"] == "gpt_sovits"), {})
+    olm = next((x for x in st["services"] if x["key"] == "ollama"), {})
+
+    warn = ""
+    if not gsv.get("up"):
+        warn = ('<div class="panel pad" style="border-color:var(--bad)">'
+                '<b style="color:var(--bad)">Voice engine offline.</b> Synthesis and cloning '
+                'both need GPT-SoVITS api_v2 on :9880.<pre class="mono" '
+                'style="white-space:pre-wrap;margin:8px 0 0">cd GPT-SoVITS; '
+                '.\\.venv\\Scripts\\python.exe api_v2.py -a 127.0.0.1 -p 9880 '
+                '-c GPT_SoVITS/configs/tts_infer.yaml</pre></div>')
+    if not olm.get("up"):
+        warn += ('<div class="panel pad" style="border-color:var(--warn);margin-top:8px">'
+                 '<b style="color:var(--warn)">Ollama offline.</b> Writing a script from a '
+                 'scenario and generating a character both need it; typing a script directly '
+                 'still works.</div>')
+
+    opts, samples = "", {}
+    for c in vsx.CHARACTERS:
+        tag = "fine-tuned" if c["kind"] == "finetuned" else "zero-shot"
+        opts += (f'<option value="{esc(c["id"])}" data-lang="{c["lang"]}">'
+                 f'{esc(c["name"])} — {vsx.LANGS[c["lang"]]} ({tag})</option>')
+        samples[c["id"]] = c["sample"]
+
+    cards = "".join(
+        f'<div class="panel pad"><div style="font-weight:600">{esc(c["name"])}</div>'
+        f'<div class="rl">{esc(c["blurb"])}</div>'
+        f'<div style="margin-top:6px"><span class="tag">{esc(vsx.LANGS[c["lang"]])}</span> '
+        f'<span class="tag {"ok" if c["kind"]=="finetuned" else ""}">'
+        f'{"fine-tuned" if c["kind"]=="finetuned" else "zero-shot"}</span></div></div>'
+        for c in vsx.CHARACTERS)
+
+    default_script = vsx.CHARACTERS[0]["sample"]
+
+    body = f"""<div class="wrap">
+{topbar('Voice Studio — text to speech, voice cloning, character creation')}
+{warn}
+<div class="nav" style="margin:14px 0">
+  <button class="btn pri" id="btn-tts" onclick="tab('tts')">Text to speech</button>
+  <button class="btn" id="btn-clone" onclick="tab('clone')">Voice clone</button>
+  <button class="btn" id="btn-character" onclick="tab('character')">Character</button>
+</div>
+
+<div id="tab-tts">
+  <h2>Characters <span class="muted" style="text-transform:none;letter-spacing:0">— 3 English,
+  2 Taiwan Mandarin</span></h2>
+  <div class="grid g3">{cards}</div>
+  <h2>Script</h2>
+  <div class="panel pad">
+    <div class="grid" style="grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;align-items:end">
+      <div><div class="muted" style="font-size:12px">Character</div>
+        <select id="character" class="btn" style="width:100%" onchange="charLang()">{opts}</select></div>
+      <div><div class="muted" style="font-size:12px">Language</div>
+        <select id="lang" class="btn" style="width:100%">
+          <option value="auto">auto (mixes)</option><option value="en">English</option>
+          <option value="zh">Taiwan Mandarin</option></select></div>
+      <div><div class="muted" style="font-size:12px">Speed <span id="sv">1.00</span>×</div>
+        <input id="speed" type="range" min="0.6" max="1.5" step="0.05" value="1"
+               style="width:100%" oninput="document.getElementById('sv').textContent=(+this.value).toFixed(2)"></div>
+      <div><div class="muted" style="font-size:12px">Volume <span id="vv">0</span> dB</div>
+        <input id="vol" type="range" min="-12" max="9" step="1" value="0" style="width:100%"
+               oninput="document.getElementById('vv').textContent=this.value"></div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="muted" style="font-size:12px">Scenario — describe the situation and let her
+        write the script, or skip and type it yourself</div>
+      <div class="grid" style="grid-template-columns:1fr 110px 220px;gap:8px;align-items:end">
+        <input id="scenario" class="btn" style="width:100%;text-align:left"
+               placeholder="e.g. unboxing a new sunscreen, honest pros and cons">
+        <div><div class="muted" style="font-size:12px">Target sec</div>
+          <input id="secs" class="btn" style="width:100%" type="number" value="18" min="5" max="60"></div>
+        <button class="btn" id="btn-script" onclick="makeScript()">Write script from scenario</button>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div class="muted" style="font-size:12px">Script to speak</div>
+      <textarea id="script" rows="4">{esc(default_script)}</textarea>
+    </div>
+    <div class="nav" style="margin-top:10px">
+      <button class="btn pri" id="btn-say" onclick="speak()">Speak</button>
+    </div>
+    <div id="out" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="tab-clone" style="display:none">
+  <h2>Voice clone <span class="muted" style="text-transform:none;letter-spacing:0">— zero-shot,
+  no training needed</span></h2>
+  <div class="panel pad">
+    <div class="muted" style="font-size:12px">Reference audio — 5 to 15 seconds of clean speech,
+      one speaker, no music. The transcript is filled in automatically.</div>
+    <input id="ref" type="file" accept="audio/*" class="btn" style="width:100%;margin-top:6px">
+    <div style="margin-top:10px">
+      <div class="muted" style="font-size:12px">Reference transcript (auto-filled after upload;
+        it must match the audio or the clone degrades)</div>
+      <textarea id="reftext" rows="2" placeholder="filled in from the uploaded audio"></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <div class="muted" style="font-size:12px">Script to speak in that voice</div>
+      <textarea id="clonescript" rows="3">This serum is genuinely worth the money, and I do not say that often.</textarea>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <div><div class="muted" style="font-size:12px">Speed <span id="csv">1.00</span>×</div>
+        <input id="cspeed" type="range" min="0.6" max="1.5" step="0.05" value="1" style="width:100%"
+               oninput="document.getElementById('csv').textContent=(+this.value).toFixed(2)"></div>
+      <div><div class="muted" style="font-size:12px">Volume <span id="cvv">0</span> dB</div>
+        <input id="cvol" type="range" min="-12" max="9" step="1" value="0" style="width:100%"
+               oninput="document.getElementById('cvv').textContent=this.value"></div>
+    </div>
+    <div class="nav" style="margin-top:10px">
+      <button class="btn pri" id="btn-clone2" onclick="doClone()">Clone &amp; speak</button>
+    </div>
+    <div id="cout" style="margin-top:12px"></div>
+    <p class="muted" style="font-size:12px;margin:12px 0 0">Only clone a voice you have the right
+      to use. A fine-tuned voice (20-30 min of audio) sounds markedly better than zero-shot —
+      see tools/voice_crawl for that path.</p>
+  </div>
+</div>
+
+<div id="tab-character" style="display:none">
+  <h2>Create a character</h2>
+  <div class="panel pad">
+    <div class="muted" style="font-size:12px">Describe the KOL you want. Age, market, product
+      area, personality, language.</div>
+    <textarea id="charprompt" rows="3">A 26-year-old Taiwanese fitness and healthy-food KOL who sells protein snacks, cheerful and science-minded, speaks Taiwan Mandarin</textarea>
+    <div class="nav" style="margin-top:10px">
+      <button class="btn pri" id="btn-char" onclick="genChar()">Generate character</button>
+    </div>
+    <pre id="charout" class="mono panel pad" style="margin-top:12px;white-space:pre-wrap;
+      background:var(--bg);max-height:340px;overflow:auto"></pre>
+    <div class="nav" id="saverow" style="display:none;margin-top:10px;align-items:center">
+      <input id="charid" class="btn" placeholder="kol id e.g. mia-lin" style="text-align:left">
+      <button class="btn" onclick="saveChar()">Save as a KOL profile</button>
+      <span class="muted" style="font-size:12px">creates kols/&lt;id&gt;/profile.json</span>
+    </div>
+  </div>
+  <h2>Existing characters</h2>
+  <div class="panel scroll"><table><thead><tr><th>KOL</th><th>Voice</th><th>Avatar</th></tr></thead>
+  <tbody>{"".join(
+      f'<tr><td><a href="/kol/{esc(k["id"])}">{esc(k["name"])}</a></td>'
+      f'<td>{"<span class=tag-ok>fine-tuned</span>" if k["voice"]["sovits"] else ("dataset only" if k["voice"]["clips"] else "—")}</td>'
+      f'<td>{esc(k["avatar"]["avatar_id"]) if k["avatar"]["built"] else "—"}</td></tr>'
+      for k in st["kols"])}</tbody></table></div>
+</div>
+
+<footer>Synthesis runs on the local GPT-SoVITS server; nothing is sent to a third party.
+Renders are written to <span class="mono">kols/_studio/out/</span>.</footer>
+</div>"""
+    return page("Voice Studio — AI-KOL", body, JS_STUDIO)
+
+
 def render_demo(st: dict) -> str:
     lt = next((x for x in st["services"] if x["key"] == "livetalking"), {})
     gsv = next((x for x in st["services"] if x["key"] == "gpt_sovits"), {})
@@ -958,12 +1201,105 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
 
+    def _studio_upload(self):
+        """Accept a reference-audio upload and auto-transcribe it.
+
+        Parsed by hand rather than with cgi/multipart libs: cgi is removed in 3.13 and this
+        only ever handles one small file field, so a boundary split is enough.
+        """
+        import voice_studio as vsx
+
+        ctype = self.headers.get("Content-Type", "")
+        if "multipart/form-data" not in ctype or "boundary=" not in ctype:
+            self._json({"error": "expected multipart/form-data"}, 400)
+            return
+        boundary = ctype.split("boundary=", 1)[1].strip().strip('"').encode()
+        raw = self.rfile.read(int(self.headers.get("Content-Length") or 0))
+        part = next((p for p in raw.split(b"--" + boundary)
+                     if b"filename=" in p.split(b"\r\n\r\n")[0]), None)
+        if not part:
+            self._json({"error": "no file field found"}, 400)
+            return
+        head, _, rest = part.partition(b"\r\n\r\n")
+        data = rest.rsplit(b"\r\n", 1)[0]
+        # The quotes bound the match, so scanning the whole header block is safe — unlike
+        # splitting on ";", which also swallowed the following Content-Type line (and on
+        # Windows its ":" was then read as a drive separator, mangling the name).
+        m = re.search(r'filename\s*=\s*"([^"]*)"', head.decode("utf-8", "replace"))
+        name = Path(m.group(1)).name if m and m.group(1) else "upload.bin"
+        name = re.sub(r"[^A-Za-z0-9._-]", "_", name)[:60] or "upload.bin"
+        if len(data) < 2000:
+            self._json({"error": "file looks empty or too short"}, 400)
+            return
+
+        vsx.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        src = vsx.UPLOAD_DIR / f"{int(time.time())}_{name}"
+        src.write_bytes(data)
+        # Normalise to what GPT-SoVITS wants; browsers hand over mp3/m4a/webm freely.
+        sys.path.insert(0, str(REPO / "tools" / "voice_crawl"))
+        import ffmpeg_util
+        wav = src.with_suffix(".ref.wav")
+        try:
+            ffmpeg_util.to_mono_wav(src, wav, 32000, loudnorm=True)
+        except Exception as exc:
+            self._json({"error": f"could not decode that audio: {exc}"}, 400)
+            return
+        try:
+            transcript, lang = vsx.transcribe(wav)
+        except Exception as exc:
+            transcript, lang = "", "en"
+            logging_note = f" (transcription failed: {type(exc).__name__})"
+        else:
+            logging_note = ""
+        self._json({"path": str(wav), "transcript": transcript, "language": lang,
+                    "note": f"uploaded {len(data)/1024:.0f} KB{logging_note}"})
+
+    def _studio_api(self, path: str):
+        import voice_studio as vsx
+        b = self._body()
+        try:
+            if path == "/api/studio/say":
+                out = vsx.synthesize(b.get("character", "sofia-vargas"),
+                                     (b.get("text") or "").strip(),
+                                     speed=float(b.get("speed", 1.0)),
+                                     volume_db=float(b.get("volume_db", 0.0)),
+                                     lang=b.get("lang") or None)
+                self._json({"url": "/media?path=" + urllib.parse.quote(rel(out)),
+                            "file": rel(out)})
+            elif path == "/api/studio/clone":
+                out = vsx.synthesize("_clone", (b.get("text") or "").strip(),
+                                     speed=float(b.get("speed", 1.0)),
+                                     volume_db=float(b.get("volume_db", 0.0)),
+                                     ref_audio=b.get("ref"), ref_text=b.get("ref_text", ""),
+                                     ref_lang=b.get("ref_lang", "en"))
+                self._json({"url": "/media?path=" + urllib.parse.quote(rel(out)),
+                            "file": rel(out)})
+            elif path == "/api/studio/script":
+                self._json({"script": vsx.write_script(
+                    b.get("character", "sofia-vargas"), (b.get("scenario") or "").strip(),
+                    seconds=int(b.get("seconds", 18)))})
+            elif path == "/api/studio/character":
+                self._json({"character": vsx.create_character((b.get("prompt") or "").strip())})
+            elif path == "/api/studio/save_character":
+                p = vsx.save_character(b.get("character") or {}, b.get("id", ""))
+                self._json({"path": rel(p)})
+            else:
+                self._json({"error": "unknown studio endpoint"}, 404)
+        except FileExistsError as exc:
+            self._json({"error": str(exc)}, 409)
+        except Exception as exc:
+            self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
+
     def do_POST(self):
         path = self.path.split("?")[0].rstrip("/") or "/"
         if path.startswith("/lt/"):
             self._proxy_lt(path)
         elif path.startswith("/api/reply/"):
             self._reply_api(path)
+        elif path == "/api/studio/upload":
+            self._studio_upload()
+        elif path.startswith("/api/studio/"):
+            self._studio_api(path)
         else:
             self._json({"error": "not found"}, 404)
 
@@ -995,6 +1331,8 @@ class Handler(BaseHTTPRequestHandler):
                 kol = urllib.parse.parse_qs(parsed.query).get("kol", ["lena-chen"])[0]
                 self._json({"kol_id": kol, "policy_mode": rq.policy_mode(kol),
                             "stats": rq.stats(kol), "items": rq.load_all(kol)})
+            elif path == "/studio":
+                self._html(render_studio(collect()))
             elif path == "/demo":
                 self._html(render_demo(collect()))
             elif path == "/":

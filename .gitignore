@@ -47,3 +47,7 @@ kols/*/avatar/_frames/
 # that made the decisions.
 kols/*/replies/
 /LivePortrait/
+
+# Studio renders/uploads: generated artefacts, regenerable, and uploads may be
+# third-party audio that should not land in the repo.
+kols/_studio/
