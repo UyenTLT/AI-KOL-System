@@ -1,0 +1,79 @@
+{
+  "kol_id": "sofia-vargas",
+  "description": "Product knowledge base for Sofia Vargas. A selling script may state ONLY what is written here. Anything left null is treated as unknown, and the guard blocks a script that states it anyway — so a blank price is not a gap to fill in, it is an instruction not to quote one.",
+  "updated_at": "2026-08-06",
+  "how_to_use": [
+    "Fill in the fields you can verify from the product's own materials. Leave the rest null.",
+    "Pick the product in the studio window, write the brief, press 'Write it for me'.",
+    "The script writer receives these fields as facts and is told everything else is unknown.",
+    "check_reply() then verifies the output: a price or link that is NOT in this file is",
+    "blocked as invented, and any guaranteed-return or risk-free claim is blocked outright —",
+    "including when the product's own marketing makes it."
+  ],
+  "products": [
+    {
+      "id": "aitokenking",
+      "name": "AI Token King",
+      "source_url": "https://www.aitokenking.com.tw/about-us",
+      "status": "TEMPLATE — NOT YET FILLED IN. The site renders its content in JavaScript, so the page returns an empty shell to a fetch and its actual offering could not be read. Every field below needs filling from material you can verify before this is used for anything.",
+      "category": null,
+      "what_it_is": null,
+      "who_it_is_for": null,
+      "price": {
+        "TWD": null,
+        "USD": null
+      },
+      "buy_links": {
+        "site": null,
+        "affiliate": null
+      },
+      "usp": null,
+      "honest_notes": null,
+      "self_bought_or_sponsored": null,
+      "in_stock": null,
+      "compliance_note": "If this turns out to be a token, coin, or any product sold on the prospect of financial gain, a scripted endorsement is regulated marketing in most jurisdictions — Taiwan included — and separate from anything this repo's guards can decide. The guards will block guaranteed-return and risk-free claims automatically, but they cannot tell you whether the promotion itself is permitted, whether a disclosure is required, or whether the KOL persona may lawfully make it. Get that answered before recording, not after."
+    },
+    {
+      "id": "glowlab-vitc",
+      "name": "GlowLab Vitamin C Serum 15%",
+      "source_url": "https://shop.glowlab.tw/vitc-serum",
+      "category": "Serum",
+      "what_it_is": "A lightweight daily serum for dull, uneven skin tone.",
+      "who_it_is_for": "Normal to oily skin types.",
+      "price": {
+        "TWD": "1,280",
+        "USD": null
+      },
+      "buy_links": {
+        "site": "https://shop.glowlab.tw/vitc-serum",
+        "affiliate": null
+      },
+      "usp": "Improves dullness and uneven skin tone for normal to oily skin types.",
+      "honest_notes": "Not recommended for very sensitive skin - some users report tingling in the first week.",
+      "self_bought_or_sponsored": null,
+      "in_stock": null,
+      "added": "extracted from pasted text and reviewed by a human before saving"
+    },
+    {
+      "id": "nova-air-pro",
+      "name": "NOVA Air Pro",
+      "source_url": "https://novaair.com/pro",
+      "category": "Portable Air Purifier",
+      "what_it_is": "A palm-sized HEPA purifier designed for small spaces like desks, cars, and hotel rooms.",
+      "who_it_is_for": "People who need a portable air purifier for small to medium-sized areas.",
+      "price": {
+        "TWD": null,
+        "USD": "$89"
+      },
+      "buy_links": {
+        "site": "https://novaair.com/pro",
+        "affiliate": null
+      },
+      "usp": "Eliminates 99.95% of particles down to 0.3 microns, making it ideal for small spaces.",
+      "honest_notes": "Designed for small spaces only (roughly 10 square metres). Filter replacements are an ongoing cost.",
+      "self_bought_or_sponsored": null,
+      "in_stock": null,
+      "added": "extracted from pasted text and reviewed by a human before saving"
+    }
+  ]
+}

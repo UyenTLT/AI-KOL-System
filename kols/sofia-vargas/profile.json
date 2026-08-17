@@ -24,73 +24,260 @@
       "verification_image_count": 5,
       "verification_images_path": "kols/sofia-vargas/images/soul_v3_verification/"
     },
+    "primary_soul_id": "6a214ed3-a62b-4b34-a05b-7433c65ba88d",
+    "soul_v4": {
+      "higgsfield_soul_id": "6a214ed3-a62b-4b34-a05b-7433c65ba88d",
+      "higgsfield_name": "sofia-hsu-v4",
+      "soul_model": "soul_2",
+      "soul_status": "training",
+      "trained": "2026-08-14",
+      "training_image_count": 8,
+      "training_images_path": "kols/sofia-vargas/images/soul_v4_outdoor/",
+      "why_new": "The 2026-08-14 recast. Soul v1/v2/v3 are all locked to the Colombian-Latina face that the recast replaced, so they generate the OLD Sofia and are unusable for anything made after this date. This is the first Soul for Sofia Hsu (Taiwanese-American, 22).",
+      "base_face": "kols/sofia-vargas/images/soul_v4_outdoor/out_01_street_goldenhour.png — chosen by the project owner from six text-only candidates. Everything else in the training set was generated FROM it, passing its job id (7222fc48-29c1-449e-a720-c453830ae757) as a reference image to nano_banana_pro.",
+      "identity_anchors": "Three layered thin gold necklaces with a small gold coin pendant, plus small gold hoop earrings. The mole below the left eye and the nose-bridge freckles that docs/visual_prompts.md specified were REMOVED at the owner's request, and the three left-ear piercings never rendered reliably (1 of 5 attempts), so the jewellery is now the only anchor. This is weaker than the design intended — if the face drifts, look here first.",
+      "measured": "Text-only prompts without a reference produced six mutually unrecognisable faces across six scenes. Passing out_01 as an image reference held the face in 7 of 8 scenes. The one failure (ref04, bedroom mirror selfie) was dropped from the training set.",
+      "known_issue": "Bright diffused light and harsh midday sun both reintroduce moles and blemishes the prompt forbids — observed in 4 separate renders (two bedroom, one hiking, one gym). Backlit, golden-hour and night scenes stay clean.",
+      "constraint": "A trained Soul works ONLY with model soul_2 or soul_cinema_studio. It CANNOT be used with nano_banana_pro, which is what produced every image in the training set. To keep generating on Nano Banana Pro, use show_reference_elements instead of this soul_id."
+    },
     "voice": {
-      "engine": "gpt-sovits",
-      "voice_id": "sofia-vargas-v1",
-      "source": "synthetic_bootstrap",
-      "bootstrap_timbre": "edge:es-MX-DaliaNeural",
-      "bootstrap_note": "Latin-American Spanish timbre reading English. Chosen by measurement: es-CO (Colombian, matching her nationality) mangled English at 68% ASR word-overlap, turning 'I have tried all month' into 'Yabetra Hidalmont'; es-MX reads the same line cleanly at 95%. No real person's voice is cloned.",
-      "language_limitation": "She is Spanish-native, but GPT-SoVITS supports zh/en/ja/ko/yue only - NOT Spanish. Her voice is therefore English with a Latin-American accent. A genuinely Spanish-speaking KOL would need a different engine (XTTS-v2 or F5-TTS).",
-      "dataset_list": "kols/sofia-vargas/voice/dataset/sofia-vargas.list",
-      "reference_audio": "kols/sofia-vargas/voice/ref.wav",
-      "reference_text": "Let me be blunt about the moisturiser: I am still undecided about it, mainly because results took much too long.",
+      "engine": "cosyvoice2",
+      "mode": "instruct",
+      "voice_id": "sofia-vargas-v2",
+      "status": "zero-shot",
+      "api": "http://127.0.0.1:9881",
+      "source": "blend_synthetic_and_owner",
+      "reference_audio": "kols/sofia-vargas/voice/ref_human.wav",
+      "reference_text": "Honestly, I have been using it for about three weeks now, and the texture is really lovely. It sinks in fast, and it does not leave that sticky feeling at all.",
       "reference_lang": "en",
-      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/sofia-vargas-e16.ckpt",
-      "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/sofia-vargas_e8_s520.pth",
-      "api": "http://127.0.0.1:9880",
-      "fallback_voice": "es-MX-DaliaNeural",
-      "status": "finetuned",
-      "dataset_clips": 320,
-      "dataset_minutes": 30.2,
-      "language_decision": {
-        "decided": "2026-08-03",
-        "choice": "English only, for now",
-        "rationale": "GPT-SoVITS ships text frontends for zh/en/ja/ko/yue only. The blocker is the grapheme-to-phoneme frontend, NOT the acoustic model or the licence — so Spanish is addable, not impossible. English was chosen for now because it is clean on licence and works today, and her profile already lists English as fluent.",
-        "deferred_options": [
-          {
-            "option": "TTS -> RVC (recommended if Spanish becomes a requirement)",
-            "how": "edge-tts es-CO speaks native Colombian Spanish, then RVC converts the timbre to her voice identity. Already the documented design in research/local-ai-companion/10-local-voice-stack.md (per-language routing, with sofia-vargas as the worked example) and tools/tts_train/rvc_pipeline.py exists for it.",
-            "licence": "RVC is MIT-style - clean",
-            "caveat": "That doc's own warning: RVC normalises timbre but is not guaranteed perfect."
-          },
-          {
-            "option": "Add a Spanish g2p frontend to GPT-SoVITS",
-            "how": "Spanish orthography is highly phonetic and espeak-ng already covers it.",
-            "licence": "GPT-SoVITS code is MIT - cleanest long term",
-            "caveat": "Real engineering work on the text frontend."
-          },
-          {
-            "option": "XTTS-v2 (17 languages, one voice)",
-            "licence": "CPML NON-COMMERCIAL - already ruled out by the project's own engine table",
-            "caveat": "Rejected on licence, not capability."
-          },
-          {
-            "option": "F5-TTS + Spanish fine-tune",
-            "licence": "code MIT / weights CC-BY-NC - must self-train to use commercially"
-          },
-          {
-            "option": "Recast the persona as English-primary",
-            "how": "A Colombian-American creating in English is coherent and is exactly what the engine supports cleanly. The project already made this same call for Vietnamese (see lena-chen's meta.design_note).",
-            "caveat": "A persona decision, not an engineering one - and the cheapest of all."
-          }
-        ]
+      "reference_span": "7.7-14.2s of voice/raw/kols_sofia-vargas_raw voice.m4a",
+      "instruct": "Speak softly and sweetly, warm and close to the microphone.",
+      "chosen": "2026-08-04",
+      "chosen_because": "Picked by ear from a side-by-side against the other candidates. The measurements agree: 16.33 semitones of pitch range and 7.25 pauses per 10 s, against 10.43 and 3.75 for the fine-tuned GPT-SoVITS voice, with the real human clip at 14.10 and 4.62. It also holds her register at 194.9 Hz where plain zero-shot cloning drifted to 163.9 Hz, and does not drag: 8.3 s for a line zero-shot took 11.2 s to say.",
+      "rights_note": "The reference recording in voice/raw/ is the PROJECT OWNER'S OWN VOICE, confirmed by them on 2026-08-04. Consent is therefore inherent and needs no third-party clearance, and this is consistent with CUDA_SETUP.md section I, which forbids cloning a real person's voice *without permission* rather than forbidding it outright. Note only that Sofia's earlier synthetic-bootstrap voice belonged to nobody, whereas this one is a real identifiable person's — worth remembering if the persona is ever sold, transferred, or operated by someone else.",
+      "identity_note": "This is a different timbre from the voice in all content published before 2026-08-04. Existing clips will not match. Either re-render them or accept the change as a deliberate rebrand.",
+      "licence": "CosyVoice 2 is Apache-2.0 for code and weights — clean for commercial use.",
+      "engine_caveat": "onnxruntime has no GPU build for Windows, so the speech tokenizer and speaker encoder run on CPU. Measured RTF 0.55-0.9 — faster than realtime, but the first optimisation to look at.",
+      "requires": "tools/voice_eval/cosy_server.py running on :9881",
+      "fallback": "gpt_sovits_previous",
+      "gpt_sovits_previous": {
+        "engine": "gpt-sovits",
+        "voice_id": "sofia-vargas-v1",
+        "source": "synthetic_bootstrap",
+        "bootstrap_timbre": "edge:es-MX-DaliaNeural",
+        "bootstrap_note": "Latin-American Spanish timbre reading English. Chosen by measurement: es-CO (Colombian, matching her nationality) mangled English at 68% ASR word-overlap, turning 'I have tried all month' into 'Yabetra Hidalmont'; es-MX reads the same line cleanly at 95%. No real person's voice is cloned.",
+        "language_limitation": "She is Spanish-native, but GPT-SoVITS supports zh/en/ja/ko/yue only - NOT Spanish. Her voice is therefore English with a Latin-American accent. A genuinely Spanish-speaking KOL would need a different engine (XTTS-v2 or F5-TTS).",
+        "dataset_list": "kols/sofia-vargas/voice/dataset/sofia-vargas.list",
+        "reference_audio": "kols/sofia-vargas/voice/ref.wav",
+        "reference_text": "Let me be blunt about the moisturiser: I am still undecided about it, mainly because results took much too long.",
+        "reference_lang": "en",
+        "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/sofia-vargas-e16.ckpt",
+        "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/sofia-vargas_e8_s520.pth",
+        "api": "http://127.0.0.1:9880",
+        "fallback_voice": "es-MX-DaliaNeural",
+        "status": "finetuned",
+        "dataset_clips": 320,
+        "dataset_minutes": 30.2,
+        "language_decision": {
+          "decided": "2026-08-03",
+          "choice": "English only, for now",
+          "rationale": "GPT-SoVITS ships text frontends for zh/en/ja/ko/yue only. The blocker is the grapheme-to-phoneme frontend, NOT the acoustic model or the licence — so Spanish is addable, not impossible. English was chosen for now because it is clean on licence and works today, and her profile already lists English as fluent.",
+          "deferred_options": [
+            {
+              "option": "TTS -> RVC (recommended if Spanish becomes a requirement)",
+              "how": "edge-tts es-CO speaks native Colombian Spanish, then RVC converts the timbre to her voice identity. Already the documented design in research/local-ai-companion/10-local-voice-stack.md (per-language routing, with sofia-vargas as the worked example) and tools/tts_train/rvc_pipeline.py exists for it.",
+              "licence": "RVC is MIT-style - clean",
+              "caveat": "That doc's own warning: RVC normalises timbre but is not guaranteed perfect."
+            },
+            {
+              "option": "Add a Spanish g2p frontend to GPT-SoVITS",
+              "how": "Spanish orthography is highly phonetic and espeak-ng already covers it.",
+              "licence": "GPT-SoVITS code is MIT - cleanest long term",
+              "caveat": "Real engineering work on the text frontend."
+            },
+            {
+              "option": "XTTS-v2 (17 languages, one voice)",
+              "licence": "CPML NON-COMMERCIAL - already ruled out by the project's own engine table",
+              "caveat": "Rejected on licence, not capability."
+            },
+            {
+              "option": "F5-TTS + Spanish fine-tune",
+              "licence": "code MIT / weights CC-BY-NC - must self-train to use commercially"
+            },
+            {
+              "option": "Recast the persona as English-primary",
+              "how": "A Colombian-American creating in English is coherent and is exactly what the engine supports cleanly. The project already made this same call for Vietnamese (see lena-chen's meta.design_note).",
+              "caveat": "A persona decision, not an engineering one - and the cheapest of all."
+            }
+          ]
+        },
+        "gsv_version": "v2Pro",
+        "note": "The fine-tuned GPT-SoVITS voice used until 2026-08-04. Still the fallback when the CosyVoice server is down, and the voice of every clip produced before that date."
       },
-      "gsv_version": "v2Pro"
+      "target_lufs": -16.0,
+      "reference_cleanup": {
+        "applied": "2026-08-12 (replaces the 2026-08-05 demucs version)",
+        "current": "high-pass only, normalised to -23 LUFS / -6 dBTP",
+        "why_changed": "A report of crackle in her voice turned out to have two causes, and demucs was implicated in both. Measured over six renders across two sentences, against the untouched original recording as the identity target:\n  demucs @-20 LUFS   similarity 0.4968 +/- 0.0160, HF/LF 0.0635, clipping 0.0010%\n  high-pass @-20     similarity 0.6320 +/- 0.0313, HF/LF 0.0463, clipping 0.0070%\n  high-pass @-23/-6  similarity 0.6571 +/- 0.0357, HF/LF 0.0431, clipping 0.0000%\nThe identity gap is 0.135 against standard deviations of 0.016 and 0.031 — far outside run-to-run variance, and in the opposite direction to what the 2026-08-05 decision assumed. Demucs separation was chosen then on rumble reduction alone (19.6 dB against 5.5 dB for a high-pass); what nobody measured was that its artefacts both raise the high-frequency noise the complaint was about AND move the render away from the voice it is meant to clone.",
+        "second_cause_level": "The reference had been normalised to -16 LUFS, and CosyVoice matches the reference's level, so raw synthesis peaked at +0.1 dBFS and clipped 0.0082% of samples BEFORE any output processing. Normalising the render afterwards cannot undo clipping already baked in — it only scales the distorted waveform down. Referencing at -23 LUFS with 6 dB of true-peak headroom removes it: 0.0000% across every run since.",
+        "ruled_out": "Output loudness normalisation was suspected and is not the cause. With the render held constant, no normalisation gives HF/LF 0.0379 and -16 LUFS gives 0.0425, inside the +/-0.014 spread between runs. target_lufs -16 stays.",
+        "cost": "The high-pass leaves the low-frequency room tone demucs removed: noise floor -29 dB against -36 dB. That is rumble, not the crackle being complained about, and it costs less than the identity did.",
+        "files": {
+          "in_use": "voice/ref_human.wav (high-pass @-23/-6)",
+          "untouched_capture": "voice/ref_human.wav.orig",
+          "high_pass_source": "voice/ref_human.wav.prev",
+          "previous_demucs_version": "voice/ref_human.wav.lufs16"
+        },
+        "superseded_2026_08_05": {
+          "applied": "2026-08-05",
+          "tool": "tools/voice_eval/clean_ref.py",
+          "steps": "demucs htdemucs vocal separation, then two-pass loudnorm to -16 LUFS / -1.5 dBTP",
+          "why": "Two different problems that a filter cannot both solve. The room: a high-pass removes what sits below the voice but not what overlaps it, and took only 5.5 dB off the rumble. Demucs separates the voice as a stem and took 19.6 dB. The level: the source recording is -34 LUFS where speech is normally -16, which is why it sounded quiet — no amount of denoising addresses that.",
+          "measured": {
+            "rumble_vs_voice_before_dB": -6.9,
+            "rumble_vs_voice_after_dB": 13.2,
+            "output_loudness_before_LUFS": -32.7,
+            "output_loudness_after_LUFS": -16.0,
+            "speaker_similarity_level_matched": 0.8708,
+            "metric_floor_same_file_different_level": 0.7898
+          },
+          "similarity_note": "ERes2NetV2 is level-sensitive: the SAME file at a different loudness scores only 0.7898 against itself. So the raw 0.71 between the old and new renders was mostly a level artefact. Matched to the same loudness they score 0.8708 — above the metric's own floor for a pure level change, so the timbre is intact.",
+          "originals": "ref_human.wav.orig (untouched capture), ref_human.wav.prev (high-pass version)"
+        }
+      },
+      "soften": {
+        "hz": 3200,
+        "gain_db": -4,
+        "why": "A 4 dB dip at 3.2 kHz, where a voice reads as harsh. Measured over four runs each: 13.6%+/-0.3 of the 2-5 kHz band before, 10.7%+/-0.7 after, with speaker similarity unchanged inside noise (0.657 to 0.645). Set to false to turn it off.",
+        "rejected": "Raising pitch by resampling reached 217 Hz at +2 semitones and cost both harshness (13.8 to 18.3%) and identity (0.633 to 0.534) — formants move with the pitch, giving a smaller voice rather than a softer one. Rewording the delivery instruction appeared to raise her register by 13 Hz over three runs and lower it by 14 over the next four; the spread is +/-5.3 Hz and the effect is not real."
+      },
+      "voice_change_2026_08_13": {
+        "what": "Her speaking voice is now a blend, not the owner's recording. An edge-tts synthetic voice (en-US-AvaNeural) put through her own RVC model — the result is neither voice: 0.41 similarity to the owner, and audibly not Ava either.",
+        "why": "Asked for a softer, more feminine voice. The owner's recording sits at 182.9 Hz, the low edge of the female range, and nothing downstream can move that without moving identity: resampling +2 semitones reached 217 Hz but pushed harshness 13.8 to 18.3% and similarity 0.633 to 0.534, because formants travel with the pitch.",
+        "measured_over_3_renders": {
+          "before_median_hz": "183.1 +/- 3.7",
+          "after_median_hz": "215.0 +/- 4.1",
+          "before_harshness_pct": "13.0 +/- 0.4",
+          "after_harshness_pct": "10.6 +/- 0.2",
+          "transcription_match": "0.99 before, 1.00 after",
+          "brightness_1_3k_over_100_1k": "0.791 before, 0.675 after — HIGHER pitch but LESS upper-mid energy, so rounder rather than brighter. Worth knowing: it is not a thinner voice, it is a higher and softer one."
+        },
+        "rights": "No real person's voice is cloned. A request to blend in a named K-pop artist was declined under CUDA_SETUP.md section I — 'never clone a real person's face or voice without permission' — which a blend does not escape, since it is still built from her recordings and still recognisable. Microsoft's terms for neural TTS output should be read before commercial release, as with every other component here.",
+        "identity_note": "This is the SECOND timbre change. Clips made before 2026-08-13 were the owner's voice and no longer match; renders were cleared rather than left to be mistaken for current output. Songs are unaffected — they go through RVC, not through this reference.",
+        "files": {
+          "in_use": "voice/ref_human.wav (the blend)",
+          "the_blend_source": "voice/ref_blend.wav",
+          "owner_high_pass": "voice/ref_human.wav.owner_highpass",
+          "owner_untouched": "voice/ref_human.wav.orig"
+        }
+      }
     },
     "avatar": {
       "engine": "livetalking-wav2lip",
-      "avatar_id": "sofia-vargas_v1",
-      "avatar_dir": "LiveTalking/data/avatars/sofia-vargas_v1",
+      "avatar_id": "sofia-vargas_v2",
+      "avatar_dir": "LiveTalking/data/avatars/sofia-vargas_v2",
       "source_video": "kols/sofia-vargas/videos/self_intro/shot08_direct_smile.mp4",
-      "motion": "real footage (her own video shot, direct-to-camera) - no synthesis needed",
-      "frames": 101,
+      "base_clip": "kols/sofia-vargas/avatar/base_pingpong.mp4",
+      "motion": "her own footage, ping-ponged (forward then reversed) into a seamless 8.1 s loop",
+      "frames": 202,
+      "fps": 25,
       "frame_size": "576x768",
       "face_size": "256x256",
-      "fps": 25,
       "status": "working",
-      "note": "Built from real video, unlike lena-chen who had only stills and needed LivePortrait. Source is 720x1280 (9:16); build_avatar normalises to the 576x768 avatar geometry, verified not to clip her face.",
-      "improve_next": "The shot is only ~4s, so the idle loop repeats noticeably. Concatenating several of her 14 shots would look like hard cuts; a longer single direct-to-camera take is the real fix.",
-      "watermark_note": "LiveTalking burns its watermark into avatar frames and every output frame; its README requires it on published video. See docs/DECISION-lipsync-licensing.md."
+      "built": "2026-08-05",
+      "loop_note": "v1 looped a raw 4 s take, and the cut back to frame 1 jumped 11.8x further than a normal frame-to-frame step — the visible repeat noted at the time. Playing the clip forward then backward makes the seam zero by construction: the last frame of the forward pass IS the first frame of the reverse. Measured after: 0.3x, quieter than the motion inside the shot itself. Concatenating several of her 14 takes was the other option and was rejected earlier because it reads as hard cuts.",
+      "lipsync_verified": "Same avatar and frame count rendered twice, once with speech and once with silence: mouth-region motion 3.66 vs 2.29, a 1.60x increase driven by audio alone. Measured with the mouth window anchored to coords.pkl — a window guessed from frame proportions lands on her chest and reports nothing.",
+      "offline_render": "tools/livetalking/render_video.py — mp4 with audio, no browser needed",
+      "watermark_note": "LiveTalking burns its watermark into avatar frames and every output frame; its README requires it on published video. See docs/DECISION-lipsync-licensing.md.",
+      "previous": {
+        "engine": "livetalking-wav2lip",
+        "avatar_id": "sofia-vargas_v1",
+        "avatar_dir": "LiveTalking/data/avatars/sofia-vargas_v1",
+        "source_video": "kols/sofia-vargas/videos/self_intro/shot08_direct_smile.mp4",
+        "motion": "real footage (her own video shot, direct-to-camera) - no synthesis needed",
+        "frames": 101,
+        "frame_size": "576x768",
+        "face_size": "256x256",
+        "fps": 25,
+        "status": "working",
+        "note": "Built from real video, unlike lena-chen who had only stills and needed LivePortrait. Source is 720x1280 (9:16); build_avatar normalises to the 576x768 avatar geometry, verified not to clip her face.",
+        "improve_next": "The shot is only ~4s, so the idle loop repeats noticeably. Concatenating several of her 14 shots would look like hard cuts; a longer single direct-to-camera take is the real fix.",
+        "watermark_note": "LiveTalking burns its watermark into avatar frames and every output frame; its README requires it on published video. See docs/DECISION-lipsync-licensing.md."
+      }
+    },
+    "voice_conversion": {
+      "engine": "rvc",
+      "purpose": "Sing. CosyVoice and GPT-SoVITS are speech engines with no melody control, so a sung line is produced elsewhere and converted to her timbre here. Measured: RVC keeps the source pitch contour (15.20 st in, 14.40 st out) and replaces the voice, which is exactly the split this needs.",
+      "trained": "2026-08-07",
+      "model": "RVC/assets/weights/sofia-vargas.pth",
+      "index": "RVC/assets/indices/sofia-vargas_added_IVF2160_Flat_nprobe_1_sofia-vargas_v2.index",
+      "config": {
+        "sr": "40k",
+        "version": "v2",
+        "f0": "rmvpe",
+        "epochs": 150,
+        "batch_size": 8,
+        "slices": 671,
+        "train_minutes": 98.5
+      },
+      "best_inference_settings": {
+        "index_rate": 1.0,
+        "protect": 0.1,
+        "why": "Kept as the default, but NOT because it was shown to be better. The earlier claim that 1.0/0.10 beat 0.75/0.33 (0.6497 vs 0.6422) does not survive: RVC inference is nondeterministic, and four identical runs of one model spread 0.0211 — larger than that difference. Treat any single similarity number as +/- 0.02."
+      },
+      "training_data": {
+        "source": "generated_from_cosyvoice",
+        "clips": 320,
+        "minutes": 30.2,
+        "dir": "kols/sofia-vargas/voice/rvc_corpus",
+        "why": "The real recording of the owner's voice is 50.33 seconds in total, against RVC's guidance of roughly ten minutes. The 320-clip dataset the profile used to cite was the edge-tts BOOTSTRAP corpus (sofia-vargas_bs_*), a different timbre entirely, and its audio no longer exists. So the corpus was re-rendered through the voice she actually has now, cycling four delivery instructions to widen the pitch spread a sung line will need."
+      },
+      "measured": {
+        "ceiling_cosyvoice_vs_human_ref": 0.6931,
+        "converted_best": 0.6497,
+        "source_before_conversion": 0.4275,
+        "reading": "The model is trained on CosyVoice renders, so its ceiling is CosyVoice's version of her (0.6931), not the human recording (1.0). Converting a different voice moved it from 0.4275 to 0.6497 — 93.7% of the distance to that ceiling. The practical consequence is the right one: a converted song sounds like the same Sofia the live stream already speaks with.",
+        "upgrade_path": "Ten to fifteen minutes of the owner reading aloud would replace the generated corpus and lift the ceiling to the human voice itself. It is the single highest-value thing a person could contribute here."
+      },
+      "licence": "RVC MIT, ContentVec MIT, RMVPE Apache-2.0, base model trained on VCTK. Checked 2026-08-07 — see docs/DECISION-lipsync-licensing.md.",
+      "inference": "RVC/.venv python -m infer.cli --model sofia-vargas.pth --input X --output Y --index-rate 1.0 --protect 0.10 (run from the RVC directory)",
+      "verified": {
+        "date": "2026-08-11",
+        "inference_is_nondeterministic": {
+          "evidence": "four byte-identical invocations produced four different files (four distinct md5s); speaker similarity across them ranged 0.6320-0.6531",
+          "sd": 0.0082,
+          "consequence": "no A/B on this metric means anything below roughly 0.02 without repeats"
+        },
+        "checkpoints_are_indistinguishable": {
+          "measured": {
+            "e25": 0.6356,
+            "e50": 0.6413,
+            "e75": 0.6345,
+            "e100": 0.6276,
+            "e125": 0.621,
+            "e150": 0.6343,
+            "final": 0.6269
+          },
+          "spread": 0.0203,
+          "reading": "The spread across all seven checkpoints is the same size as the spread across four runs of ONE checkpoint. They cannot be ranked on this metric. What the flatness does show is that the model had converged by e25-e50: the remaining 100 epochs, about 45 minutes, bought nothing measurable. Train the next character for 50."
+        },
+        "pitch_limit": {
+          "measured_mean_of_3": {
+            "+0": 0.6448,
+            "+5": 0.6013,
+            "+10": 0.5476
+          },
+          "median_hz": {
+            "+0": 220.4,
+            "+5": 279.7,
+            "+10": 295.7
+          },
+          "clipping": "none at any shift (0.000% of samples at ceiling)",
+          "reading": "Identity degrades monotonically as pitch is pushed up, and the drop is far outside the noise. Her corpus is speech at roughly 195-220 Hz, so +10 semitones asks the model for a register it never saw. Keep a sung source within about five semitones of her speaking range; beyond that it stops being her. This is the concrete cost of a speech-only training corpus."
+        },
+        "all_checkpoints_load": true,
+        "metadata_correct": "40k / f0=1 / v2 on all seven"
+      }
     }
   },
   "meta": {

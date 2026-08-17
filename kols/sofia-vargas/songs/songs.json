@@ -1,0 +1,144 @@
+{
+  "kol_id": "sofia-vargas",
+  "note": "Source vocals live in raw/ and are converted once into her voice in sofia/. A source is normally a finished mix, so `stems: mix` separates the vocal, converts only that, and remixes it over the untouched backing. Every entry must declare `rights`: 'internal_only' or 'commercial' — after conversion the two are indistinguishable files, so the moment of import is the only time the answer is known.",
+  "songs": [
+    {
+      "id": "taking-my-sweet-time",
+      "title": "Taking My Sweet Time",
+      "source": "raw/taking-my-sweet-time.mp3",
+      "converted": "sofia/taking-my-sweet-time.wav",
+      "stems": "mix",
+      "pitch_shift": 0,
+      "language": "en",
+      "mood": [
+        "bright",
+        "upbeat",
+        "confident",
+        "sunny",
+        "morning"
+      ],
+      "keywords": [
+        "happy",
+        "upbeat",
+        "fun",
+        "dance",
+        "party",
+        "morning",
+        "confident",
+        "energy",
+        "bright",
+        "sunny",
+        "cheer",
+        "loud",
+        "anthem",
+        "celebrate",
+        "good"
+      ],
+      "lyrics": "So I'm taking up the whole sidewalk,\ntaking my sweet time, taking my own walk.\nYou can keep your quiet little box —\nI've got somewhere better to be.",
+      "rights": "internal_only",
+      "origin": "Suno free tier, downloaded 2026-08-11. Lyrics written for this project.",
+      "licence_note": "Suno free tier: grants NO commercial rights. Demo, review and internal testing only. Re-generate on a paid plan and change rights to 'commercial' before any published or monetised use.",
+      "separated": true,
+      "pitch_note": "vocal shifted into her register with RVC and the backing shifted the same amount with ffmpeg, so the two stay in key. Measured 0.4604 before, 0.5992 after.",
+      "register": {
+        "median_hz": 311.1269837220809,
+        "landed_hz": 311.1269837220809,
+        "ok": false,
+        "suggested_pitch": -8,
+        "advice": "the vocal lands at 311 Hz, +7.7 semitones from her register (165-235 Hz), so it will be transposed -8 — the voice by RVC and the backing by resampling, together, so they stay in the same key. Generated vocals land here almost every time: three tracks measured 297, 311 and 290 Hz, and asking the generator for a lower register moved it by 7 Hz across three attempts. Set auto_key to false on the entry to skip it."
+      }
+    },
+    {
+      "id": "nothing-solved-tonight",
+      "title": "Nothing Has To Be Solved Tonight",
+      "source": "raw/nothing-solved-tonight.mp3",
+      "converted": "sofia/nothing-solved-tonight.wav",
+      "stems": "mix",
+      "pitch_shift": 0,
+      "language": "en",
+      "mood": [
+        "calm",
+        "night",
+        "gentle",
+        "comfort",
+        "slow"
+      ],
+      "keywords": [
+        "sleep",
+        "sleeping",
+        "lonely",
+        "alone",
+        "quiet",
+        "night",
+        "tired",
+        "sad",
+        "lullaby",
+        "calm",
+        "gentle",
+        "soft",
+        "comfort",
+        "rest",
+        "insomnia"
+      ],
+      "lyrics": "Nothing has to be solved tonight,\nnothing has to be figured out right.\nJust breathe with me, let the hour go —\nI'm not going anywhere, you know.",
+      "rights": "internal_only",
+      "origin": "Suno free tier, downloaded 2026-08-11. Lyrics written for this project.",
+      "licence_note": "Suno free tier: grants NO commercial rights. Demo, review and internal testing only. Re-generate on a paid plan and change rights to 'commercial' before any published or monetised use.",
+      "separated": true,
+      "register": {
+        "median_hz": 295.365950611658,
+        "landed_hz": 295.365950611658,
+        "ok": false,
+        "suggested_pitch": -7,
+        "advice": "the vocal lands at 295 Hz, +6.8 semitones from her register (165-235 Hz), so it will be transposed -7 — the voice by RVC and the backing by resampling, together, so they stay in the same key. Generated vocals land here almost every time: three tracks measured 297, 311 and 290 Hz, and asking the generator for a lower register moved it by 7 Hz across three attempts. Set auto_key to false on the entry to skip it."
+      }
+    },
+    {
+      "id": "set-it-down",
+      "title": "Set It Down",
+      "source": "raw/set-it-down.mp3",
+      "converted": "sofia/set-it-down.wav",
+      "stems": "mix",
+      "pitch_shift": 0,
+      "language": "en",
+      "mood": [
+        "calm",
+        "night",
+        "gentle",
+        "comfort",
+        "slow"
+      ],
+      "keywords": [
+        "sleep",
+        "sleeping",
+        "lonely",
+        "alone",
+        "quiet",
+        "night",
+        "tired",
+        "sad",
+        "lullaby",
+        "calm",
+        "gentle",
+        "soft",
+        "comfort",
+        "rest",
+        "heavy",
+        "worry"
+      ],
+      "lyrics": "Nothing has to be solved tonight,\nnothing has to be worked out.\nSet it down, let the hour go —\nI'm not going anywhere.",
+      "rights": "internal_only",
+      "origin": "Suno free tier, downloaded 2026-08-11. Second attempt, written and prompted for a low alto register after the first pair measured +8.4 and +9.2 semitones above her.",
+      "licence_note": "Suno free tier: grants NO commercial rights. Demo, review and internal testing only. Re-generate on a paid plan and change rights to 'commercial' before any published use.",
+      "separated": true,
+      "register": {
+        "median_hz": 290.29174037003673,
+        "landed_hz": 290.29174037003673,
+        "ok": false,
+        "suggested_pitch": -6,
+        "advice": "the vocal lands at 290 Hz, +6.5 semitones from her register (165-235 Hz), so it will be transposed -6 — the voice by RVC and the backing by resampling, together, so they stay in the same key. Generated vocals land here almost every time: three tracks measured 297, 311 and 290 Hz, and asking the generator for a lower register moved it by 7 Hz across three attempts. Set auto_key to false on the entry to skip it."
+      },
+      "pitch_note": "vocal shifted into her register with RVC and the backing shifted the same amount with ffmpeg, so the two stay in key. Measured 0.4604 before, 0.5992 after."
+    }
+  ]
+}

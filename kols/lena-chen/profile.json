@@ -212,7 +212,9 @@
       "notes": "Sweet, bright, mid-high pitched, warm and friendly, bilingual ZH/EN from one reference sample. ZH/EN-first design avoids the Vietnamese-model licensing risk flagged in research/local-ai-companion/10-local-voice-stack.md. CosyVoice2 is Apache-2.0 and native to LiveTalking for the later realtime phase.",
       "dataset_minutes": 28.7,
       "dataset_clips": 304,
-      "gsv_version": "v2Pro"
+      "gsv_version": "v2Pro",
+      "target_lufs": -16.0,
+      "target_lufs_note": "-16 LUFS is the usual target for spoken-word content. Set on every voice so they can be cut together without one jumping out: before this, sofia-vargas sat at -15.7 and the GPT-SoVITS voices at -21.6 to -23.9, an 8.2 dB spread."
     },
     "avatar": {
       "engine": "livetalking-wav2lip",

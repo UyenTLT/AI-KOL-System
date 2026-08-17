@@ -29,7 +29,9 @@
       "dataset_minutes": 28.0,
       "gsv_version": "v2Pro",
       "sovits_weights": "GPT-SoVITS/SoVITS_weights_v2Pro/preset-en-warm_e8_s520.pth",
-      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/preset-en-warm-e16.ckpt"
+      "gpt_weights": "GPT-SoVITS/GPT_weights_v2Pro/preset-en-warm-e16.ckpt",
+      "target_lufs": -16.0,
+      "target_lufs_note": "-16 LUFS is the usual target for spoken-word content. Set on every voice so they can be cut together without one jumping out: before this, sofia-vargas sat at -15.7 and the GPT-SoVITS voices at -21.6 to -23.9, an 8.2 dB spread."
     }
   }
 }
