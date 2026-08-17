@@ -8,16 +8,31 @@ party, and there is no per-character API cost.
 
 ## 1. Text to speech
 
-Five characters — **3 English, 2 Taiwan Mandarin**. All five are **fine-tuned**, which sounds
-markedly more natural than zero-shot:
+Five characters — **3 English, 2 Taiwan Mandarin** — on **two engines** since 2026-08-04:
 
-| Character | Language | Corpus | Bootstrapped from |
+| Character | Language | Engine | Voice source |
 |---|---|---|---|
-| Sofia Vargas | English | 30.2 min | es-MX-Dalia (Latin-American accent) |
-| Lena Chen 陳語彤 | Taiwan Mandarin | 28.7 min | en-US-AvaMultilingual |
-| Chloe (EN, warm) | English | 28.0 min | en-US-EmmaMultilingual |
-| Ava (EN, bright) | English | 31.2 min | en-US-Aria |
-| Hsiao-Yu 小雨 | Taiwan Mandarin | 35.9 min | zh-TW-HsiaoYu |
+| **Sofia Vargas** | English | **CosyVoice 2, instruct** | zero-shot from the owner's own recording |
+| Lena Chen 陳語彤 | Taiwan Mandarin | GPT-SoVITS, fine-tuned | 28.7 min · en-US-AvaMultilingual |
+| Chloe (EN, warm) | English | GPT-SoVITS, fine-tuned | 28.0 min · en-US-EmmaMultilingual |
+| Ava (EN, bright) | English | GPT-SoVITS, fine-tuned | 31.2 min · en-US-Aria |
+| Hsiao-Yu 小雨 | Taiwan Mandarin | GPT-SoVITS, fine-tuned | 35.9 min · zh-TW-HsiaoYu |
+
+**Sofia moved off the fine-tuned voice on 2026-08-04**, chosen by ear from a side-by-side and
+confirmed by measurement. The fine-tuned voice was flat because the corpus was: all 320 clips
+came from one edge-tts voice at one fixed rate and pitch, so they varied by wording and
+nothing else — 0.47 semitones of delivery variation across the whole set. A model cannot
+produce range it was never shown.
+
+Measured across nine sentence types (short, question, exclamation, long, numbers, brand name,
+hesitant, list, emotional): mean pitch **198.0 Hz**, mean pitch range **14.48 st**, mean ASR
+round-trip **98%**. The real human clip sits at 14.10 st; the old fine-tuned voice at 10.43.
+Her established register was 202.9 Hz, so the identity holds.
+
+Requires `tools/voice_eval/cosy_server.py` on `:9881`. If it is down, `voice_studio` warns and
+falls back to her old GPT-SoVITS voice, which is kept under `voice.gpt_sovits_previous` — read
+it with `gsv_block()`, never the top-level voice block, or `is_finetuned()` reports False and
+synthesis quietly drops to the *base* checkpoint. Audio still comes out; it is just not her.
 
 Verified after fine-tuning — all five are distinct speakers, and all five transcribe back
 accurately (ERes2NetV2 speaker verification, against a same-speaker baseline of 0.919):

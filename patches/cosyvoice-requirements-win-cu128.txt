@@ -1,0 +1,70 @@
+# CosyVoice 2 requirements, adjusted for this box (Windows, RTX 5070 / Blackwell sm_120).
+#
+# Two changes from upstream `CosyVoice/requirements.txt`:
+#
+#   1. torch/torchaudio pins REMOVED. Upstream pins 2.3.1 on a cu121 index — the same pin
+#      that already had to be replaced for GPT-SoVITS and LiveTalking, because cu121 wheels
+#      carry no sm_120 kernels and a 50-series card cannot run them. Install torch first,
+#      from the cu128 index, then this file:
+#
+#        .venv\Scripts\python.exe -m pip install torch torchaudio \
+#            --index-url https://download.pytorch.org/whl/cu128
+#        .venv\Scripts\python.exe -m pip install -r patches\cosyvoice-requirements-win-cu128.txt
+#
+#      Order matters: several packages below declare a torch dependency, so installing them
+#      first can pull a CPU or cu121 build over the top of the working one. Re-check with
+#      `torch.cuda.is_available()` afterwards.
+#
+#   2. The cu121 extra-index-url is dropped, so nothing silently resolves back to it.
+#
+# One more step is needed before this file will install at all. `openai-whisper==20231117`
+# has a setup.py that imports `pkg_resources`, which setuptools 81+ no longer ships, so its
+# isolated build fails with ModuleNotFoundError and pip aborts the whole resolve — nothing
+# gets installed, not just whisper. It cannot simply be dropped: `cosyvoice/cli/frontend.py`
+# imports `whisper` on the inference path. Install it out of isolation first:
+#
+#        .venv\Scripts\python.exe -m pip install "setuptools<81" wheel
+#        .venv\Scripts\python.exe -m pip install --no-build-isolation openai-whisper==20231117
+#
+# Linux-only entries (deepspeed, tensorrt, onnxruntime-gpu) keep their markers and are
+# skipped on Windows — note this leaves onnxruntime on CPU here, which is a speed caveat
+# worth measuring rather than assuming.
+--extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+conformer==0.3.2
+deepspeed==0.15.1; sys_platform == 'linux'
+diffusers==0.29.0
+fastapi==0.115.6
+fastapi-cli==0.0.4
+gdown==5.1.0
+gradio==5.4.0
+grpcio==1.57.0
+grpcio-tools==1.57.0
+hydra-core==1.3.2
+HyperPyYAML==1.2.3
+inflect==7.3.1
+librosa==0.10.2
+lightning==2.2.4
+matplotlib==3.7.5
+modelscope==1.20.0
+networkx==3.1
+numpy==1.26.4
+omegaconf==2.3.0
+onnx==1.16.0
+onnxruntime-gpu==1.18.0; sys_platform == 'linux'
+onnxruntime==1.18.0; sys_platform == 'darwin' or sys_platform == 'win32'
+openai-whisper==20231117
+protobuf==4.25
+pyarrow==18.1.0
+pydantic==2.7.0
+pyworld==0.3.4
+rich==13.7.1
+soundfile==0.12.1
+tensorboard==2.14.0
+tensorrt-cu12==10.13.3.9; sys_platform == 'linux'
+tensorrt-cu12-bindings==10.13.3.9; sys_platform == 'linux'
+tensorrt-cu12-libs==10.13.3.9; sys_platform == 'linux'
+transformers==4.51.3
+x-transformers==2.11.24
+uvicorn==0.30.0
+wetext==0.0.4
+wget==3.2

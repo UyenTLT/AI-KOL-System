@@ -6,6 +6,8 @@ Local-first, free tooling to turn a KOL's static profile + photos into content. 
 | Tool | What it does |
 |---|---|
 | [`dashboard/`](dashboard/) | **Live pipeline tracker** — one page showing where every KOL stands, plus service + GPU state. Start here. |
+| [`selftest/`](selftest/) | **Verification console** — runs every layer's checks live and shows the evidence. `--cli` exits non-zero on failure. |
+| [`voice_eval/`](voice_eval/) | **Voice lab** — engines side by side against real human speech, with blind mode and octave-safe prosody metrics. For judging *how human* a voice sounds. |
 | [`voice_crawl/`](voice_crawl/) | Voice data → GPT-SoVITS training set → headless fine-tune. Crawl real audio or synthesize a bootstrap timbre. |
 | [`livetalking/`](livetalking/) | Realtime lip-synced avatar speaking in the KOL's cloned voice. |
 | [`tts_train/`](tts_train/) | `tts_client.py` (the TTS HTTP client used by the apps) + RVC timbre conversion. |
@@ -15,7 +17,8 @@ Local-first, free tooling to turn a KOL's static profile + photos into content. 
 Quick status check:
 
 ```bash
-python tools/dashboard/server.py     # http://127.0.0.1:8770
+python tools/dashboard/server.py     # http://127.0.0.1:8770  — what state is it in
+python tools/selftest/server.py      # http://127.0.0.1:8772  — does it still work
 ```
 
 ## `vlog_app.py` — Photo-vlog generator (MVP)

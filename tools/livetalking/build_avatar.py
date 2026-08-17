@@ -141,6 +141,12 @@ def run_genavatar(video: Path, avatar_id: str) -> Path:
     """Invoke LiveTalking's own generator so the output format stays authoritative."""
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join([str(LT), env.get("PYTHONPATH", "")]).rstrip(os.pathsep)
+    # genavatar.py prints progress in Chinese. On a console using a legacy code page (cp950
+    # here) that raises UnicodeEncodeError *inside the print*, so the generator dies with
+    # exit 1 after the face detection has already run — the failure looks like a model problem
+    # and is really a console encoding one.
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
     cmd = [sys.executable, "-m", "avatars.wav2lip.genavatar",
            "--video_path", str(video), "--avatar_id", avatar_id,
            "--img_size", str(FACE_SIZE), "--save_path", "data/avatars"]

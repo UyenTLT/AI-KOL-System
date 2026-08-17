@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -89,6 +90,30 @@ PRESET_REF_TEXT = {
 LANGS = {"en": "English", "zh": "Chinese (Taiwan Mandarin)"}
 
 
+def gsv_block(cid: str) -> dict:
+    """The GPT-SoVITS half of a character's voice config.
+
+    Usually that is the voice block itself. When a character has moved to another engine —
+    sofia-vargas to CosyVoice 2 — the GPT-SoVITS setup is kept under `gpt_sovits_previous`,
+    and everything that speaks api_v2 (the fine-tuned check, the weight lookup, LiveTalking)
+    has to read it from there.
+
+    Getting this wrong is silent rather than loud: without it `is_finetuned` returned False,
+    the character was treated as zero-shot, and synthesis fell back to the *base* checkpoint
+    with a generic edge-tts reference. Audio still came out. It just was not her.
+    """
+    p = REPO / "kols" / cid / "profile.json"
+    if not p.is_file():
+        return {}
+    try:
+        v = (json.loads(p.read_text(encoding="utf-8")).get("ai_assets") or {}).get("voice") or {}
+    except Exception:
+        return {}
+    if v.get("engine") and v["engine"] != "gpt-sovits" and v.get("gpt_sovits_previous"):
+        return v["gpt_sovits_previous"]
+    return v
+
+
 def is_finetuned(cid: str) -> bool:
     """True when this character has usable fine-tuned weights on disk.
 
@@ -96,13 +121,7 @@ def is_finetuned(cid: str) -> bool:
     moment `build_voice.py` finishes — no edit to this file, and no risk of the declared
     `kind` drifting out of step with reality.
     """
-    p = REPO / "kols" / cid / "profile.json"
-    if not p.is_file():
-        return False
-    try:
-        v = (json.loads(p.read_text(encoding="utf-8")).get("ai_assets") or {}).get("voice") or {}
-    except Exception:
-        return False
+    v = gsv_block(cid)
     sov, gpt = v.get("sovits_weights"), v.get("gpt_weights")
     return bool(sov and gpt and (REPO / sov).is_file() and (REPO / gpt).is_file())
 
@@ -170,8 +189,7 @@ def voice_config(cid: str) -> dict:
     if not c:
         raise KeyError(f"unknown character {cid}")
     if c["kind"] == "finetuned":
-        prof = json.loads((REPO / "kols" / cid / "profile.json").read_text(encoding="utf-8"))
-        v = (prof.get("ai_assets") or {}).get("voice") or {}
+        v = gsv_block(cid)      # not the raw voice block — see gsv_block's docstring
         # A fine-tuned voice speaks best from its OWN reference clip; fall back to the
         # preset clip if the profile somehow lacks one.
         ref = v.get("reference_audio")
@@ -227,16 +245,275 @@ def apply_volume(wav_path: Path, gain_db: float) -> None:
     sf.write(str(wav_path), scaled, sr, subtype="PCM_16")
 
 
+COSY_API = os.getenv("COSYVOICE_API", "http://127.0.0.1:9881")
+
+
+def _cosyvoice_config(cid: str) -> dict | None:
+    """The CosyVoice block from a profile, or None if this character does not use it.
+
+    Returns None rather than raising when the server is down, so the character falls back to
+    the GPT-SoVITS voice kept in `voice.gpt_sovits_previous` instead of failing outright. A
+    slightly different voice beats no voice when something downstream is mid-render.
+    """
+    try:
+        prof = json.loads((REPO / "kols" / cid / "profile.json").read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    v = (prof.get("ai_assets") or {}).get("voice") or {}
+    if v.get("engine") != "cosyvoice2":
+        return None
+    try:
+        urllib.request.urlopen(f"{v.get('api', COSY_API)}/health", timeout=2)
+    except Exception:
+        print(f"  [warn] {cid} is configured for CosyVoice 2 but {v.get('api', COSY_API)} is "
+              f"not answering — falling back to the previous GPT-SoVITS voice. Start it with:\n"
+              f"         CosyVoice\\.venv\\Scripts\\python.exe tools\\voice_eval\\cosy_server.py")
+        return None
+    return v
+
+
+def _cosy_alive(api: str | None = None) -> bool:
+    try:
+        urllib.request.urlopen(f"{api or COSY_API}/health", timeout=2)
+        return True
+    except Exception:
+        return False
+
+
+def _clone_cosyvoice(text: str, ref_audio: str, ref_text: str, *, speed: float = 1.0,
+                     volume_db: float = 0.0, out: Path | None = None,
+                     target_lufs: float | None = -16.0) -> Path:
+    """Speak `text` in the voice of an arbitrary reference clip, zero-shot.
+
+    The transcript is not optional in the way it looks. CosyVoice matches the prompt audio
+    against the prompt *text*, so a wrong or empty one is the usual cause of a clone that
+    sounds nothing like the source — which is why the caller auto-transcribes when none is
+    given rather than leaving it blank.
+    """
+    if not ref_text.strip():
+        raise ValueError("cloning needs the reference transcript — pass ref_text, or let the "
+                         "caller fill it in with transcribe()")
+    body = {"text": text, "mode": "zero_shot", "ref": ref_audio, "ref_text": ref_text}
+    req = urllib.request.Request(f"{COSY_API}/say", data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=600) as r:
+            audio = r.read()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"cosy_server rejected the clone: {exc.read().decode()[:300]}") from exc
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out = out or (OUT_DIR / f"clone_{int(time.time())}.wav")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(audio)
+    if out.stat().st_size < 1000:
+        raise RuntimeError("cosy_server returned no usable audio")
+    if abs(speed - 1.0) > 0.01:
+        _retime(out, speed)
+    if target_lufs is not None:
+        _normalise_loudness(out, float(target_lufs))
+    apply_volume(out, volume_db)
+    return out
+
+
+def _synthesize_cosyvoice(cid: str, text: str, v: dict, *, speed: float = 1.0,
+                          volume_db: float = 0.0, out: Path | None = None,
+                          instruct: str | None = None) -> Path:
+    ref = v.get("reference_audio")
+    ref_abs = _abs(ref) if ref else None
+    if not ref_abs or not Path(ref_abs).is_file():
+        raise RuntimeError(f"{cid}: reference clip missing ({ref})")
+
+    mode = v.get("mode", "zero_shot")
+    body = {"text": text, "mode": mode, "ref": ref_abs}
+    if mode == "instruct":
+        # A caller may override the profile's standing instruction for one line. The instruction
+        # is a real delivery control, not a label: measured on this voice, the profile's
+        # conversational wording gives 17.50 semitones of pitch range, while "softly and
+        # tenderly, almost whispering" gives 8.17 over 5.1 s instead of 3.8. That is the
+        # difference between answering a comment and confiding something.
+        chosen = instruct or v.get("instruct") or "Speak naturally."
+        # A long instruction gets spoken. Measured: at 219 characters the model read most of the
+        # instruction aloud inside the answer, and the transcript of the audio matched the text
+        # it was given by 0.409 instead of 1.000. At 74 and 87 characters it matched perfectly.
+        # The cap is a warning rather than a truncation because silently cutting an instruction
+        # would change the delivery without saying so — this makes the cause visible in the log
+        # the first time it happens, instead of after transcribing the output to find out.
+        if len(chosen) > 120:
+            print(f"  warning: instruct is {len(chosen)} characters. Past roughly 120 CosyVoice "
+                  f"starts speaking the instruction aloud — keep it under one short sentence.",
+                  flush=True)
+        body["instruct"] = chosen
+    else:
+        body["ref_text"] = v.get("reference_text", "")
+
+    req = urllib.request.Request(f"{v.get('api', COSY_API)}/say",
+                                 data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=600) as r:
+            audio = r.read()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"cosy_server rejected the request: {exc.read().decode()[:300]}") from exc
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out = out or (OUT_DIR / f"{cid}_{int(time.time())}.wav")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(audio)
+    if out.stat().st_size < 1000:
+        raise RuntimeError("cosy_server returned no usable audio")
+    # Softening runs before loudness so the level is set on what actually gets heard: cutting
+    # 4 dB out of the busiest band afterwards would leave every line quieter than it asked to be.
+    soft = v.get("soften")
+    if soft is not False:
+        s = soft if isinstance(soft, dict) else {}
+        _soften(out, float(s.get("hz", 3200.0)), float(s.get("gain_db", -4.0)))
+    # CosyVoice has no speed parameter; resample the timeline rather than pretend it does.
+    if abs(speed - 1.0) > 0.01:
+        _retime(out, speed)
+    if v.get("target_lufs") is not None:
+        _normalise_loudness(out, float(v["target_lufs"]))
+    apply_volume(out, volume_db)
+    return out
+
+
+def _soften(path: Path, hz: float = 3200.0, gain_db: float = -4.0) -> None:
+    """Take the edge off a rendered line, in place.
+
+    2-5 kHz is where a voice reads as harsh, and a 4 dB dip at 3.2 kHz measurably lowers it:
+    13.6% of the band's energy before against 10.7% after, over four runs each with standard
+    deviations of 0.3 and 0.7. Speaker similarity is unchanged within noise (0.657 to 0.645).
+
+    Two things that were tried for the same goal and are NOT here, because the measurements did
+    not support them:
+
+    * **Raising the pitch by resampling.** +2 semitones reached 217 Hz, which is more centrally
+      in the female range, and cost harshness (13.8% to 18.3%) and identity (0.633 to 0.534).
+      Formants move with the pitch and the result is a smaller voice, not a softer one.
+    * **Rewording the delivery instruction.** A warmer wording looked like it raised her register
+      by 13 Hz over three runs and by -14 Hz over the next four. The run-to-run spread is ±5.3 Hz
+      and the effect is not real.
+    """
+    import subprocess
+    tmp = path.with_suffix(".soft.wav")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(path),
+                    "-af", f"equalizer=f={hz}:width_type=o:width=1.4:g={gain_db}", str(tmp)],
+                   check=True, capture_output=True, text=True,
+                   encoding="utf-8", errors="replace")
+    tmp.replace(path)
+
+
+def _normalise_loudness(path: Path, lufs: float, true_peak: float = -1.5) -> None:
+    """Bring a render to a fixed loudness with headroom to spare.
+
+    Two separate reasons, and only the first is obvious. The recordings this project clones from
+    sit around -34 LUFS where speech is normally -16, so output was simply quiet. Less obvious:
+    once the reference was cleaned and levelled, renders started landing at a -0.1 dB peak,
+    which survives as a wav and clips the moment anything encodes it. A true-peak ceiling of
+    -1.5 dBTP costs nothing audible and removes that.
+
+    Driven by `voice.target_lufs` in the profile rather than applied to everyone, so the four
+    GPT-SoVITS voices keep their existing levels until someone decides otherwise.
+    """
+    import subprocess
+
+    # Limit first, as its own pass. Peaks reach the true-peak ceiling before the integrated
+    # loudness gets near target, so loudnorm correctly refuses to push further and the clip
+    # lands 3-4 dB quiet; shaving the peaks buys about 1.5 dB at no cost to pitch range
+    # (measured 100%, against 99% for compression at 2:1 or 3:1).
+    #
+    # Two details, both learned the hard way. `level=false` stops alimiter applying its own
+    # auto-normalisation. And the loudness has to be measured *after* limiting, not before —
+    # chaining `alimiter,loudnorm` while feeding loudnorm statistics taken from the unlimited
+    # signal describes an input it never sees, and it over-corrects: one voice came out at
+    # -12.7 LUFS against a -16 target, clipping at 0.0 dB peak.
+    limited = path.with_suffix(".lim.wav")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(path),
+                    "-af", "alimiter=limit=0.7:level=false",
+                    "-ar", "32000", "-ac", "1", str(limited)], check=True)
+
+    stats = _loudnorm_stats(limited, lufs, true_peak)
+    af = (f"loudnorm=I={lufs}:TP={true_peak}:LRA=11:measured_I={stats['input_i']}"
+          f":measured_TP={stats['input_tp']}:measured_LRA={stats['input_lra']}"
+          f":measured_thresh={stats['input_thresh']}:offset={stats['target_offset']}:linear=true"
+          if len(stats) == 5 else f"loudnorm=I={lufs}:TP={true_peak}:LRA=11")
+    tmp = path.with_suffix(".norm.wav")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(limited), "-af", af,
+                    "-ar", "32000", "-ac", "1", str(tmp)], check=True)
+    limited.unlink(missing_ok=True)
+    tmp.replace(path)
+
+
+def _loudnorm_stats(path: Path, lufs: float, true_peak: float) -> dict:
+    """loudnorm's own measurement pass, parsed. Missing or infinite values are dropped so the
+    caller falls back to single-pass rather than building a filter string with holes in it."""
+    import re
+    import subprocess
+    probe = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-nostats", "-i", str(path),
+         "-af", f"loudnorm=I={lufs}:TP={true_peak}:LRA=11:print_format=json", "-f", "null", "-"],
+        capture_output=True, text=True)
+    stats = {}
+    for key in ("input_i", "input_tp", "input_lra", "input_thresh", "target_offset"):
+        m = re.search(rf'"{key}"\s*:\s*"(-?[\d.]+|-?inf)"', probe.stderr)
+        if m and "inf" not in m.group(1):
+            stats[key] = m.group(1)
+    return stats
+
+
+def _retime(path: Path, speed: float) -> None:
+    """Change tempo without changing pitch, via ffmpeg's atempo."""
+    import subprocess
+    import ffmpeg_util
+    tmp = path.with_suffix(".retimed.wav")
+    # atempo is only valid over 0.5-2.0; chain it for anything outside that.
+    factors, remaining = [], speed
+    while remaining > 2.0:
+        factors.append(2.0); remaining /= 2.0
+    while remaining < 0.5:
+        factors.append(0.5); remaining *= 2.0
+    factors.append(remaining)
+    chain = ",".join(f"atempo={f:.4f}" for f in factors)
+    exe = getattr(ffmpeg_util, "FFMPEG", None) or "ffmpeg"
+    subprocess.run([str(exe), "-y", "-v", "error", "-i", str(path), "-filter:a", chain,
+                    str(tmp)], check=True)
+    tmp.replace(path)
+
+
 def synthesize(cid: str, text: str, *, speed: float = 1.0, volume_db: float = 0.0,
                lang: str | None = None, out: Path | None = None,
                ref_audio: str | None = None, ref_text: str | None = None,
-               ref_lang: str | None = None) -> Path:
-    """Speak `text` as character `cid` (or with an explicit reference clip for cloning)."""
+               ref_lang: str | None = None, instruct: str | None = None) -> Path:
+    """Speak `text` as character `cid` (or with an explicit reference clip for cloning).
+
+    `instruct` overrides the character's standing delivery instruction for this line only, and
+    applies to instruction-controlled engines. Ignored elsewhere, since GPT-SoVITS has no
+    equivalent control — a caller that depends on it should check the engine first.
+    """
+    # A profile can name a different engine. sofia-vargas moved to CosyVoice 2 in
+    # instruction-controlled mode on 2026-08-04, chosen by ear and backed by measurement
+    # (see her profile's voice.chosen_because). An ad-hoc clone still goes to GPT-SoVITS,
+    # because that path is about a caller-supplied reference rather than the character's own.
+    if not ref_audio:
+        cosy = _cosyvoice_config(cid)
+        if cosy:
+            return _synthesize_cosyvoice(cid, text, cosy, speed=speed, volume_db=volume_db,
+                                         out=out, instruct=instruct)
     if not api_alive():
         raise RuntimeError(
             f"GPT-SoVITS api_v2 is not reachable at {TTS_API}. Start it with:\n"
             "  cd GPT-SoVITS; .\\.venv\\Scripts\\python.exe api_v2.py -a 127.0.0.1 -p 9880 "
             "-c GPT_SoVITS/configs/tts_infer.yaml")
+
+    if ref_audio and _cosy_alive():
+        # Clone through CosyVoice when it is up. Its zero-shot mode is markedly more expressive
+        # than GPT-SoVITS on the base checkpoint — measured 16.84 semitones of pitch range
+        # against 8.20 on the same reference. The reason that mode was NOT chosen for Sofia was
+        # register drift, 39 Hz off the voice she had already established. Cloning an arbitrary
+        # clip has no established register to drift from: sounding like the uploaded audio is
+        # the entire point, so the drawback there is the goal here.
+        return _clone_cosyvoice(text, _abs(ref_audio), ref_text or "", speed=speed,
+                                volume_db=volume_db, out=out)
 
     if ref_audio:      # ad-hoc clone: base weights + the caller's reference
         cfg = {"sovits": _abs(BASE_SOVITS), "gpt": _abs(BASE_GPT),
@@ -277,6 +554,20 @@ def synthesize(cid: str, text: str, *, speed: float = 1.0, volume_db: float = 0.
     out.write_bytes(audio)
     if not out.is_file() or out.stat().st_size < 1000:
         raise RuntimeError("api_v2 returned no usable audio")
+    # Level this path too, or the voices drift apart. Measured before adding it: sofia-vargas
+    # (levelled) sat at -15.7 LUFS while the four GPT-SoVITS voices ran -21.6 to -23.9 — an
+    # 8.2 dB spread, plainly audible the moment two of them appear in the same video. An
+    # ad-hoc clone has no profile to read, so it keeps whatever level it was given.
+    if not ref_audio:
+        target = gsv_block(cid).get("target_lufs")
+        if target is None:
+            try:
+                prof = json.loads((REPO / "kols" / cid / "profile.json").read_text(encoding="utf-8"))
+                target = ((prof.get("ai_assets") or {}).get("voice") or {}).get("target_lufs")
+            except Exception:
+                target = None
+        if target is not None:
+            _normalise_loudness(out, float(target))
     apply_volume(out, volume_db)
     return out
 
@@ -295,8 +586,119 @@ def transcribe(path: Path, lang: str | None = None) -> str:
 
 # ------------------------------------------------------------- scenario -> script
 
+# Bracketed forms are unambiguous. Bare ones are not, so they are only removed when they stand
+# alone between sentences — "? looks down Wow." is a direction, "She looks down the list" is
+# prose, and the first version of this cut both, leaving "She the list of features".
+_STAGE_BRACKET = re.compile(r"[\(\[\*]\s*[^)\]\*\n]{1,60}?\s*[\)\]\*]")
+_STAGE_BARE = re.compile(
+    r"(?:(?<=[.!?…])|(?<=^)|(?<=\n))\s*"
+    r"(?:looks?|glances?|smiles?|laughs?|winks?|nods?|shrugs?|pauses?|sighs?|gestures?|turns?)"
+    r"\s+(?:down|up|away|at camera|to camera|around|off|slowly)\s*"
+    r"(?=[A-ZÀ-ỹ]|$)",
+    re.IGNORECASE)
+
+
+def _strip_stage_directions(text: str) -> str:
+    """Remove the bits a script writer adds for a human performer.
+
+    The rules already say "no stage directions" and one still arrived — "looks down" in the
+    middle of a sentence, with no brackets to give it away. A voice model does not perform a
+    direction, it reads it, so the phrase is spoken aloud to the viewer. Bracketed forms are
+    easy; the bare ones need naming, which is why the verb list is explicit rather than clever.
+    """
+    cleaned = _STAGE_BARE.sub(" ", _STAGE_BRACKET.sub(" ", text))
+    cleaned = re.sub(r"\s{2,}", " ", cleaned)
+    return re.sub(r"\s+([,.!?…])", r"\1", cleaned).strip()
+
+
+def _fit_length(text: str, target_words: int, tolerance: float = 1.4) -> str:
+    """Trim a script back to roughly its target, at a sentence boundary.
+
+    The prompt asks for "about N words" and is treated as a suggestion. Measured against a
+    15-second brief, the demo angle returned 160 words — around 64 seconds of speech, four
+    times what was asked for. That is not a stylistic quibble: the length is what makes a
+    clip usable as a hook or an ad slot at all.
+
+    Trimming rather than regenerating, because the opening of an overlong script is usually
+    fine and it is the tail that wanders. Cuts only at a sentence end, so the result never
+    stops mid-thought, and leaves the text alone entirely when it is close enough.
+    """
+    import re as _re
+    words = text.split()
+    if len(words) <= target_words * tolerance:
+        return text
+    sentences = _re.split(r"(?<=[.!?…])\s+|(?<=[。！？])\s*", text.strip())
+    kept: list[str] = []
+    count = 0
+    for s in sentences:
+        n = len(s.split())
+        if kept and count + n > target_words * tolerance:
+            break
+        kept.append(s)
+        count += n
+    return " ".join(kept) if kept else text
+
+
+def load_product(cid: str, product_id: str | None) -> dict | None:
+    """One entry from a KOL's products.json — the source of truth for price and link.
+
+    The catalogue exists precisely so a script never has to guess a number: without it the
+    guard treats every price as invented, which is correct, and a selling script then cannot
+    state one at all.
+    """
+    if not product_id:
+        return None
+    p = REPO / "kols" / cid / "products.json"
+    if not p.is_file():
+        return None
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    for item in data.get("products", []):
+        if item.get("id") == product_id:
+            return item
+    return None
+
+
+def _product_brief(prod: dict) -> str:
+    """The catalogue entry as instructions, with an explicit fence around what may be claimed."""
+    # The persona prompt tells her "never invent a price — prices come from your product list".
+    # Without saying that this block *is* that list, the model takes the cautious branch and
+    # offers to go and check a price it was handed, which defeats the point of supplying it.
+    lines = [f"YOUR PRODUCT LIST — this is the verified catalogue entry your persona rules refer",
+             f"to. Every detail below is confirmed. State the price and link as written; do not",
+             f"offer to look them up. These are also the ONLY product details you may state:",
+             f"  name: {prod.get('name')}"]
+    if prod.get("category"):
+        lines.append(f"  category: {prod['category']}")
+    price = prod.get("price") or {}
+    have = {k: v for k, v in price.items() if v not in (None, "")} if isinstance(price, dict) else {}
+    if have:
+        lines.append("  price: " + ", ".join(f"{k} {v}" for k, v in have.items()))
+    else:
+        lines.append("  price: NOT KNOWN — do not state a price. Say you will check.")
+    links = {k: v for k, v in (prod.get("buy_links") or {}).items() if v}
+    lines.append("  link: " + (", ".join(links.values()) if links
+                               else "NOT KNOWN — do not claim a link exists."))
+    if prod.get("usp"):
+        lines.append(f"  selling point: {prod['usp']}")
+    if prod.get("honest_notes"):
+        lines.append(f"  honest pros and cons, including the downside: {prod['honest_notes']}")
+    if prod.get("self_bought_or_sponsored"):
+        lines.append(f"  relationship: {prod['self_bought_or_sponsored']} "
+                     f"(disclose this if it is sponsored)")
+    lines += [
+        "",
+        "Anything not listed above is unknown to you. Do not invent a price, a discount, a link,",
+        "a statistic, a guarantee, or a claim about results, earnings or returns. If the script",
+        "needs a fact you were not given, say you will check rather than filling it in.",
+    ]
+    return "\n".join(lines)
+
+
 def write_script(cid: str, scenario: str, *, seconds: int = 20,
-                 model: str | None = None) -> str:
+                 model: str | None = None, product: dict | str | None = None) -> str:
     """Turn a scenario description into a spoken script in the character's own voice."""
     from openai import OpenAI
 
@@ -317,31 +719,74 @@ def write_script(cid: str, scenario: str, *, seconds: int = 20,
         persona = (f"You are {c['name']}, a friendly virtual influencer who reviews products "
                    f"honestly and speaks in {lang_name}.")
 
+    prod = load_product(cid, product) if isinstance(product, str) else product
+    brief = f"\n\n{_product_brief(prod)}" if prod else ""
+
+    if prod:
+        # The persona rule reads "Prices come from your product list — if you are not certain,
+        # say you will check and follow up." With a catalogue supplied, the model still took the
+        # cautious branch every time (0 of 3 runs stated a price it had been handed), because
+        # nothing told it the uncertainty had been resolved. Rewriting that one clause for this
+        # call is narrower than loosening the rule: without a catalogue it stays exactly as it
+        # was, and the guard still rejects any number that is not in the entry.
+        persona = persona.replace(
+            "Prices come from your product list — if you are not certain, say you will check "
+            "and follow up.",
+            "Prices come from your product list. The catalogue entry in this brief IS that list "
+            "and is verified, so state its price and link plainly. Only say you will check when "
+            "a detail is genuinely absent from it.")
+
     rules = (
-        f"Write a spoken script for this scenario: {scenario}\n\n"
+        f"Write a spoken script for this scenario: {scenario}{brief}\n\n"
         f"Rules:\n"
         f"- Language: {lang_name} only.\n"
         f"- About {words} words, roughly {seconds} seconds when read aloud.\n"
         f"- It will be SPOKEN by a voice model. Output ONLY the words to say — no headings, "
         f"no stage directions, no speaker labels, no emoji, no markdown, no bullet points.\n"
         f"- Write numbers and prices as spoken words.\n"
-        f"- Do not invent a specific price, discount, or link.\n"
+        + ("- State the price and the link exactly as the product facts give them, or not at "
+           "all. Never round, adjust or 'improve' a number.\n" if prod else
+           "- Do not invent a specific price, discount, or link.\n")
+        + "- Never claim guaranteed returns, profit, earnings, or that anything is risk-free.\n"
         f"- Natural spoken rhythm: short sentences, contractions, one idea per sentence.\n"
         f"- End on a question or a light call to action."
     )
     client = OpenAI(base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
                     api_key="ollama")
-    r = client.chat.completions.create(
-        model=model or os.getenv("KOL_LLM_MODEL", "qwen2.5:7b"),
-        messages=[{"role": "system", "content": persona},
-                  {"role": "system", "content": rules},
-                  {"role": "user", "content": scenario}],
-        temperature=0.7, max_tokens=600)
-    text = (r.choices[0].message.content or "").strip()
-
-    from persona_brain import sanitize_for_speech, wants_traditional
+    from persona_brain import check_reply, sanitize_for_speech, wants_traditional
     trad = c["lang"] == "zh" and (c.get("kind") != "finetuned" or wants_traditional(cid))
-    return sanitize_for_speech(text, trad)
+
+    # Generate, then rule-check — the same treatment a DM reply gets. This path had none,
+    # which was backwards: a script becomes a published video, a reply reaches one follower.
+    #
+    # The rules above already say "Do not invent a specific price, discount, or link", and the
+    # model wrote "Price was two hundred and ninety-nine dollars" anyway. That is the whole
+    # reason the guards live in code: prompting is not a control.
+    messages = [{"role": "system", "content": persona},
+                {"role": "system", "content": rules},
+                {"role": "user", "content": scenario}]
+    last_text, last_bad = "", []
+    for attempt in range(2):
+        r = client.chat.completions.create(
+            model=model or os.getenv("KOL_LLM_MODEL", "qwen2.5:7b"),
+            messages=messages, temperature=0.7, max_tokens=600)
+        text = sanitize_for_speech((r.choices[0].message.content or "").strip(), trad)
+        text = _fit_length(_strip_stage_directions(text), words)
+        bad = check_reply(scenario, text, facts=prod)
+        if not bad:
+            return text
+        last_text, last_bad = text, bad
+        messages.append({"role": "system", "content":
+                         f"That draft broke these hard rules: {', '.join(bad)}. Rewrite it "
+                         f"with no invented price, no claimed link, no medical claim, and no "
+                         f"offer to negotiate. Say you will check rather than state a number."})
+
+    # Deliberately raised rather than silently returned. A DM reply falls back to a safe
+    # canned line because someone is waiting; a script has a human author who can rewrite,
+    # and quietly handing back copy that names a made-up price is the worse failure.
+    raise ValueError(
+        f"script still broke {', '.join(last_bad)} after a retry — rewrite the scenario or "
+        f"the line by hand. Offending draft: {last_text[:200]}")
 
 
 # --------------------------------------------------------------- character maker

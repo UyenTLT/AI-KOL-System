@@ -92,6 +92,46 @@ def probe(url: str, timeout: float = 1.5) -> tuple[bool, str]:
         return False, type(exc).__name__
 
 
+# The sessionid of the most recent avatar connection, captured as it passes through the
+# signalling proxy.
+#
+# "Approve & speak" used to ask reply_queue to discover a live session by polling
+# GET /api/sessions. No LiveTalking build serves that route -- the string appears nowhere in
+# its source -- so the lookup returned 404, the sessionid was always None, and the button
+# silently degraded to approve-only even with a viewer connected. It failed safe, and so went
+# unnoticed until tools/selftest asserted it.
+#
+# The fix is to stop discovering what we already know: every /demo connection negotiates its
+# session through this proxy, so the sessionid is in a response we are already handling.
+_LAST_SESSION: dict = {"sid": None, "at": 0.0}
+
+
+def _remember_session(offer_response: bytes) -> None:
+    try:
+        sid = json.loads(offer_response).get("sessionid")
+    except Exception:
+        return
+    if sid is not None:
+        _LAST_SESSION.update(sid=sid, at=time.time())
+
+
+def live_session() -> str | None:
+    """The session to speak into, or None. Prefers whatever the proxy last saw; falls back to
+    reply_queue's lookup so this keeps working if LiveTalking ever does serve a session list.
+
+    A remembered id can still be stale (the viewer closed the tab). That is not worth probing
+    for -- LiveTalking answers `{"code": -1, "msg": "session not found"}`, which the caller
+    surfaces as-is."""
+    sid = _LAST_SESSION.get("sid")
+    if sid is not None:
+        return sid
+    try:
+        import reply_queue as rq
+        return rq._livetalking_session()
+    except Exception:
+        return None
+
+
 def gpu_state() -> dict | None:
     exe = shutil.which("nvidia-smi")
     if not exe:
@@ -1154,8 +1194,11 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # /offer negotiates a session and can take a few seconds on first call.
             with urllib.request.urlopen(req, timeout=30) as resp:
-                self._send(resp.read(), resp.headers.get("Content-Type",
-                                                         "application/json"), resp.status)
+                body = resp.read()
+                if upstream == "/offer":
+                    _remember_session(body)
+                self._send(body, resp.headers.get("Content-Type",
+                                                  "application/json"), resp.status)
         except urllib.error.HTTPError as exc:
             self._send(exc.read() or b"{}", "application/json", exc.code)
         except Exception as exc:
@@ -1186,13 +1229,14 @@ class Handler(BaseHTTPRequestHandler):
                 action = b.get("action") or "approve"
                 sid = None
                 if b.get("speak"):
-                    sid = rq._livetalking_session()
+                    sid = live_session()
                 rec = rq.decide(kol, b.get("id", ""), action,
                                 final_text=b.get("text"),
                                 reviewer=b.get("reviewer", "dashboard"),
                                 note=b.get("note", ""), sessionid=sid)
                 if b.get("speak") and not sid:
-                    rec["speak_detail"] = "no live avatar session — approved but not spoken"
+                    rec["speak_detail"] = ("approved, but not spoken: no avatar session yet. "
+                                           "Open /demo and press Connect, then approve again.")
                 self._json(rec)
             else:
                 self._json({"error": "unknown reply endpoint"}, 404)

@@ -107,8 +107,23 @@ def create_draft(kol_id: str, follower_msg: str, *, model: str | None = None) ->
 
 
 def _livetalking_session() -> str | None:
-    """LiveTalking needs a WebRTC session before /human works, so speaking an approved
-    reply is only possible while a viewer is connected. Returns a sessionid if one exists."""
+    """Best-effort lookup of a live avatar session.
+
+    LiveTalking needs a WebRTC session before /human works, so speaking an approved reply is
+    only possible while a viewer is connected. There is, however, **no endpoint that lists
+    sessions**: this polls GET /api/sessions, which no LiveTalking build serves (the string
+    appears nowhere in its source), so it returns None in practice. It is kept because it
+    costs one request and would start working if upstream ever adds the route.
+
+    Real sources of a sessionid, in the order callers should prefer them:
+      1. the dashboard, which captures it from the /offer response passing through its
+         signalling proxy (`server.live_session()`);
+      2. LIVETALKING_SESSIONID in the environment, for the CLI;
+      3. this lookup.
+    """
+    env = os.getenv("LIVETALKING_SESSIONID")
+    if env:
+        return env
     try:
         req = urllib.request.Request(f"{LIVETALKING}/api/sessions", method="GET")
         with urllib.request.urlopen(req, timeout=3) as r:
@@ -201,6 +216,10 @@ def main() -> int:
     a.add_argument("kol_id"); a.add_argument("rid")
     a.add_argument("--text", default=None, help="edited text to approve instead of the draft")
     a.add_argument("--speak", action="store_true", help="also speak it via LiveTalking")
+    a.add_argument("--sessionid", default=None,
+                   help="avatar session to speak into. There is no endpoint that lists "
+                        "sessions, so pass it explicitly (the /demo page logs it on Connect) "
+                        "or set LIVETALKING_SESSIONID")
     a.add_argument("--reviewer", default=os.getenv("USERNAME", "human"))
 
     r = sub.add_parser("reject", help="reject a draft")
@@ -231,10 +250,12 @@ def main() -> int:
         return 0
 
     if args.cmd == "approve":
-        sid = _livetalking_session() if args.speak else None
+        sid = (args.sessionid or _livetalking_session()) if args.speak else None
         if args.speak and not sid:
-            print("no live LiveTalking session — approving without speaking.\n"
-                  "  (open /demo and press Connect first if you want it spoken)")
+            print("no avatar session — approving without speaking.\n"
+                  "  LiveTalking serves no endpoint that lists sessions, so it cannot be\n"
+                  "  discovered: open /demo, press Connect, and pass the id it logs via\n"
+                  "  --sessionid (or set LIVETALKING_SESSIONID).")
         rec = decide(args.kol_id, args.rid,
                      "edit" if args.text is not None else "approve",
                      final_text=args.text, reviewer=args.reviewer, sessionid=sid)

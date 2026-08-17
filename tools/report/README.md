@@ -1,12 +1,13 @@
 # report — regenerable presentation decks
 
-Two PowerPoint decks, generated from live project state rather than hand-edited. Both pull
+Three PowerPoint decks, generated from live project state rather than hand-edited. All pull
 their figures from `tools/dashboard/server.py:collect()`, so KOL counts, dataset sizes, GPU
 and service status are always current — regenerate instead of editing slides.
 
 ```powershell
 .\.venv\Scripts\python.exe tools\report\make_progress_deck.py   # 10 slides, technical
 .\.venv\Scripts\python.exe tools\report\make_exec_deck.py       # 14 slides, management
+.\.venv\Scripts\python.exe tools\report\make_status_deck.py     # 13 slides, review meeting
 ```
 
 Needs `pip install python-pptx`.
@@ -15,6 +16,17 @@ Needs `pip install python-pptx`.
 |---|---|---|
 | `docs/AI-KOL-Progress-Report.pptx` | Technical / team | Architecture, delivered tooling, verification results, the environment blockers in detail, next steps |
 | `docs/AI-KOL-Executive-Review.pptx` | Management | Resources, architecture, models in plain language, **cost model**, improvement areas, a 4 h/day week plan, roadmap, learnings |
+| `docs/AI-KOL-Status-Review.pptx` | The review meeting | What is proven and what is not: the two quality problems blocking launch (stiff replies, a 7.6 s wait), what causes each, the fixes, and **three numbered asks** that need a management decision |
+
+The Vietnamese long-form version of the third deck is `docs/BAO-CAO-TONG-QUAN-2026-08.md`. It
+carries the same figures; edit both or neither.
+
+## Measured constants in `make_status_deck.py`
+
+Everything the status deck asserts about latency, persona quality and voice sits in the `M`
+dict at the top of the file, one entry per measurement, each with the file it was measured in
+named beside it. A figure that changes gets changed there once rather than hunted through
+slide text — and the comment is what makes it traceable rather than merely quotable.
 
 ## Cost assumptions (executive deck)
 
