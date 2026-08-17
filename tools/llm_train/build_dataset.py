@@ -282,11 +282,23 @@ def candidates(kol_id: str, msg: str, k: int, model: str,
         from server import STYLE as CHAT_STYLE
     except Exception:
         CHAT_STYLE = ""
+    # Her life goes into generation for the same reason the style instructions do: candidates
+    # are selected for telling something that happened to her, and a generator with no life to
+    # draw on can only invent one or omit it. Measured, this is the difference between 5% and
+    # 10% of replies carrying an anecdote before any filtering happens at all — and the target
+    # is 25.3%, so the filter needs something to find.
+    try:
+        from stage import life_threads
+        LIFE = life_threads(kol_id, message=msg)
+    except Exception:
+        LIFE = ""
     msgs = [{"role": "system", "content": build_system_prompt(kol_id)},
             {"role": "system", "content": MODES["comment"]["system"] + (" " + extra if extra else "")},
             {"role": "system", "content": language_directive(msg, trad)}]
     if CHAT_STYLE:
         msgs.insert(1, {"role": "system", "content": CHAT_STYLE})
+    if LIFE:
+        msgs.insert(2, {"role": "system", "content": LIFE})
     msgs += list(thread or [])
     msgs.append({"role": "user", "content": msg})
     client = _client()
@@ -334,6 +346,70 @@ with them without inventing a matching loss of its own.
 Answer with ONLY the number of the best candidate. No explanation."""
 
 
+# Measured on 1,956 turns of real sit-down talk (datasets/style/heart2heart.jsonl, built by
+# harvest_talk.py). These are the three shapes she was measurably wrong on; the two she was
+# already fine on — turn length and concrete detail — are deliberately not steered, because
+# steering a metric that is already correct only moves it off.
+#
+# The detectors are imported from the measurement rather than rewritten here. Two copies of
+# "what counts as an opinion" would drift, and then the dataset would be optimised against one
+# definition and reported against another.
+SHAPE_TARGET = {"qback": 0.048, "experience": 0.321, "opinion": 0.197}
+
+
+class Shape:
+    """Steer the accepted set toward the measured shape of real speech.
+
+    Rejection sampling filters each reply on its own, which cannot express "one turn in twenty
+    ends with a question". That is a property of the set, not of a reply — and it is the biggest
+    single defect measured: she hands the conversation back in 71.4% of replies where a real
+    person does it in 4.8%.
+
+    So this narrows the survivors before the ranking judge sees them, always toward whichever
+    rate is furthest from its target, and never to nothing. A reply that ends in a question is
+    not wrong; seven in ten of them is.
+    """
+
+    def __init__(self, target: dict | None = None):
+        self.t = dict(target or SHAPE_TARGET)
+        self.n = 0
+        self.c = {k: 0 for k in self.t}
+
+    @staticmethod
+    def feats(text: str) -> dict:
+        from harvest_talk import _OPINION, _PAST_I, _QBACK
+        return {"qback": bool(_QBACK.search(text)),
+                "experience": bool(_PAST_I.search(text)),
+                "opinion": bool(_OPINION.search(text))}
+
+    def rate(self, key: str) -> float:
+        return self.c[key] / self.n if self.n else 0.0
+
+    def prefer(self, cands: list[str]) -> list[str]:
+        if len(cands) <= 1 or not self.n:
+            return cands
+        feats = {c: self.feats(c) for c in cands}
+        # Largest deviation first: fixing the 67-point question-back gap matters more than
+        # nudging opinions by three points, and applying them in order lets the later ones act
+        # only on what the earlier one left.
+        for key in sorted(self.t, key=lambda k: -abs(self.rate(k) - self.t[k])):
+            want = self.rate(key) < self.t[key]
+            subset = [c for c in cands if feats[c][key] == want]
+            if subset and len(subset) < len(cands):
+                cands = subset
+        return cands
+
+    def add(self, text: str) -> None:
+        f = self.feats(text)
+        self.n += 1
+        for k in self.c:
+            self.c[k] += int(f[k])
+
+    def report(self) -> str:
+        return "  ".join(f"{k} {self.rate(k)*100:.1f}% (target {self.t[k]*100:.1f}%)"
+                         for k in self.t)
+
+
 def pick_best(message: str, cands: list[str], model: str) -> str:
     """Choose among survivors by asking the model which one a person would have sent.
 
@@ -367,7 +443,8 @@ def pick_best(message: str, cands: list[str], model: str) -> str:
 
 
 def build_conversations(kol_id: str, openers: list[str], turns: int, k: int,
-                        model: str, sysmsg: str) -> tuple[list[dict], int, dict]:
+                        model: str, sysmsg: str,
+                        shape: "Shape | None" = None) -> tuple[list[dict], int, dict]:
     """Walk each opener into a short conversation, keeping every reply that survives the judge.
 
     Only turns after the first are marked `mid`, and only those carry the greeting rule. The
@@ -387,9 +464,13 @@ def build_conversations(kol_id: str, openers: list[str], turns: int, k: int,
                     rejected += 1
                     for w in why:
                         tally[w] = tally.get(w, 0) + 1
+            if shape is not None:
+                survivors = shape.prefer(survivors)
             best = pick_best(msg, survivors, model) if survivors else None
             if not best:
                 break
+            if shape is not None:
+                shape.add(best)
             rows.append({"messages": [{"role": "system", "content": sysmsg}]
                                      + thread
                                      + [{"role": "user", "content": msg},
@@ -410,6 +491,9 @@ def build(kol_id: str, n: int, k: int, model: str, turns: int = 1) -> dict:
 
     msgs = fan_messages(n, model)
     rows, rejected, tally = [], 0, {}
+    # One tracker across the whole run: the rates it steers are properties of the finished
+    # dataset, so a per-batch instance would let every batch drift the same way and cancel out.
+    shape = Shape()
     started = time.perf_counter()
 
     if turns > 1:
@@ -418,7 +502,7 @@ def build(kol_id: str, n: int, k: int, model: str, turns: int = 1) -> dict:
         step = max(1, len(msgs) // 12)
         for i in range(0, len(msgs), step):
             chunk = msgs[i:i + step]
-            r, rej, t = build_conversations(kol_id, chunk, turns, k, model, sysmsg)
+            r, rej, t = build_conversations(kol_id, chunk, turns, k, model, sysmsg, shape)
             rows += r
             rejected += rej
             for key, v in t.items():
@@ -427,6 +511,7 @@ def build(kol_id: str, n: int, k: int, model: str, turns: int = 1) -> dict:
             done = min(i + step, len(msgs))
             print(f"  {done}/{len(msgs)} openers, {len(rows)} examples, "
                   f"~{el/done*(len(msgs)-done)/60:.1f} min left", flush=True)
+            print(f"      shape: {shape.report()}", flush=True)
         return _write(kol_id, rows, rejected, tally, started)
 
     for i, m in enumerate(msgs):

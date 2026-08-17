@@ -242,8 +242,17 @@ _TIME = re.compile(r"\b(?:yesterday|today|tonight|this morning|last (?:night|wee
                    r"summer)|on (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|"
                    r"in (?:january|february|march|april|may|june|july|august|september|october|"
                    r"november|december)|at \d|o'?clock|ago)\b", re.I)
-_PAST_I = re.compile(r"\bI (?:was|had|went|got|did|made|tried|saw|said|took|found|bought|ate|"
-                     r"felt|thought|used|started|ended up|remember)\b", re.I)
+# First person, past tense — "something happened to me", the shape a story takes.
+#
+# This was a fixed list of twenty verbs, and it missed the ordinary ones: "I filmed four takes",
+# "I spent the whole day", "I walked out". Caught while unit-testing the dataset steering, where
+# a candidate that plainly told a story scored as not telling one. The `[a-z]+ed` alternative is
+# what makes it a rule about tense rather than a list somebody has to keep extending; the
+# irregular verbs still need naming, because English will not let them be derived.
+_PAST_I = re.compile(r"\bI (?:[a-z]+ed|was|had|went|got|did|made|saw|said|took|found|bought|"
+                     r"ate|felt|thought|ran|came|left|met|woke|slept|drove|wrote|spent|kept|"
+                     r"told|gave|sat|stood|read|lost|won|broke|forgot|knew|grew|sent|built|"
+                     r"put|paid|held|heard|understood)\b", re.I)
 _OPINION = re.compile(r"\b(?:I think|I reckon|honestly|to be honest|I love|I hate|I prefer|"
                       r"my favou?rite|the best|the worst|way better|so much better|I cannot "
                       r"stand|I would rather|personally)\b", re.I)
