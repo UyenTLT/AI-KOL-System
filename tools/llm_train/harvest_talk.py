@@ -100,6 +100,33 @@ def _subtitle_cues(path: Path) -> list[dict]:
     return out
 
 
+def search(query: str, limit: int = 10, *, min_secs: int = 240, max_secs: int = 3600) -> list[str]:
+    """Resolve a genre query to video URLs, using yt-dlp's own search.
+
+    A hand-pasted list of links is not reproducible and quietly encodes whoever pasted it. A
+    query is a statement of what the corpus is meant to be, it can be re-run when the corpus
+    needs refreshing, and it goes in the commit message.
+
+    Duration is filtered rather than trusted: under four minutes is a clip or a short and has no
+    conversational shape to measure, and over an hour is usually a stream VOD whose captions
+    take longer to fetch than they are worth here.
+    """
+    import yt_dlp
+
+    opts = {"quiet": True, "no_warnings": True, "extract_flat": True, "skip_download": True}
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        res = ydl.extract_info(f"ytsearch{limit * 3}:{query}", download=False)
+    out = []
+    for e in (res.get("entries") or []):
+        dur = e.get("duration") or 0
+        if not (min_secs <= dur <= max_secs):
+            continue
+        out.append(e.get("url") or f"https://www.youtube.com/watch?v={e['id']}")
+        if len(out) >= limit:
+            break
+    return out
+
+
 def fetch_one(url: str, *, asr_fallback: bool = True, whisper_model: str = "base.en") -> dict:
     """One video -> {title, id, cues}. Subtitles when they exist, ASR when they do not."""
     import yt_dlp
@@ -153,6 +180,13 @@ def fetch_one(url: str, *, asr_fallback: bool = True, whisper_model: str = "base
 
 _SENT_END = re.compile(r"[.!?…]$")
 
+# Broadcast-style captions mark a change of speaker with ">>" (and a named one with ">> NAME:").
+# Two people's speech merged into one measured turn is not one person talking, and the whole
+# point of the measurement is the shape of one person talking. Seen in the first harvest: a
+# turn reading ">> Always. This is You know, you just speaking to you, I'm feeling like..." is
+# two halves of an interview glued together, and it would be scored as somebody's sentence.
+_SPEAKER_CHANGE = re.compile(r"\s*>>+\s*(?:[A-Z][A-Za-z .'-]{0,24}:)?\s*")
+
 
 def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[str]:
     """Merge cues into utterance-sized turns, the unit a chat reply is comparable to.
@@ -169,6 +203,18 @@ def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[st
         text = re.sub(r"\s+", " ", c["text"]).strip()
         if not text:
             continue
+        # A speaker change ends the current turn as surely as a pause does, and more reliably.
+        if _SPEAKER_CHANGE.search(text):
+            parts = _SPEAKER_CHANGE.split(text)
+            if buf and parts[0].strip():
+                buf.append(parts[0].strip())
+            if buf:
+                out.append(" ".join(buf))
+            buf = []
+            text = " ".join(p.strip() for p in parts[1:] if p.strip())
+            if not text:
+                last_end = c["start"]
+                continue
         if last_end is not None and c["start"] - last_end > gap and buf:
             out.append(" ".join(buf)); buf = []
         buf.append(text)
@@ -287,8 +333,13 @@ def cmd_fetch(args) -> int:
     if args.urls_from:
         urls += [l.strip() for l in Path(args.urls_from).read_text(encoding="utf-8").splitlines()
                  if l.strip() and not l.strip().startswith("#")]
+    for q in (args.search or []):
+        found = search(q, args.per_query)
+        print(f"search {q!r} -> {len(found)} videos", flush=True)
+        urls += found
+    urls = list(dict.fromkeys(urls))       # keep order, drop repeats across queries
     if not urls:
-        print("give --url or --urls-from", file=sys.stderr)
+        print("give --url, --urls-from or --search", file=sys.stderr)
         return 2
 
     OUT.mkdir(parents=True, exist_ok=True)
@@ -368,6 +419,15 @@ def cmd_compare(args) -> int:
 
 
 def main() -> int:
+    # Video titles carry emoji, and this console is cp950. The corpus had already been written
+    # when the summary table raised UnicodeEncodeError on a teacup — a completed harvest that
+    # reported itself as a crash. Replace what the console cannot draw rather than lose the run.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except Exception:
+            pass
+
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -375,6 +435,9 @@ def main() -> int:
     f = sub.add_parser("fetch", help="download subtitles (or transcribe) into a style corpus")
     f.add_argument("--url", action="append", help="repeatable")
     f.add_argument("--urls-from", help="a file with one URL per line, # for comments")
+    f.add_argument("--search", action="append",
+                   help="a genre query resolved through YouTube search; repeatable")
+    f.add_argument("--per-query", type=int, default=8, help="videos to keep per query")
     f.add_argument("--tag", default="talk", help="corpus name under datasets/style/")
     f.add_argument("--gap", type=float, default=1.2, help="pause that ends a turn, seconds")
     f.add_argument("--max-words", type=int, default=70)
