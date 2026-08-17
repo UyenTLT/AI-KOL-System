@@ -26,6 +26,10 @@ venv/
 # silently excluded the launcher scripts from version control.
 /GPT-SoVITS/
 /LiveTalking/
+# CosyVoice 2 — under evaluation as an emotion-controllable alternative to GPT-SoVITS.
+# Same reasoning as the two above: multi-GB checkout with its own venv and weights. The
+# Windows/cu128 requirements variant IS tracked, in patches/.
+/CosyVoice/
 
 # Voice data: source audio + intermediates are large and re-derivable.
 # The .list manifest and QC report ARE tracked so a dataset stays reproducible.
@@ -51,3 +55,63 @@ kols/*/replies/
 # Studio renders/uploads: generated artefacts, regenerable, and uploads may be
 # third-party audio that should not land in the repo.
 kols/_studio/
+
+# Rendered voice clips. Regenerable, and the browser on this box cannot play audio, so
+# these exist to be opened by hand in a media player.
+/renders/
+
+# RVC, cloned in for singing-voice conversion. Same reasoning as the four engines above:
+# a multi-GB checkout with its own venv and weights, and reproducible from its upstream.
+/RVC/
+
+# The LLM fine-tuning workspace. Everything under it is either downloaded or derived, and
+# it is 30 GB: the base checkpoint, a merged fp16 GGUF, the LoRA adapters and a llama.cpp
+# checkout. One file alone is 15 GB, and GitHub refuses anything over 100 MB — so `git add -A`
+# here does not merely bloat the repository, it produces a push that cannot succeed.
+#
+# What makes the fine-tune reproducible is tracked instead, and is small: the training and
+# validation splits in datasets/, the scripts in tools/llm_train/, and the Modelfile.
+/finetune/
+!/finetune/export/Modelfile-*
+
+# Song audio — every subdirectory of songs/, keeping only songs.json.
+#
+# Two reasons, and the second is the one that decides it. They are large: source mixes,
+# pitch-shifted intermediates, separated stems and comparison renders, tens of MB each and
+# hundreds together. And they are third-party in origin — a converted vocal is indistinguishable
+# from its source after conversion, which is exactly why songs.json records `rights` per entry
+# at import time. A file whose licence has to be looked up in a manifest is not a file to push
+# to a remote by default; the same reasoning already keeps kols/_studio/ out.
+#
+# songs.json itself IS tracked: it is the library, the rights record, and what makes the audio
+# reproducible from its sources.
+kols/*/songs/*/
+
+# Runtime logs from the local services.
+*.log
+
+# Office lock files, created while a document is open.
+~$*
+
+# Per-fan conversation memory written by the one-to-one chat: what she remembers about a named
+# person, their thread, and the facts extracted from it. Operational state about individuals,
+# and it belongs on the machine that holds the conversation — the same reasoning that keeps
+# the reply queue out.
+kols/*/fans/
+
+# The RVC training corpus: 320 clips derived from material already tracked or already ignored,
+# and rebuildable with tools/tts_train/build_rvc_corpus.py.
+kols/*/voice/rvc_corpus/
+
+# Reference-clip intermediates (.orig, .prev, .lufs16, .owner_highpass) — the working steps
+# behind the reference clip, not the clip itself.
+kols/*/voice/*.wav.*
+
+# The owner's own recorded voice, and the blend derived from it. NOT a size decision: consent
+# to use a real person's voice to build a character locally is not consent to publish the
+# recording, and this remote's visibility has not been confirmed. Excluded until somebody who
+# can answer that says otherwise — `git add -f kols/sofia-vargas/voice/ref_human.wav` is all
+# it takes. The synthetic ref.wav, which is what the character was bootstrapped from, is
+# tracked and always has been.
+kols/*/voice/ref_human.*
+kols/*/voice/ref_blend.wav
