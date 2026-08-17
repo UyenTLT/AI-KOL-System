@@ -12,7 +12,7 @@
 
 Param(
     [Parameter(Mandatory = $true)][string]$KolId,
-    [string]$AvatarId = "wav2lip256_avatar1",
+    [string]$AvatarId = "",
     [ValidateSet("webrtc", "rtcpush", "rtmp", "virtualcam")][string]$Transport = "webrtc",
     [ValidateSet("wav2lip", "musetalk", "ultralight")][string]$Model = "wav2lip",
     [int]$ListenPort = 8010,
@@ -98,9 +98,20 @@ $modelFile = Join-Path $LT "models\wav2lip.pth"
 if ($Model -eq "wav2lip" -and -not (Test-Path $modelFile)) {
     throw "missing $modelFile (copy wav2lip256.pth there and rename it)"
 }
+# The avatar comes from the KOL's own profile unless one is named on the command line. It used
+# to default to `wav2lip256_avatar1`, the sample shipped with LiveTalking — which meant the
+# obvious invocation (`run_livetalking.ps1 sofia-vargas`) started her voice behind a stranger's
+# face, and did so silently. The profile already records which avatar is hers; the sample has
+# been deleted, and nothing should point at it by default.
+if (-not $AvatarId) {
+    $AvatarId = $profile.ai_assets.avatar.avatar_id
+    if (-not $AvatarId) {
+        throw "$KolId has no ai_assets.avatar.avatar_id - build one with tools\livetalking\build_avatar.py, or pass -AvatarId"
+    }
+}
 $avatarDir = Join-Path $LT "data\avatars\$AvatarId"
 if (-not (Test-Path $avatarDir)) {
-    throw "missing avatar: $avatarDir (extract wav2lip256_avatar1.tar.gz into data\avatars\)"
+    throw "missing avatar: $avatarDir (build it with: LiveTalking\.venv\Scripts\python.exe tools\livetalking\build_avatar.py $KolId)"
 }
 
 # ---- environment ---------------------------------------------------------------

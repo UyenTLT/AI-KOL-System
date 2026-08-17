@@ -199,10 +199,11 @@
         "frame_size": "576x768",
         "face_size": "256x256",
         "fps": 25,
-        "status": "working",
+        "status": "superseded — build directory deleted 2026-08-17 to reclaim disk",
         "note": "Built from real video, unlike lena-chen who had only stills and needed LivePortrait. Source is 720x1280 (9:16); build_avatar normalises to the 576x768 avatar geometry, verified not to clip her face.",
         "improve_next": "The shot is only ~4s, so the idle loop repeats noticeably. Concatenating several of her 14 shots would look like hard cuts; a longer single direct-to-camera take is the real fix.",
-        "watermark_note": "LiveTalking burns its watermark into avatar frames and every output frame; its README requires it on published video. See docs/DECISION-lipsync-licensing.md."
+        "watermark_note": "LiveTalking burns its watermark into avatar frames and every output frame; its README requires it on published video. See docs/DECISION-lipsync-licensing.md.",
+        "rebuild": "LiveTalking\\.venv\\Scripts\\python.exe tools\\livetalking\build_avatar.py sofia-vargas --motion video --video kols/sofia-vargas/videos/self_intro/shot08_direct_smile.mp4  (v1 looped the raw take; v2 ping-pongs it)"
       }
     },
     "voice_conversion": {
