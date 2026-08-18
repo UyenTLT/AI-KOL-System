@@ -139,6 +139,52 @@ footer{margin-top:32px;padding-top:12px;border-top:1px solid var(--rule);
 # and the caption tells the viewer to press play.
 JS = """
 document.addEventListener('DOMContentLoaded', function(){
+  // Every audio element holds the whole answer as a list of sentence clips. Playing them in
+  // turn is what lets the server hand over the first one before the last one exists — the
+  // listener hears a continuous answer, and the rendering finishes behind it.
+  var players = document.querySelectorAll('audio[data-clips]');
+  Array.prototype.forEach.call(players, function(el){
+    var clips = (el.getAttribute('data-clips') || '').split(' ').filter(Boolean);
+    var stem = el.getAttribute('data-stem') || '';
+    var at = 0;
+    function advance(){
+      if(at >= clips.length) return false;
+      el.src = '/media/' + clips[at];
+      var q = el.play();
+      if(q && q.catch) q.catch(function(){});
+      return true;
+    }
+    el.addEventListener('ended', function(){
+      at += 1;
+      if(advance()) return;
+      // Ran off the end of what the page was given. The rest of the answer is still being
+      // rendered behind this, so ask for it, and keep asking until the server says it has
+      // finished. Synthesis runs faster than speech, so this is a formality rather than a
+      // race — but a stall here would be heard as her stopping mid-answer.
+      if(!stem) return;
+      var tries = 0;
+      var poll = setInterval(function(){
+        tries += 1;
+        fetch('/clips?stem=' + encodeURIComponent(stem)).then(function(r){ return r.json(); })
+          .then(function(s){
+            if(s.clips && s.clips.length > clips.length){
+              clips = s.clips;
+              clearInterval(poll);
+              advance();
+            } else if(s.done || tries > 60){
+              clearInterval(poll);
+            }
+          }).catch(function(){ clearInterval(poll); });
+      }, 400);
+    });
+    el.addEventListener('play', function(){
+      // Restarting from the controls should restart the answer, not the last sentence of it.
+      if(el.ended && at >= clips.length && clips.length){
+        at = 0; el.src = '/media/' + clips[0];
+      }
+    });
+  });
+
   var a = document.getElementById('latest');
   if(a){
     var p = a.play();
@@ -209,7 +255,8 @@ def answer(c: dict, hist: list) -> dict:
     the same path — a fast route that behaves differently from the slow one is a bug generator.
     """
     import shutil
-    from stage import respond, perform, song_for, classify, strip_tics, fix_vocative, MODES
+    from stage import (respond, perform, perform_streamed, song_for, classify,
+                       strip_tics, fix_vocative, MODES)
 
     mode = c.get("mode") or classify(c["text"])
     t = time.perf_counter()
@@ -238,12 +285,37 @@ def answer(c: dict, hist: list) -> dict:
         print(f"  stripped: {removed}", flush=True)
     think = time.perf_counter() - t
 
-    clip = f"{datetime.now():%H%M%S}-{mode}-{uuid.uuid4().hex[:4]}.wav"
+    stem = f"{datetime.now():%H%M%S}-{mode}-{uuid.uuid4().hex[:4]}"
+    clip, clips, first_at = "", [], 0.0
     t = time.perf_counter()
     speak = 0.0
+    ev_ref = {"clips": clips}
     try:
-        perform(KOL, text, mode, CLIPS / clip)
-        speak = time.perf_counter() - t
+        # Render the opening sentence, hand it over, and finish the rest behind it.
+        #
+        # Rendering all of them first and only then responding measures the improvement without
+        # delivering it: the page would show "first words in 1.7 s" while the listener waited
+        # the full 13.9 s for the response to arrive. The point is the handover, not the split.
+        gen = perform_streamed(KOL, text, mode, CLIPS, stem)
+        clip = next(gen)
+        clips.append(clip)
+        first_at = time.perf_counter() - t
+
+        def rest():
+            try:
+                for name in gen:
+                    with LOCK:
+                        clips.append(name)
+            except Exception as exc:
+                print(f"  rest of the answer failed: {exc}", flush=True)
+            finally:
+                with LOCK:
+                    ev_ref["done"] = True
+
+        threading.Thread(target=rest, daemon=True).start()
+        speak = first_at
+    except StopIteration:
+        ev_ref["done"] = True
     except Exception as exc:
         # Losing the audio should not lose what she said — the transcript is still the useful
         # half, and a stream that blanks out because the voice server hiccuped is worse than one
@@ -252,8 +324,9 @@ def answer(c: dict, hist: list) -> dict:
         print(f"  voice failed: {exc}", flush=True)
 
     return {"who": c["who"], "fan_text": c["text"], "text": text, "mode": mode,
-            "label": MODES[mode]["label"], "clip": clip, "think": think, "speak": speak,
-            "at": f"{datetime.now():%H:%M:%S}"}
+            "label": MODES[mode]["label"], "clip": clip, "clips": clips, "think": think,
+            "speak": speak, "first_at": first_at, "stem": stem,
+            "done": ev_ref.get("done", False), "at": f"{datetime.now():%H:%M:%S}"}
 
 
 def prefetch_worker() -> None:
@@ -312,7 +385,13 @@ def page(body: str = "", **keep) -> bytes:
         aid = ' id="latest"' if newest else ""
         note = ('<div class="meta" id="latest-note"></div>' if newest else "")
         cls = " song" if e["mode"] == "song" else ""
-        clip = (f'<audio{aid} controls src="/media/{esc(e["clip"])}"></audio>'
+        # The reply is rendered a sentence at a time so the first one can be heard while the
+        # rest is still being made, so the element carries the whole list and the script walks
+        # it. One <audio> rather than several: several would show a row of players for what the
+        # listener experiences as one answer.
+        rest = " ".join(e.get("clips") or [])
+        clip = (f'<audio{aid} controls src="/media/{esc(e["clip"])}" '
+                f'data-clips="{esc(rest)}" data-stem="{esc(e.get("stem", ""))}"></audio>'
                 if e.get("clip") else '<div class="empty">no audio for this turn</div>')
         turns.append(f"""<div class="turn">
   <p class="fan"><b>{esc(e["who"])}</b> &nbsp;{esc(e["fan_text"])}</p>
@@ -320,7 +399,7 @@ def page(body: str = "", **keep) -> bytes:
     <div class="said">{esc(e["text"])}</div>
     {clip}{note}
     <div class="meta"><span class="badge{cls}">{esc(e["label"])}</span>
-      <span>thought in {e["think"]:.1f}s</span><span>spoke in {e["speak"]:.1f}s</span>
+      <span>thought in {e["think"]:.1f}s</span><span>first words in {e.get("first_at", e["speak"]):.1f}s</span><span>spoke in {e["speak"]:.1f}s</span>
       <span>{esc(e["at"])}</span></div>
   </div>
 </div>""")
@@ -424,6 +503,16 @@ class Handler(BaseHTTPRequestHandler):
             with LOCK:
                 body = json.dumps({"events": len(EVENTS), "pending": len(PENDING),
                                    "prepared": len(PREPARED), "auto": AUTO["on"]})
+            self._send(body.encode(), "application/json")
+        elif p == "/clips":
+            # The rest of an answer arrives after the page has already been served, so the
+            # player asks for the list again when it runs off the end of what it was given.
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            stem = (q.get("stem") or [""])[0]
+            with LOCK:
+                ev = next((e for e in EVENTS if e.get("stem") == stem), None)
+                body = json.dumps({"clips": list(ev["clips"]) if ev else [],
+                                   "done": bool(ev and ev.get("done"))})
             self._send(body.encode(), "application/json")
         elif p == "/ping":
             self._send(b"sofia live is reachable", "text/plain; charset=utf-8")
