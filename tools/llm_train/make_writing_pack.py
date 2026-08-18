@@ -286,7 +286,7 @@ and come back to it.
 """
 
 
-def build_html(kol_id: str, rows: list[dict], name: str) -> str:
+def build_html(kol_id: str, rows: list[dict], name: str, writer: str = "") -> str:
     payload = json.dumps(rows, ensure_ascii=False)
     # Everything inline: this file gets emailed to somebody and opened from their desktop, so it
     # must work with no network, no server and no build step. The checks mirror the production
@@ -335,6 +335,13 @@ footer{margin-top:24px;font:11.5px Consolas,monospace;color:var(--faint)}
 <h1>Writing answers &mdash; __NAME__</h1>
 <p class="sub">Your work saves itself as you type. Press Export when you are done, or whenever
 you want to send what you have.</p>
+<div class="card" style="padding:12px 14px;margin-bottom:14px">
+  <label for="me" style="font:600 10.5px/1.5 Consolas,monospace;letter-spacing:.08em;
+   text-transform:uppercase;color:var(--faint);display:block;margin-bottom:5px">Your name</label>
+  <input id="me" type="text" placeholder="so we know whose answers these are"
+   style="width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--rule);
+   border-radius:8px;background:var(--bg);color:var(--ink)">
+</div>
 <div class="bar"><i id="bar"></i></div>
 
 <div class="card">
@@ -363,11 +370,21 @@ you want to send what you have.</p>
 <script>
 var ROWS = __PAYLOAD__;
 var BRIEF = __BRIEF__;
-var KEY = "writing-pack-__KOL__";
+var WRITER = "__WRITER__";
+var KEY = "writing-pack-__KOL__-" + (WRITER || "solo");
 var state = JSON.parse(localStorage.getItem(KEY) || "{}");
 var i = 0;
 
 document.getElementById("brief").textContent = BRIEF;
+
+// Whose answers these are. Several people write in parallel from separate packs, and a file
+// that does not say who wrote it cannot be compared with the others or sent back for a second
+// pass. Remembered per pack so it is typed once.
+var NAMEKEY = KEY + "-writer";
+var me = document.getElementById("me");
+me.value = localStorage.getItem(NAMEKEY) || WRITER || "";
+me.addEventListener("input", function(){ localStorage.setItem(NAMEKEY, me.value.trim()); });
+function who(){ return (me.value || "").trim(); }
 
 // The same rules the pipeline enforces. Shown while the sentence is being written, because a
 // batch rejected a week later teaches nobody anything.
@@ -399,7 +416,8 @@ function check(t){
 
 function render(){
   var r = ROWS[i];
-  document.getElementById("kind").textContent = r.kind;
+  document.getElementById("kind").textContent =
+    r.kind + (r.shared ? "  ·  everyone answers this one" : "");
   document.getElementById("prompt").textContent = r.prompt;
   document.getElementById("answer").value = state[r.prompt] || "";
   document.getElementById("count").textContent = (i+1) + " / " + ROWS.length;
@@ -440,14 +458,16 @@ document.getElementById("skip").onclick = function(){ if(i < ROWS.length-1){ i++
 document.getElementById("export").onclick = function(){
   var lines = ROWS.filter(function(r){ return state[r.prompt] && state[r.prompt].trim(); })
     .map(function(r){
-      return JSON.stringify({kol: "__KOL__", kind: r.kind, prompt: r.prompt,
+      return JSON.stringify({kol: "__KOL__", writer: who(), kind: r.kind,
+                             shared: !!r.shared, prompt: r.prompt,
                              answer: state[r.prompt].trim()});
     });
   if(!lines.length){ alert("Nothing written yet."); return; }
+  if(!who()){ alert("Put your name at the top first, so these can be told apart."); return; }
   var blob = new Blob([lines.join(String.fromCharCode(10))], {type: "application/x-ndjson"});
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "answers.jsonl";
+  a.download = "answers-" + (who() || "unnamed").replace(/[^A-Za-z0-9_-]/g, "") + ".jsonl";
   a.click();
 };
 
@@ -455,7 +475,33 @@ render();
 </script></body></html>
 """.replace("__PAYLOAD__", payload).replace("__BRIEF__", json.dumps(brief(kol_id))) \
    .replace("__NAME__", name).replace("__KOL__", kol_id) \
-   .replace("__COUNT__", str(len(rows)))
+   .replace("__WRITER__", writer).replace("__COUNT__", str(len(rows)))
+
+
+def split_for(rows: list[dict], writers: int, shared: int, seed: int = 0) -> list[list[dict]]:
+    """Divide the prompts between writers, with a small set every one of them gets.
+
+    Mostly disjoint, because two people answering the same prompt is one answer bought at twice
+    the price, and coverage is the whole reason to involve several people.
+
+    The shared set is the exception and it earns its cost. The same prompt answered by everybody
+    is the only way to see whether they read the brief the same way — one writer ending every
+    answer with a question, another writing paragraphs where the rest write two lines, is
+    invisible in disjoint work and obvious the moment two answers sit side by side. It also
+    gives the training set a few genuine variants of one reply, which is the closest thing here
+    to showing the model that an answer has more than one right form.
+    """
+    rng = random.Random(seed)
+    pool = list(rows)
+    rng.shuffle(pool)
+    common, rest = pool[:shared], pool[shared:]
+    packs: list[list[dict]] = [[] for _ in range(max(1, writers))]
+    for i, row in enumerate(rest):
+        packs[i % len(packs)].append(row)
+    for i, pack in enumerate(packs):
+        packs[i] = [dict(r, shared=True) for r in common] + pack
+        rng.shuffle(packs[i])
+    return packs
 
 
 def main() -> int:
@@ -463,6 +509,10 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("kol_id")
     ap.add_argument("--count", type=int, default=150)
+    ap.add_argument("--writers", type=int, default=1,
+                    help="split the prompts into this many packs, one per person")
+    ap.add_argument("--shared", type=int, default=8,
+                    help="prompts every writer gets, for comparing how they read the brief")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
@@ -470,27 +520,39 @@ def main() -> int:
     name = (prof.get("identity") or {}).get("name") or args.kol_id
 
     rows = gather(args.kol_id, args.count)
-    out = Path(args.out) if args.out else REPO / "writing-pack" / args.kol_id
-    out.mkdir(parents=True, exist_ok=True)
+    base = Path(args.out) if args.out else REPO / "writing-pack" / args.kol_id
+    base.mkdir(parents=True, exist_ok=True)
 
-    (out / "BRIEF.md").write_text(brief(args.kol_id), encoding="utf-8")
-    (out / "write.html").write_text(build_html(args.kol_id, rows, name), encoding="utf-8")
-    # utf-8-sig so Excel on Windows opens it without mangling the apostrophes.
-    with open(out / "questions.csv", "w", encoding="utf-8-sig", newline="") as fh:
-        w = csv.writer(fh)
-        w.writerow(["kind", "what the follower said", "her answer (write here)"])
-        for r in rows:
-            w.writerow([r["kind"], r["prompt"], ""])
+    packs = split_for(rows, args.writers, args.shared) if args.writers > 1 else [rows]
+    for i, pack in enumerate(packs, 1):
+        out = base if args.writers == 1 else base / f"writer-{i}"
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "BRIEF.md").write_text(brief(args.kol_id), encoding="utf-8")
+        (out / "write.html").write_text(
+            build_html(args.kol_id, pack, name, writer=("" if args.writers == 1 else str(i))),
+            encoding="utf-8")
+        # utf-8-sig so Excel on Windows opens it without mangling the apostrophes.
+        with open(out / "questions.csv", "w", encoding="utf-8-sig", newline="") as fh:
+            w = csv.writer(fh)
+            w.writerow(["kind", "what the follower said", "her answer (write here)"])
+            for r in pack:
+                w.writerow([r["kind"], r["prompt"], ""])
+        shared_n = sum(1 for r in pack if r.get("shared"))
+        print(f"  {out}   {len(pack)} prompts, {shared_n} of them shared with every writer")
 
     counts: dict[str, int] = {}
     for r in rows:
         counts[r["kind"]] = counts.get(r["kind"], 0) + 1
-    print(f"writing pack -> {out}")
+    print(f"\n{len(rows)} prompts across {len(packs)} pack(s):")
     for k, v in sorted(counts.items(), key=lambda x: -x[1]):
         print(f"  {v:3}  {k}")
-    print(f"\n  BRIEF.md       who she is, the rules, the measured targets")
-    print(f"  write.html     open in any browser, no install, exports answers.jsonl")
-    print(f"  questions.csv  the same prompts for anyone who prefers a spreadsheet")
+    print("\n  BRIEF.md       who she is, the rules, the measured targets")
+    print("  write.html     open in any browser, no install, exports answers.jsonl")
+    print("  questions.csv  the same prompts for anyone who prefers a spreadsheet")
+    if len(packs) > 1:
+        print("\n  One folder per person. Collect the answers.jsonl files they send back into")
+        print("  a single directory and run:")
+        print("      python tools/llm_train/merge_answers.py <that directory>")
     return 0
 
 
