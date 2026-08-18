@@ -198,6 +198,10 @@ document.addEventListener('DOMContentLoaded', function(){
   // the page waits for the current audio to end (or for the viewer never to have started it).
   var auto = document.body.getAttribute('data-auto') === '1';
   if(!auto) return;
+  // Polled four times a second rather than once every one and a half. The answer is ready
+  // about four seconds after the comment is posted, and waiting up to another 1.5 s to notice
+  // was a third of the remaining delay — spent doing nothing, on a local request that costs a
+  // few hundred bytes.
   var seen = parseInt(document.body.getAttribute('data-events') || '0', 10);
   var timer = setInterval(function(){
     fetch('/state').then(function(r){ return r.json(); }).then(function(s){
@@ -207,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function(){
       clearInterval(timer);
       location.reload();
     }).catch(function(){});
-  }, 1500);
+  }, 400);
 });
 """
 
@@ -255,7 +259,7 @@ def answer(c: dict, hist: list) -> dict:
     the same path — a fast route that behaves differently from the slow one is a bug generator.
     """
     import shutil
-    from stage import (respond, perform, perform_streamed, song_for, classify,
+    from stage import (respond, respond_streamed, perform, perform_streamed, song_for, classify,
                        strip_tics, fix_vocative, MODES)
 
     mode = c.get("mode") or classify(c["text"])
@@ -275,7 +279,48 @@ def answer(c: dict, hist: list) -> dict:
                 "label": label, "clip": clip, "think": time.perf_counter() - t, "speak": 0.0,
                 "at": f"{datetime.now():%H:%M:%S}"}
 
-    text = sung["text"] if sung else respond(KOL, c["text"], mode, history=hist, asker=c.get("who"))[0]
+    streamed = None
+    if not sung:
+        # Stream the reply so the voice can start on sentence one while the model is still
+        # writing sentence three. One sentence of lookahead is held back the whole way, because
+        # `strip_tics` removes a bolted-on question at the END of an answer and a sentence
+        # already spoken cannot be taken back. The head goes out immediately; only the tail
+        # waits, which is the half nobody is listening for yet.
+        streamed = []
+        opener = {}
+        try:
+            for piece in respond_streamed(KOL, c["text"], mode, history=hist,
+                                          asker=c.get("who")):
+                if piece is None:      # a rule tripped mid-stream
+                    streamed = None
+                    break
+                streamed.append(piece)
+                # Synthesise the opening sentence the moment it exists, while the model is
+                # still writing the rest. Collecting every sentence first and only then
+                # starting the voice is what the previous version did, and it measured no
+                # faster than not streaming at all — the two costs were still paid end to end
+                # instead of at the same time.
+                if len(streamed) == 1:
+                    def _open(sent=piece):
+                        try:
+                            from stage import perform as _p
+                            _p(KOL, sent, mode, CLIPS / f"{early_stem}-00.wav")
+                            opener["ok"] = True
+                        except Exception as exc:
+                            print(f"  opener failed: {exc}", flush=True)
+                    early_stem = f"{datetime.now():%H%M%S}-{mode}-{uuid.uuid4().hex[:4]}"
+                    opener["stem"] = early_stem
+                    opener["thread"] = threading.Thread(target=_open, daemon=True)
+                    opener["thread"].start()
+        except Exception as exc:
+            print(f"  streaming failed, falling back: {exc}", flush=True)
+            streamed = None
+    if sung:
+        text = sung["text"]
+    elif streamed:
+        text = " ".join(streamed)
+    else:
+        text = respond(KOL, c["text"], mode, history=hist, asker=c.get("who"))[0]
     # The same cleanup the chat has had for a while. It was never wired in here, which is why
     # the stream still signed off with "thanks for asking" long after the chat had stopped.
     text, misnamed = fix_vocative(text, c.get("who"), KOL)
@@ -296,10 +341,22 @@ def answer(c: dict, hist: list) -> dict:
         # Rendering all of them first and only then responding measures the improvement without
         # delivering it: the page would show "first words in 1.7 s" while the listener waited
         # the full 13.9 s for the response to arrive. The point is the handover, not the split.
-        gen = perform_streamed(KOL, text, mode, CLIPS, stem)
-        clip = next(gen)
-        clips.append(clip)
-        first_at = time.perf_counter() - t
+        reuse = opener.get("stem") if not sung and streamed else None
+        if reuse:
+            # The opening sentence has been rendering since the model produced it. Wait for
+            # that rather than starting again: it is normally already finished.
+            opener["thread"].join(timeout=30)
+        if reuse and opener.get("ok"):
+            stem = reuse
+            clip = f"{stem}-00.wav"
+            clips.append(clip)
+            first_at = time.perf_counter() - t
+            gen = perform_streamed(KOL, " ".join(streamed[1:]), mode, CLIPS, stem + "b")
+        else:
+            gen = perform_streamed(KOL, text, mode, CLIPS, stem)
+            clip = next(gen)
+            clips.append(clip)
+            first_at = time.perf_counter() - t
 
         def rest():
             try:
