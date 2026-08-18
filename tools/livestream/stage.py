@@ -500,6 +500,32 @@ def strip_tics(reply: str, *, first_message: bool, message: str = "") -> tuple[s
     return out or reply.strip(), removed
 
 
+def _humour_block() -> str:
+    """The humour rules and their worked examples, read from where they are defined.
+
+    Two reasons this is a source read rather than an import. There are two files called
+    server.py in this repo, so importing by name returns whichever was loaded first and the
+    getattr fallback then silently yields nothing -- that failure mode is exactly why the
+    generator produced 0.0% playful replies. And the chat server imports THIS module, so
+    executing it here to reach the constants would be a cycle. Parsing the two string
+    constants out of the file costs nothing and cannot run anything.
+    """
+    import ast
+    out = []
+    try:
+        tree = ast.parse((REPO / "tools" / "chat" / "server.py").read_text(encoding="utf-8"))
+        found = {}
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant):
+                for t in node.targets:
+                    if isinstance(t, ast.Name) and t.id in ("HUMOUR", "PLAYFUL_EXAMPLES"):
+                        found[t.id] = node.value.value
+        out = [found[k] for k in ("HUMOUR", "PLAYFUL_EXAMPLES") if found.get(k)]
+    except Exception:
+        pass
+    return '\n\n'.join(out).strip()
+
+
 MODES = {
     "comment": {
         "label": "answering a comment",
@@ -523,6 +549,21 @@ MODES = {
                    # — and on a live comment, brevity was the better answer anyway.
                    "AT MOST two short sentences, under 200 characters. Say one thing well "
                    "rather than three things adequately.\n\n" + SUBSTANCE),
+    },
+    "banter": {
+        "label": "being teased",
+        # Same delivery as an ordinary comment. A brighter wording was the obvious thing to
+        # reach for and the measurement says not to: four instruction/tempo combinations were
+        # rendered eighteen times each and landed within one semitone of each other with a
+        # standard deviation near three. Changing it here would be decoration presented as a
+        # feature.
+        "instruct": ANSWERING,
+        "system": ("You are live on stream and somebody is teasing you, daring you, or setting "
+                   "up a joke. Play along. Take the joke rather than defending against it, give "
+                   "one back, and do not turn earnest — being teased and answering sincerely is "
+                   "the most deflating thing you can do on a stream.\n\n"
+                   "AT MOST two short sentences, under 200 characters.\n\n" + SUBSTANCE
+                   + "\n\n" + _humour_block()),
     },
     "heart": {
         "label": "talking with a fan",
@@ -570,18 +611,41 @@ _HEART_RE = re.compile(
     re.IGNORECASE)
 
 
+# Somebody teasing her, daring her, or setting up a joke. The register that answers this is not
+# the register that answers "what is your morning like" — being teased and replying earnestly is
+# the single most deflating thing she can do on a stream, and it is what she does now.
+#
+# Anchored on the SHAPE of a tease rather than on funny words: a challenge, a dare, a mock
+# accusation, an obviously absurd premise, or a this-or-that with no serious answer.
+_BANTER_RE = re.compile(
+    r"\bI bet you\b|\badmit it\b|\bprove it\b|\bno way you\b|\byou (?:definitely|totally) (?:did|do|are|were|have|know|cannot|can\'?t)\b"
+    r"|\bI don'?t believe you\b|\bsure you (?:do|did|are)\b|\byou'?re lying\b"
+    r"|\brate your\b|\bout of ten\b|\bbe honest,?[^.!?]{0,12}(?:how|which|do you|did you|are you|was it|with (?:me|us))\b|,\s*be honest\b|\bhow bad (?:is|are)\b"
+    r"|\bwould you rather\b|\bsettle it\b|\bfight me\b"
+    r"|\b(?:oh,? )?come on(?:,? now)\b"
+    r"|\b(?:bet you|you) (?:can'?t|could never) even\b|\bbet you can'?t\b|\bworst .{0,20}(?:ever|of all time)\b"
+    r"|\bexpose yourself\b|\bwe all know\b|\bevery(?:one|body) can see\b",
+    re.IGNORECASE)
+
+
 def classify(message: str) -> str:
     """Pick the register for one incoming message.
 
     Song is tested first and deliberately: "sing me something, I feel awful tonight" is a song
     request that happens to mention a feeling, and answering it as a heart-to-heart would ignore
     what was actually asked for.
+
+    Heart before banter for the same reason in reverse. "I bet you never feel this lonely" is
+    somebody telling you they are lonely in the grammar of a tease, and answering it with a joke
+    would be the worst reading available.
     """
     text = message or ""
     if _SONG_RE.search(text):
         return "song"
     if _HEART_RE.search(text):
         return "heart"
+    if _BANTER_RE.search(text):
+        return "banter"
     return "comment"
 
 

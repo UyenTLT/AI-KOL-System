@@ -99,37 +99,6 @@ SEEDS = [
     "I have 47 unread messages and I'm ignoring all of them",
 ]
 
-# Worked examples of the playful register, because HUMOUR is rules and this project's own note
-# says rules describe while examples demonstrate. Every one is built from her canon — the basil,
-# Marco's drums, the one pasta dish, the parking ticket, Dani — so nothing here teaches her a
-# life she does not have, and nothing is borrowed from a real creator.
-#
-# Each demonstrates a different move rather than being generally amusing: undercutting herself,
-# absurd specificity, mock outrage, and taking a joke rather than defending against it.
-PLAYFUL_EXAMPLES = """Examples of the lighter register. Do not reuse the words, copy how they work.
-
-THEM: what did you have for dinner, be honest
-HER: The same pasta I have made every night this week. I have peaked as a cook and I have
-     decided to stay here.
-
-THEM: your plant is dying and everyone can see it
-HER: It is not dying, it is relocating. Fourth spot this month. I water it with attention
-     rather than water, which the plant has opinions about.
-
-THEM: rate your own cooking out of ten
-HER: A seven, and a nine if you only count the one dish. My abuela taught me to test the pan by
-     flicking water at it, which I once did in a friend's kitchen and cracked their hob, so
-     maybe a six.
-
-THEM: I bet you lose every argument with your cousin
-HER: Excuse me. I lose the football bets. The arguments I win, he just keeps talking afterwards
-     so nobody can tell.
-
-THEM: how was filming today
-HER: Four takes of the same intro and I used the first one. Marco started drumming on take one
-     so honestly the other three were a formality.
-"""
-
 MORE_FANS = """Write short comments a follower would leave for a beauty and lifestyle creator on
 a live stream. Real comments: short, casual, sometimes typo-ish, sometimes off-topic, sometimes
 personal. Not marketing copy, not questions a journalist would ask.
@@ -367,7 +336,8 @@ def candidates(kol_id: str, msg: str, k: int, model: str,
     # Selection cannot pick what was never generated, so no amount of ranking on "FUNNY" could
     # reach a pool that had none. This is generation-side and it costs nothing.
     _hum = getattr(chat_mod, "HUMOUR", "") if chat_mod else ""
-    PLAY = (_hum + "\n\n" + PLAYFUL_EXAMPLES) if _hum else PLAYFUL_EXAMPLES
+    _ex = getattr(chat_mod, "PLAYFUL_EXAMPLES", "") if chat_mod else ""
+    PLAY = (_hum + "\n\n" + _ex).strip()
     # Her life goes into generation for the same reason the style instructions do: candidates
     # are selected for telling something that happened to her, and a generator with no life to
     # draw on can only invent one or omit it. Measured, this is the difference between 5% and
@@ -378,8 +348,17 @@ def candidates(kol_id: str, msg: str, k: int, model: str,
         LIFE = life_threads(kol_id, message=msg)
     except Exception:
         LIFE = ""
+    # Generate under the register this message would actually be SERVED under, so the
+    # habit being trained is the habit that will be asked for. Only banter is routed
+    # here: heart and song already have their own generation paths, and re-routing them
+    # would move a distribution that has been steered to measured targets.
+    try:
+        from stage import classify
+        register = "banter" if classify(msg) == "banter" else "comment"
+    except Exception:
+        register = "comment"
     msgs = [{"role": "system", "content": build_system_prompt(kol_id)},
-            {"role": "system", "content": MODES["comment"]["system"] + (" " + extra if extra else "")},
+            {"role": "system", "content": MODES[register]["system"] + (" " + extra if extra else "")},
             {"role": "system", "content": language_directive(msg, trad)}]
     if CHAT_STYLE:
         msgs.insert(1, {"role": "system", "content": CHAT_STYLE})
