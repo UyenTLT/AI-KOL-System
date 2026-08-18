@@ -555,6 +555,14 @@ def _write(kol_id: str, rows: list[dict], rejected: int, tally: dict, started: f
 
 
 def main() -> int:
+    # Model output carries emoji and this console is cp950. Printing a sample must not be able
+    # to destroy a run whose numbers are already computed — it happened here, and in
+    # harvest_talk before it.
+    for _s in (sys.stdout, sys.stderr):
+        try:
+            _s.reconfigure(errors="replace")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("kol_id")
     ap.add_argument("--n", type=int, default=250, help="how many fan messages")
