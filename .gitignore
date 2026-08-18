@@ -120,3 +120,6 @@ kols/*/voice/ref_blend.wav
 .env
 *.key
 youtube-api-key.txt
+
+# Written answers come back as a file from whoever wrote them; the pack itself is generated.
+writing-pack/
