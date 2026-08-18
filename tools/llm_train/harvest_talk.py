@@ -235,7 +235,7 @@ def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[di
             return
         text = re.sub(r"\s+", " ", " ".join(c["text"] for c in buf)).strip()
         if len(text.split()) >= 4:
-            out.append({"text": text, **_delivery(buf, text)})
+            out.append({"text": text, "start_t": round(buf[0]["start"], 2), **_delivery(buf, text)})
         buf.clear()
 
     for c in cues:
@@ -258,7 +258,12 @@ def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[di
         # A cue carries no duration in json3 events we keep, so approximate the end from the
         # word count at a normal speaking rate.
         last_end = c["start"] + len(text.split()) / 2.8
-        if sum(len(x["text"].split()) for x in buf) >= max_words and _SENT_END.search(text):
+        n_words = sum(len(x["text"].split()) for x in buf)
+        # A hard ceiling as well as a sentence break. Live-stream captions carry no punctuation
+        # at all, so the sentence test never fired and a whole stream merged into one turn of
+        # 426 words -- which then matched a question by containing its answer somewhere inside,
+        # along with the answers to nine other questions.
+        if n_words >= max_words * 2 or (n_words >= max_words and _SENT_END.search(text)):
             flush()
     flush()
     return out
@@ -759,6 +764,117 @@ def substantive(text: str) -> str | None:
     return t
 
 
+_LIFE_STOP = {
+    "about", "after", "again", "been", "could", "does", "doing", "from", "have",
+    "just", "know", "like", "make", "more", "much", "only", "other", "really", "should",
+    "some", "such", "than", "that", "them", "then", "there", "these", "they", "thing",
+    "things", "think", "this", "time", "very", "want", "well", "were", "what", "when",
+    "where", "which", "while", "will", "with", "would", "your",
+}
+
+
+def live_chat(video_id: str) -> list[dict]:
+    """Viewer messages from a past live stream, with their offset into the video.
+
+    This is the only source in the project that carries a question and its answer together. A
+    comment section has questions and no answers; a caption track has the presenter's speech and
+    no questions. A live stream has both, on one clock — which is also exactly the situation
+    Sofia is built for, so the register is right as well as the structure.
+
+    `videoOffsetTimeMsec` is the field that matters: it is the position in the recording, so it
+    lines up with caption timing directly. The wall-clock `timestampUsec` does not.
+    """
+    import yt_dlp
+
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        opts = {"skip_download": True, "writesubtitles": True, "subtitleslangs": ["live_chat"],
+                "outtmpl": str(td / "%(id)s.%(ext)s"), "quiet": True, "no_warnings": True}
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            ydl.extract_info(f"https://www.youtube.com/watch?v={video_id}", download=True)
+        files = list(td.glob("*.live_chat.json"))
+        if not files:
+            return []
+        out = []
+        for line in files[0].read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                obj = json.loads(line)
+                act = obj["replayChatItemAction"]
+                off = int(obj.get("videoOffsetTimeMsec") or
+                          act.get("videoOffsetTimeMsec") or 0) / 1000.0
+                for a in act.get("actions", []):
+                    item = a.get("addChatItemAction", {}).get("item", {})
+                    r = item.get("liveChatTextMessageRenderer")
+                    if not r:
+                        continue
+                    text = "".join(x.get("text", "") for x in r.get("message", {}).get("runs", []))
+                    text = " ".join(text.split())
+                    if text:
+                        out.append({"t": off, "text": text})
+            except (KeyError, ValueError, TypeError):
+                continue
+    return out
+
+
+# A viewer asking the streamer something, as opposed to chatting to the room. Anchored on the
+# second person: "how do you stay motivated" is for the streamer, "anyone else here from Brazil"
+# is for the chat.
+_ASKS_STREAMER = re.compile(r"\?", re.I)
+_SECOND_PERSON = re.compile(r"\b(?:you|your|u|ur)\b", re.I)
+
+
+def _answer_window(text: str, keys: set, span: int = 45) -> str:
+    """The part of a block that actually answers, rather than the block it sits in.
+
+    Even with a word cap, a streamer answering five questions in a row produces one stretch of
+    speech, and the reply to any one of them is a sentence or two inside it. Centring a window
+    on where the question words land is what turns a matched block into an answer.
+    """
+    words = text.split()
+    if len(words) <= span:
+        return text
+    hits = [i for i, w in enumerate(words) if re.sub(r"[^a-z]", "", w.lower()) in keys]
+    if not hits:
+        return " ".join(words[:span])
+    mid = hits[len(hits) // 2]
+    lo = max(0, mid - span // 3)
+    return " ".join(words[lo:lo + span])
+
+
+def align_qa(chat: list[dict], turns: list[dict], *, window: float = 75.0,
+             min_overlap: int = 2) -> list[dict]:
+    """Pair a viewer's question with what the streamer said next, where the two actually match.
+
+    Alignment by time alone is not evidence: a streamer answers some questions, ignores most,
+    and takes them out of order. What makes a pair trustworthy is that streamers READ THE
+    QUESTION ALOUD before answering it, so the speech that follows shares the question's
+    content words. That overlap is the filter, and it is why `min_overlap` is a count of shared
+    words rather than a similarity score — two rare words in common is a match, and a high
+    score built from "the" and "you" is not.
+    """
+    pairs = []
+    for msg in chat:
+        q = msg["text"]
+        if not (_ASKS_STREAMER.search(q) and _SECOND_PERSON.search(q)):
+            continue
+        words = {w for w in re.findall(r"[a-z]{4,}", q.lower()) if w not in _LIFE_STOP}
+        if len(words) < 2:
+            continue
+        best, best_n = None, 0
+        for t in turns:
+            if not (msg["t"] <= t.get("start_t", 0) <= msg["t"] + window):
+                continue
+            shared = words & {w for w in re.findall(r"[a-z]{4,}", t["text"].lower())}
+            if len(shared) > best_n:
+                best, best_n = t, len(shared)
+        if best and best_n >= min_overlap:
+            pairs.append({"question": q, "answer": _answer_window(best["text"], words),
+                          "shared_words": best_n, "at": round(msg["t"], 1)})
+    return pairs
+
+
 def cmd_comments(args) -> int:
     # Re-filtering an existing harvest costs no quota and no network, which matters because the
     # filters are where the judgement lives and they get revised more often than the data does.
@@ -828,6 +944,90 @@ def cmd_comments(args) -> int:
           f"emoji-only, or too short once a name was stripped)")
     for c in keep[:8]:
         print("   ", c[:100])
+    return 0
+
+
+def find_livestreams(query: str, key: str, limit: int = 10) -> list[dict]:
+    """Completed live broadcasts, through the API, because ordinary search cannot find them.
+
+    yt-dlp's own search returns whatever matches the words, and "livestream" in a title is not
+    evidence: the first three candidates it produced all came back `was_live=False` and had no
+    chat to replay. `eventType=completed` is a filter on what the thing IS rather than on what
+    it is called.
+    """
+    import urllib.parse
+    import urllib.request
+
+    params = urllib.parse.urlencode({
+        "part": "snippet", "type": "video", "eventType": "completed",
+        "videoDuration": "long", "q": query, "maxResults": min(limit, 25),
+        "relevanceLanguage": "en", "key": key})
+    url = "https://www.googleapis.com/youtube/v3/search?" + params
+    with urllib.request.urlopen(url, timeout=25) as r:
+        data = json.loads(r.read().decode("utf-8"))
+    return [{"id": it["id"]["videoId"], "title": it["snippet"]["title"]}
+            for it in data.get("items", []) if it.get("id", {}).get("videoId")]
+
+
+def cmd_livechat(args) -> int:
+    """Viewer questions from real live streams, paired with what the streamer said next."""
+    key = read_api_key(args.key)
+    vids = [{"id": v, "title": v} for v in (args.video or [])]
+    if args.search:
+        if not key:
+            print("searching for completed live streams needs the API key", file=sys.stderr)
+            return 2
+        for q in args.search:
+            found = find_livestreams(q, key, args.per_query)
+            print(f"search {q!r} -> {len(found)} completed live streams", flush=True)
+            vids += found
+    seen_ids, uniq = set(), []
+    for v in vids:
+        if v["id"] not in seen_ids:
+            seen_ids.add(v["id"])
+            uniq.append(v)
+    vids = uniq[: args.videos]
+    if not vids:
+        print("give --search or --video", file=sys.stderr)
+        return 2
+
+    pairs, questions = [], []
+    for i, v in enumerate(vids, 1):
+        try:
+            chat = live_chat(v["id"])
+        except Exception as exc:
+            print(f"  [{i}/{len(vids)}] {v['id']}: chat {type(exc).__name__}", file=sys.stderr)
+            continue
+        if not chat:
+            print(f"  [{i}/{len(vids)}] {v['id']}: no chat replay", flush=True)
+            continue
+        try:
+            vid = fetch_one(f"https://www.youtube.com/watch?v={v['id']}", asr_fallback=False)
+            tt = turns(vid["cues"])
+        except Exception as exc:
+            print(f"  [{i}/{len(vids)}] {v['id']}: captions {type(exc).__name__}", file=sys.stderr)
+            continue
+        got = align_qa(chat, tt, window=args.window, min_overlap=args.min_overlap)
+        for p in got:
+            p["video_id"] = v["id"]
+        pairs += got
+        asked = [c["text"] for c in chat
+                 if _ASKS_STREAMER.search(c["text"]) and _SECOND_PERSON.search(c["text"])]
+        questions += asked
+        print(f"  [{i}/{len(vids)}] {v['id']}: {len(chat)} chat, {len(tt)} turns, "
+              f"{len(asked)} questions asked, {len(got)} answered and matched", flush=True)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    qs = list(dict.fromkeys(q for q in questions if 4 <= len(q.split()) <= 30))
+    (OUT / f"{args.tag}-questions.txt").write_text(chr(10).join(qs), encoding="utf-8")
+    with open(OUT / f"{args.tag}-pairs.jsonl", "w", encoding="utf-8") as fh:
+        for p in pairs:
+            fh.write(json.dumps(p, ensure_ascii=False) + chr(10))
+    print(f"{chr(10)}{len(qs)} distinct viewer questions -> {args.tag}-questions.txt")
+    print(f"{len(pairs)} question-and-answer pairs      -> {args.tag}-pairs.jsonl")
+    for p in pairs[:4]:
+        print(f"   Q: {p['question'][:88]}")
+        print(f"   A: {p['answer'][:88]}")
     return 0
 
 
@@ -937,6 +1137,19 @@ def main() -> int:
     cm.add_argument("--min-words", type=int, default=3)
     cm.add_argument("--max-words", type=int, default=40)
     cm.set_defaults(func=cmd_comments)
+
+    lc = sub.add_parser("livechat", help="viewer questions and the streamer's answers, paired")
+    lc.add_argument("--search", action="append", help="genre query for completed live streams")
+    lc.add_argument("--video", action="append", help="a video id; repeatable")
+    lc.add_argument("--key", help="API key; defaults to the environment or the key file")
+    lc.add_argument("--tag", default="live")
+    lc.add_argument("--videos", type=int, default=8)
+    lc.add_argument("--per-query", type=int, default=8)
+    lc.add_argument("--window", type=float, default=75.0,
+                    help="seconds after a question in which the answer must start")
+    lc.add_argument("--min-overlap", type=int, default=2,
+                    help="content words the answer must share with the question")
+    lc.set_defaults(func=cmd_livechat)
 
     q = sub.add_parser("seeds", help="pull the real questions out of a corpus")
     q.add_argument("corpus")
