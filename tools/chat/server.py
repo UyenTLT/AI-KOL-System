@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import os
 import re
 import sys
@@ -50,6 +51,11 @@ KOL = os.getenv("KOL_ID", "sofia-vargas")
 # entire point of a chat that claims to remember you.
 LOCK = threading.Lock()
 MAX_TURNS = 40          # kept on disk
+# Sentences that finish rendering after the page has been served. The player asks for
+# them by stem; the thread that makes them also writes the final list back to the
+# fan's memory file, so this only has to survive until the answer finishes playing.
+PENDING_CLIPS: dict[str, list[str]] = {}
+DONE_CLIPS: set[str] = set()
 CONTEXT_TURNS = 12      # sent to the model
 
 # How she talks in a private message, as opposed to what she knows. Written as instructions
@@ -290,6 +296,35 @@ footer{margin-top:28px;padding-top:11px;border-top:1px solid var(--rule);
 JS = """
 document.addEventListener('DOMContentLoaded', function(){
   var t = document.getElementById('msg'); if(t) t.focus();
+  // A reply is rendered a sentence at a time and handed over as soon as the first one exists,
+  // so the player walks the list and asks for the sentences that arrive after the page did.
+  var players = document.querySelectorAll('audio[data-clips]');
+  Array.prototype.forEach.call(players, function(el){
+    var clips = (el.getAttribute('data-clips') || '').split(' ').filter(Boolean);
+    var stem = el.getAttribute('data-stem') || '';
+    var at = 0;
+    function advance(){
+      if(at >= clips.length) return false;
+      el.src = '/media/' + clips[at];
+      var q = el.play();
+      if(q && q.catch) q.catch(function(){});
+      return true;
+    }
+    el.addEventListener('ended', function(){
+      at += 1;
+      if(advance() || !stem) return;
+      var tries = 0;
+      var poll = setInterval(function(){
+        tries += 1;
+        fetch('/clips?stem=' + encodeURIComponent(stem)).then(function(r){ return r.json(); })
+          .then(function(s){
+            if(s.clips && s.clips.length > clips.length){
+              clips = s.clips; clearInterval(poll); advance();
+            } else if(s.done || tries > 60){ clearInterval(poll); }
+          }).catch(function(){ clearInterval(poll); });
+      }, 400);
+    });
+  });
   var a = document.getElementById('latest');
   if(a && a.play){ var p = a.play(); if(p && p.catch) p.catch(function(){}); }
   window.scrollTo(0, document.body.scrollHeight);
@@ -343,7 +378,9 @@ def page(fan: str = "", body: str = "", **keep) -> bytes:
     for i, m in enumerate(msgs):
         her = m["role"] == "assistant"
         aid = ' id="latest"' if i == last_audio else ""
-        audio = (f'<audio{aid} controls src="/media/{esc(m["clip"])}"></audio>'
+        rest = " ".join(m.get("clips") or [])
+        audio = (f'<audio{aid} controls src="/media/{esc(m["clip"])}" '
+                 f'data-clips="{esc(rest)}" data-stem="{esc(m.get("stem", ""))}"></audio>'
                  if m.get("clip") else "")
         t = f'<div class="t">{esc(m.get("at", ""))}</div>' if m.get("at") else ""
         bubbles.append(f'<div class="msg {"her" if her else "you"}">'
@@ -437,6 +474,13 @@ class Handler(BaseHTTPRequestHandler):
         q = urllib.parse.parse_qs(p.query)
         if p.path == "/":
             self._send(page((q.get("fan") or [""])[0]), "text/html; charset=utf-8")
+        elif p.path == "/clips":
+            stem = (q.get("stem") or [""])[0]
+            with LOCK:
+                more = list(PENDING_CLIPS.get(stem) or [])
+                done = stem in DONE_CLIPS
+            body = json.dumps({"clips": [stem + "-00.wav"] + more, "done": done})
+            self._send(body.encode(), "application/json")
         elif p.path == "/ping":
             self._send(b"sofia chat is reachable", "text/plain; charset=utf-8")
         elif p.path.startswith("/media/"):
@@ -558,18 +602,44 @@ class Handler(BaseHTTPRequestHandler):
             print(f"  stripped: {removed}", flush=True)
         think = time.perf_counter() - t
 
-        clip, speak = "", 0.0
+        clip, clips, speak = "", [], 0.0
+        stem = f"{datetime.now():%H%M%S}-{uuid.uuid4().hex[:4]}"
         if g("voice"):
-            from voice_studio import synthesize
-            # The same delivery the live stream uses, imported rather than restated: a KOL who
-            # sounds unhurried on stream and brisk in DMs is two different people.
+            # The same delivery the live stream uses, and now the same handover: the opening
+            # sentence goes out and the rest renders behind it. On the stream that took the
+            # wait from 16.6 s to 4.1 s, and a private message is exactly where a long silence
+            # reads worst -- there is no queue to hide it behind and no audience to fill it.
             sys.path.insert(0, str(REPO / "tools" / "livestream"))
-            from stage import ANSWERING
-            clip = f"{datetime.now():%H%M%S}-{uuid.uuid4().hex[:4]}.wav"
+            from stage import perform_streamed
             t = time.perf_counter()
             try:
-                synthesize(KOL, reply, out=CLIPS / clip, instruct=ANSWERING, speed=PACE)
+                gen = perform_streamed(KOL, reply, "comment", CLIPS, stem)
+                clip = next(gen)
+                clips.append(clip)
                 speak = time.perf_counter() - t
+
+                def _rest(gen=gen, stem=stem, fan=fan):
+                    try:
+                        for name in gen:
+                            with LOCK:
+                                PENDING_CLIPS.setdefault(stem, []).append(name)
+                    except Exception as exc:
+                        print(f"  rest of the reply failed: {exc}", flush=True)
+                    finally:
+                        with LOCK:
+                            DONE_CLIPS.add(stem)
+                            # Write the finished list back, so reopening the conversation
+                            # tomorrow plays the whole answer rather than its first sentence.
+                            import memory as _m
+                            mem = _m.load(KOL, fan)
+                            for m in mem.get("thread") or []:
+                                if m.get("stem") == stem:
+                                    m["clips"] = [clip] + PENDING_CLIPS.get(stem, [])
+                            _m.save(KOL, mem)
+
+                threading.Thread(target=_rest, daemon=True).start()
+            except StopIteration:
+                DONE_CLIPS.add(stem)
             except Exception as exc:
                 clip = ""
                 print(f"  voice failed: {exc}", flush=True)
@@ -580,6 +650,7 @@ class Handler(BaseHTTPRequestHandler):
             thread = thread_of(mem)
             thread.append({"role": "user", "content": text, "at": now})
             thread.append({"role": "assistant", "content": reply, "clip": clip,
+                           "clips": clips, "stem": stem,
                            "at": f"{now}  ·  {think:.1f}s"
                                  + (f" + {speak:.1f}s voice" if speak else "")})
             mem["thread"] = thread[-MAX_TURNS:]
