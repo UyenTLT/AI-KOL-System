@@ -734,7 +734,7 @@ _LEADING_NAME = re.compile(r"^\s*[A-Z][a-z]{2,}\s*[!,]+\s*(?=[A-Za-z])")
 # bring back a podcast she has never had forces her either to invent one or to refuse, and
 # neither makes a training example worth keeping.
 _ABOUT_CHANNEL = re.compile(
-    r"\b(?:videos?|vlogs?|episodes?|pod|podcasts?|grwm|channel|series|upload(?:s|ed)?|"
+    r"\b(?:videos?|vids?|vlogs?|episodes?|pod|podcasts?|grwm|thumbnails?|channel|series|upload(?:s|ed)?|"
     r"subscribe|subscriber|rebrand|patreon|ko-?fi|merch|algorithm|content)\b", re.IGNORECASE)
 # Written about her to the other viewers rather than to her. "she's one of my fav creators" is a
 # recommendation posted in a comment section; handed to a persona as something a follower said,

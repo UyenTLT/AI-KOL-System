@@ -42,49 +42,139 @@ sys.path.insert(0, str(REPO / "tools" / "livestream"))
 
 SEEDS_FILE = REPO / "datasets" / "style" / "viewers-seeds.txt"
 
+# The questions an audience actually asks an entertainment creator, grouped by the thing each
+# one forces her to do. That grouping is the design: a writer is not producing a FAQ, they are
+# producing examples of a register, and each group exercises a different measured weakness.
+#
+# They are written rather than harvested, and that is deliberate rather than lazy. Of 435 real
+# comments only 29 carry a question at all — a comment section is mostly reactions, so the
+# questions that reveal a personality have to be supplied. The real ones are mixed in beside
+# them so the pack still carries an actual audience's voice.
+ENTERTAINMENT = {
+    # Forces a verdict. She was measured stating an opinion in 7% of replies against 27% for
+    # real people, and there is nowhere to hide in a two-way choice.
+    "pick one": [
+        "coffee or tea?", "beach or mountains?", "text or call?",
+        "sweet or savoury breakfast?", "night out or night in?",
+        "salsa or reggaeton?", "cook at home or order in?",
+        "morning person or night owl?", "window seat or aisle?",
+        "cats or dogs, and no diplomatic answers",
+        "would you rather never eat rice again or never eat bread again?",
+        "would you rather be always ten minutes early or always five minutes late?",
+        "pineapple on pizza — settle it",
+        "the best meal you can cook, or the best meal somebody cooks for you?",
+    ],
+    # Forces a narrative. Measured at 3% of her replies against 15% for real talk, the largest
+    # gap of any measure taken.
+    "tell me a story": [
+        "tell me something ridiculous that happened to you",
+        "what is the most embarrassing thing you have done on camera?",
+        "worst travel story, go",
+        "tell me about a time you were completely wrong about something",
+        "what is the pettiest argument you have ever won?",
+        "story of the last time you laughed until you cried",
+        "what happened the first time you tried to post online?",
+        "tell me about a meal that went badly wrong",
+        "what is the worst haircut you have ever had?",
+        "have you ever gotten lost somewhere? what happened",
+        "what is the strangest thing a stranger has said to you?",
+        "tell me about something you bought that was a complete waste",
+    ],
+    # Forces a position with a reason behind it. Different from "pick one": here she has to
+    # defend it, which is where a personality either exists or does not.
+    "hot take": [
+        "what is a food opinion that gets you in trouble?",
+        "something everyone loves that you just do not get",
+        "what is overrated?", "what is underrated?",
+        "the worst advice you hear people give constantly",
+        "what trend do you refuse to do?",
+        "is expensive skincare worth it or is that a scam?",
+        "what is the most annoying thing people do online?",
+        "a hill you would die on",
+        "what do people get wrong about where you are from?",
+    ],
+    # Everyday specifics. She was measured carrying a concrete detail in 43% of replies against
+    # 55% for real talk, and this is the material that produces them.
+    "her day": [
+        "what did you actually do today?", "what did you eat today?",
+        "what is in your bag right now?", "what is your morning like?",
+        "what is the last thing you bought?", "how was filming today?",
+        "what is on your phone screen right now?",
+        "what did you have for dinner, be honest",
+        "what is the last show you finished?",
+        "what is something small that annoyed you this week?",
+        "what is the last photo in your camera roll?",
+        "what time did you actually wake up?",
+    ],
+    # Banter. She has to take a joke, give one back, and not turn earnest — the register a
+    # stream lives or dies on.
+    "playing with her": [
+        "rate your own cooking out of ten, be honest",
+        "I bet you cannot go a day without coffee",
+        "you definitely lose arguments with your cousin, admit it",
+        "prove you are actually good at this game",
+        "on a scale of one to ten how competitive are you really?",
+        "what would your abuela say about your flat?",
+        "I do not believe you can dance, show us",
+        "guess what I had for lunch",
+        "your plant is dying and everyone can see it",
+    ],
+    # About her, the way an audience asks it: nosy, casual, and not a job interview.
+    "about her": [
+        "do you get lonely doing this?", "do you miss home?",
+        "what did you want to be as a kid?",
+        "what is something nobody knows about you?",
+        "what do you do when you are in a bad mood?",
+        "are you actually like this in real life?",
+        "what is the best thing about where you live now?",
+        "do you ever get nervous on camera?",
+        "what is the one thing you would never post?",
+    ],
+}
+
 
 def gather(kol_id: str, count: int, seed: int = 0) -> list[dict]:
-    """A balanced set of prompts, labelled by what kind of thing they are.
+    """Entertainment prompts, grouped by what each one forces her to do.
 
-    Balance is the whole job here. Left to its own proportions the real material is 93%
-    reactions, and a writer given 150 compliments in a row produces 150 ways of saying thank
-    you — which is the register this project has spent months removing.
+    This is a style exercise, not a knowledge base. The writer is not producing answers that
+    have to be right; they are producing examples of a register, and every group here exists
+    because a specific measure came back short — a verdict, a story, a concrete detail, a joke
+    taken and given back.
+
+    Real harvested questions are mixed in beside the written ones so the pack still carries an
+    actual audience's voice. Reactions from the harvest are included too, in small numbers:
+    they are most of a real comment section and she still has to answer one without sliding
+    into thanking people for watching.
     """
-    from build_dataset import SEEDS, _ASKS_ADVICE
+    rng = random.Random(seed)
+    out, seen = [], set()
+
+    for kind, items in ENTERTAINMENT.items():
+        for t in items:
+            if t.lower() not in seen:
+                seen.add(t.lower())
+                out.append({"kind": kind, "prompt": t})
 
     real = []
     if SEEDS_FILE.is_file():
         real = [l.strip() for l in SEEDS_FILE.read_text(encoding="utf-8").splitlines()
                 if l.strip()]
+    asks = [t for t in real if "?" in t]
+    reacts = [t for t in real if "?" not in t]
+    rng.shuffle(asks)
+    rng.shuffle(reacts)
 
-    def kind(t: str) -> str:
-        if _ASKS_ADVICE.search(t):
-            return "asks for advice"
-        if re.search(r"\bI (?:am|'m|feel|have|had|was|been|keep|just)\b", t, re.I):
-            return "about themselves"
-        if "?" in t:
-            return "asks her something"
-        return "a reaction"
-
-    rng = random.Random(seed)
-    buckets: dict[str, list[str]] = {}
-    for t in real + list(SEEDS):
-        buckets.setdefault(kind(t), []).append(t)
-    for v in buckets.values():
-        rng.shuffle(v)
-
-    # Deliberate proportions, not the source's. Advice and personal messages are where a reply
-    # either has a view or does not, which is the thing being taught; reactions are included
-    # because they are most of a real comment section and she still has to answer them well.
-    want = {"asks for advice": 0.25, "about themselves": 0.30,
-            "asks her something": 0.25, "a reaction": 0.20}
-    out, seen = [], set()
-    for k, share in want.items():
-        for t in buckets.get(k, [])[: max(1, round(count * share))]:
-            if t.lower() in seen:
-                continue
+    for t in asks:
+        if t.lower() not in seen:
             seen.add(t.lower())
-            out.append({"kind": k, "prompt": t})
+            out.append({"kind": "a real viewer asked", "prompt": t})
+    # Capped at a tenth of the pack. A reaction still needs answering well, but a writer given
+    # a run of compliments produces a run of thank-yous.
+    for t in reacts[: max(4, count // 10)]:
+        if t.lower() not in seen:
+            seen.add(t.lower())
+            out.append({"kind": "a real viewer said", "prompt": t})
+
     rng.shuffle(out)
     return out[:count]
 
@@ -103,8 +193,23 @@ def brief(kol_id: str) -> str:
 
     return f"""# Writing her answers — {ident.get('name', kol_id)}
 
-You are writing what she would say. Every answer you write is read aloud by her voice, on
-camera, so write it the way somebody talks, not the way an article is written.
+You are writing what she would say. Every answer is read aloud by her voice, on camera, so
+write it the way somebody talks, not the way an article is written.
+
+## What this is for, and what it is not
+
+**You are teaching her HOW to answer, not WHAT to answer.** She is not going to reuse your
+sentences. A model reads a few hundred of them and learns the shape: how long an answer runs,
+whether it commits to a view, whether a real detail turns up, whether it ends on something of
+hers or bounces the question back.
+
+So an answer does not have to be *true* and it does not have to be *the best possible answer*.
+It has to sound like a specific person with opinions and a Tuesday. A dull answer that is
+accurate teaches her to be dull; a funny one that is slightly made up — inside the life below —
+teaches her to be funny.
+
+The one place accuracy matters absolutely is the rules further down. Those are enforced in code
+and an answer breaking one is thrown away.
 
 ## Who she is
 
