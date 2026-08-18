@@ -48,24 +48,14 @@ LOCK = threading.Lock()
 PENDING: list[dict] = []
 EVENTS: list[dict] = []
 
-# Answers rendered before anyone asked for them.
+# There is no prefetch queue and no auto toggle any more, and the reason is a measurement
+# rather than a preference: an answer used to take 16.6 s, so it had to be rendered ahead of
+# the click and parked. It now takes about 3 s, which is short enough that a comment can simply
+# be answered when it arrives. Two buttons and two pieces of state went with it.
 #
-# Measured, the wait is not the thinking: the language model takes 0.8 s and the voice takes
-# 6.8 s, so 89% of it is synthesis. But synthesis runs at RTF 0.54-0.68 — she produces audio
-# faster than it can be listened to — which means that while one answer is playing there is idle
-# capacity to render the next one. A stream is a queue, so the next comment is almost always
-# already known.
-#
-# This does not make synthesis faster. It moves it off the moment somebody is waiting.
-PREPARED: list[dict] = []
-PREFETCH_DEPTH = 2
+# What survives is in the page, and it is not optional: the next answer is held back until the
+# current one has finished playing, or she talks over herself.
 
-# When on, she works through the queue herself instead of waiting to be clicked. The rendering
-# was already happening ahead of time; this is only about who decides when it gets shown.
-#
-# The page holds one back until the current clip has finished playing. Without that she talks
-# over herself — a stream where every answer cuts off the last one is worse than one that waits.
-AUTO = {"on": True}
 
 CSS = """
 :root{--bg:#EFF2F2;--card:#FFF;--card2:#E7ECEC;--ink:#111719;--tx:#1B2426;--mut:#5A6A6C;
@@ -196,16 +186,18 @@ document.addEventListener('DOMContentLoaded', function(){
   // Auto mode. The server has already spoken the next answer; this only decides when to show
   // it, and the rule is: not while she is still talking. Reloading mid-clip cuts her off, so
   // the page waits for the current audio to end (or for the viewer never to have started it).
-  var auto = document.body.getAttribute('data-auto') === '1';
-  if(!auto) return;
-  // Polled four times a second rather than once every one and a half. The answer is ready
-  // about four seconds after the comment is posted, and waiting up to another 1.5 s to notice
-  // was a third of the remaining delay — spent doing nothing, on a local request that costs a
-  // few hundred bytes.
+  // Watch for the answer to the comment just posted. Polled four times a second rather than
+  // once every one and a half: the answer is ready about three seconds after the comment, and
+  // waiting up to another 1.5 s to notice was a third of what remained — spent doing nothing,
+  // on a local request costing a few hundred bytes.
+  //
+  // The one check that stays is not a preference. Two comments posted seconds apart produce
+  // two answers, and showing the second while the first is still being spoken makes her talk
+  // over herself.
   var seen = parseInt(document.body.getAttribute('data-events') || '0', 10);
   var timer = setInterval(function(){
     fetch('/state').then(function(r){ return r.json(); }).then(function(s){
-      if(!s.auto || s.events <= seen) return;
+      if(s.events <= seen) return;
       var busy = a && !a.paused && !a.ended;
       if(busy) return;
       clearInterval(timer);
@@ -386,12 +378,20 @@ def answer(c: dict, hist: list) -> dict:
             "done": ev_ref.get("done", False), "at": f"{datetime.now():%H:%M:%S}"}
 
 
-def prefetch_worker() -> None:
-    """Render answers ahead of the click, whenever there is a queue and idle capacity."""
+def answer_worker() -> None:
+    """Answer whatever is in the queue, as soon as it is there.
+
+    This used to render ahead of a click and park the result, because an answer took sixteen
+    seconds and a stream cannot wait sixteen seconds in silence. It now takes about three, so
+    there is nothing to park and nothing to click: a comment is posted and she answers it.
+
+    The one piece of timing that remains is in the page, and it is not optional. Two comments
+    posted seconds apart produce two answers, and showing the second while the first is still
+    being spoken makes her talk over herself.
+    """
     while True:
         with LOCK:
-            busy = len(PREPARED) >= PREFETCH_DEPTH or not PENDING
-            c = None if busy else PENDING.pop(0)
+            c = PENDING.pop(0) if PENDING else None
             # c is None whenever the queue is empty, which is most of the time — asking it for a
             # name there killed the worker thread on its first idle tick and left every comment
             # sitting in the queue with nothing to process it.
@@ -402,12 +402,10 @@ def prefetch_worker() -> None:
         try:
             ev = answer(c, hist)
         except Exception as exc:
-            print(f"  prefetch failed: {exc}", flush=True)
+            print(f"  answer failed: {exc}", flush=True)
             continue
         with LOCK:
-            # In auto mode the prepared answer goes straight onto the stream. The page decides
-            # WHEN to show it, so nothing here has to know about playback.
-            (EVENTS if AUTO["on"] else PREPARED).append(ev)
+            EVENTS.append(ev)
 
 
 def page(body: str = "", **keep) -> bytes:
@@ -420,18 +418,16 @@ def page(body: str = "", **keep) -> bytes:
     with LOCK:
         pending = list(PENDING)
         events = list(EVENTS)
-        prepared = list(PREPARED)
-        auto_on = AUTO["on"]
 
-    # Two different states, and the difference is the whole point: one is a comment she has not
-    # looked at, the other is an answer already spoken and waiting to be played.
-    ready = "".join(f'<li><span class="who">{esc(p["who"])}</span> {esc(p["fan_text"])}'
-                    f' &nbsp;<b style="color:var(--ok)">ready</b></li>' for p in prepared)
+    # One state now, where there used to be two. An answer no longer waits to be played, so
+    # there is nothing "rendered and ready" to distinguish from a comment not yet looked at —
+    # a comment in the queue is one she is about to answer or is answering.
     items = "\n".join(f'<li><span class="who">{esc(c["who"])}</span> {esc(c["text"])}</li>'
                       for c in pending)
-    if prepared or pending:
-        queue = (f'<div class="queue"><div class="hd">queue &mdash; {len(prepared)} rendered, '
-                 f'{len(pending)} still to do</div><ol>{ready}{items}</ol></div>')
+    if pending:
+        queue = (f'<div class="queue"><div class="hd">queue &mdash; {len(pending)} '
+                 f'{"comment" if len(pending) == 1 else "comments"} she is working through'
+                 f'</div><ol>{items}</ol></div>')
     else:
         queue = ('<div class="queue"><div class="hd">queue &mdash; empty</div>'
                  '<span class="empty">nothing waiting</span></div>')
@@ -464,12 +460,12 @@ def page(body: str = "", **keep) -> bytes:
 
     opts = "".join(f'<option value="{k}">{esc(v["label"])}</option>' for k, v in MODES.items())
     who = keep.get("who") or "guest"
-    n = len(pending) + len(prepared)
+    n = len(pending)
 
     doc = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Sofia — live</title><style>{CSS}</style><script>{JS}</script></head>
-<body data-auto="{1 if auto_on else 0}" data-events="{len(events)}"><div class="w">
+<body data-events="{len(events)}"><div class="w">
 
 <h1><span class="dot"></span>Sofia &mdash; live</h1>
 <p class="sub">Comments come in, she reads them out and answers. Everything runs on this machine.</p>
@@ -495,16 +491,12 @@ def page(body: str = "", **keep) -> bytes:
 {queue}
 
 <div class="bar" style="margin-top:14px">
-  <form method="post" action="/auto">
-    <button type="submit">{"Auto: on — she answers by herself" if auto_on else "Auto: off"}</button>
-  </form>
-  <form method="post" action="/next">
-    <button type="submit" class="sec"{" disabled" if not n else ""}>Answer the next one now</button>
-  </form>
   <form method="post" action="/reset"><button type="submit" class="sec">Clear stream</button></form>
 </div>
-<p class="note">{"She works through the queue on her own, waiting for each answer to finish before starting the next. Post a comment and she replies without being asked." if auto_on else "Nothing is spoken until you ask for it."}
-   She picks the register from the comment itself; the dropdown only forces one for a demo.</p>
+<p class="note">Post a comment and she answers it &mdash; about three seconds to the first
+   words. If she is still speaking, the next answer waits until she has finished rather than
+   talking over herself. She picks the register from the comment itself; the dropdown only
+   forces one for a demo.</p>
 
 <h2>Stream</h2>
 {transcript}
@@ -559,7 +551,7 @@ class Handler(BaseHTTPRequestHandler):
         elif p == "/state":
             with LOCK:
                 body = json.dumps({"events": len(EVENTS), "pending": len(PENDING),
-                                   "prepared": len(PREPARED), "auto": AUTO["on"]})
+                                   "answering": bool(PENDING)})
             self._send(body.encode(), "application/json")
         elif p == "/clips":
             # The rest of an answer arrives after the page has already been served, so the
@@ -591,12 +583,6 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if p == "/comment":
                 self._comment(g)
-            elif p == "/next":
-                self._next()
-            elif p == "/auto":
-                with LOCK:
-                    AUTO["on"] = not AUTO["on"]
-                self._redirect()
             elif p == "/reset":
                 with LOCK:
                     PENDING.clear()
@@ -620,51 +606,14 @@ class Handler(BaseHTTPRequestHandler):
                             "text": text, "mode": g("mode") or None})
         self._redirect()
 
-    def _next(self):
-        """Show the next answer — already rendered if the prefetch thread got there first.
-
-        Nothing that touches the socket or builds a page happens while LOCK is held. `page()`
-        takes the same lock and `threading.Lock` is not reentrant, so the "nothing waiting"
-        branch used to deadlock the thread against itself — and because it died holding the
-        lock, every later request blocked too. The whole server hung, from one click on an
-        empty queue.
-        """
-        c = hist = None
-        served = False
-        with LOCK:
-            if PREPARED:
-                EVENTS.append(PREPARED.pop(0))
-                served = True
-            elif PENDING:
-                c = PENDING.pop(0)
-                hist = history_for(c.get("who"))
-
-        if served:
-            self._redirect()
-            return
-        if c is None:
-            self._send(page(error("Nothing waiting", "Post a comment first.")),
-                       "text/html; charset=utf-8")
-            return
-
-        # Nothing was ready, so render it now. This is the first comment of a stream, or one
-        # posted while the queue was empty; every comment behind it gets the prepared path.
-        ev = answer(c, hist)
-        ev["waited"] = True
-        with LOCK:
-            EVENTS.append(ev)
-        self._redirect()
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8777)
     args = ap.parse_args()
-    threading.Thread(target=prefetch_worker, daemon=True).start()
+    threading.Thread(target=answer_worker, daemon=True).start()
     srv = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"Sofia live -> http://{args.host}:{args.port}")
-    print(f"prefetching up to {PREFETCH_DEPTH} answers ahead")
     print(f"clips -> {CLIPS}")
     try:
         srv.serve_forever()
