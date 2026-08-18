@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import tempfile
@@ -658,6 +659,178 @@ def questions_from(rows, *, min_words=4, max_words=18):
     return out
 
 
+def fetch_comments(video_id: str, key: str, limit: int = 100) -> list[str]:
+    """Top-level comments on one video, through the official API.
+
+    First-party rather than scraped, which is the standing rule in this project for anything
+    touching a platform: the comment endpoint is a documented part of the YouTube Data API, so
+    this needs no browser automation, breaks no terms, and cannot get an account restricted.
+
+    What comes back is the thing the caption track cannot contain. In a video the viewer never
+    speaks, so every question on the audio belongs to the presenter — 772 mined from the podcast
+    corpus and not one of them was a viewer's. These are.
+    """
+    import urllib.parse
+    import urllib.request
+
+    params = urllib.parse.urlencode({
+        "part": "snippet", "videoId": video_id, "maxResults": min(limit, 100),
+        "order": "relevance", "textFormat": "plainText", "key": key})
+    url = "https://www.googleapis.com/youtube/v3/commentThreads?" + params
+    with urllib.request.urlopen(url, timeout=20) as r:
+        data = json.loads(r.read().decode("utf-8"))
+    out = []
+    for item in data.get("items", []):
+        try:
+            top = item["snippet"]["topLevelComment"]["snippet"]["textOriginal"]
+        except (KeyError, TypeError):
+            continue
+        out.append(" ".join(top.split()))
+    return out
+
+
+KEY_FILE = REPO / "youtube-api-key.txt"
+KEY_PLACEHOLDER = "PASTE_YOUR_YOUTUBE_DATA_API_KEY_HERE"
+
+
+def read_api_key(explicit: str | None = None) -> str:
+    """The key, from the flag, the environment, or the untracked file at the repo root.
+
+    The file exists so the key never has to be typed into a shell — a key in a command line
+    lands in the history of whoever ran it, and a key in a chat window lands in a transcript.
+    It is in .gitignore, and this refuses the placeholder so an unedited file fails loudly
+    rather than producing a confusing 400 from the API.
+    """
+    if explicit:
+        return explicit.strip()
+    env = os.getenv("YOUTUBE_API_KEY", "").strip()
+    if env:
+        return env
+    if KEY_FILE.is_file():
+        text = KEY_FILE.read_text(encoding="utf-8-sig").strip()
+        if text and KEY_PLACEHOLDER not in text:
+            return text.splitlines()[0].strip()
+    return ""
+
+
+# Praise with nothing in it. Warm, common, and useless as a training prompt: there is no
+# substantive reply to "love your videos!!", so an example built on it teaches her to produce
+# the thanks-for-watching noise this project has spent months removing.
+_PRAISE_ONLY = re.compile(
+    r"^[^a-z]*(?:i\s+)?(?:love|loved|loving|adore|obsessed with|so good|amazing|beautiful|"
+    r"gorgeous|queen|iconic|perfect|the best|great|awesome|yay|thank you|thanks)"
+    r"[^?]*$", re.IGNORECASE)
+# A comment addressed to the creator by name. Kept as material, but the name goes: feeding
+# another creator's name in as something a follower said to Sofia is how a character starts
+# answering to somebody else's.
+#
+# It must require the punctuation a vocative carries. An earlier version accepted a bare space
+# after the capitalised word, which ate the first word of every ordinary question: "Did you
+# contact the seller?" became "you contact the seller?" and "Have you had your hormones tested?"
+# became "you had...". Both survived every later filter and would have gone into training as
+# malformed prompts.
+_LEADING_NAME = re.compile(r"^\s*[A-Z][a-z]{2,}\s*[!,]+\s*(?=[A-Za-z])")
+# Comments about that creator's output rather than about a person. A follower asking Sofia to
+# bring back a podcast she has never had forces her either to invent one or to refuse, and
+# neither makes a training example worth keeping.
+_ABOUT_CHANNEL = re.compile(
+    r"\b(?:videos?|vlogs?|episodes?|pod|podcasts?|grwm|channel|series|upload(?:s|ed)?|"
+    r"subscribe|subscriber|rebrand|patreon|ko-?fi|merch|algorithm|content)\b", re.IGNORECASE)
+# Written about her to the other viewers rather than to her. "she's one of my fav creators" is a
+# recommendation posted in a comment section; handed to a persona as something a follower said,
+# it has no addressee and produces a reply to nobody.
+_THIRD_PERSON = re.compile(
+    r"^(?![^.!?]*\byou\b)[^.!?]*\b(?:she|he|her|his|they)\b", re.IGNORECASE)
+_MOSTLY_EMOJI = re.compile(r"^[\W\d_]*$")
+
+
+def substantive(text: str) -> str | None:
+    """A comment worth answering, with any name stripped — or None if there is nothing in it."""
+    t = _LEADING_NAME.sub("", text).strip()
+    if not t or _MOSTLY_EMOJI.match(t):
+        return None
+    if "?" not in t and _PRAISE_ONLY.match(t):
+        return None
+    if _ABOUT_CHANNEL.search(t) or _THIRD_PERSON.match(t):
+        return None
+    # Needs some actual words left after the decoration is gone.
+    if len(re.findall(r"[a-z]{3,}", t.lower())) < 4:
+        return None
+    return t
+
+
+def cmd_comments(args) -> int:
+    # Re-filtering an existing harvest costs no quota and no network, which matters because the
+    # filters are where the judgement lives and they get revised more often than the data does.
+    if args.refilter:
+        raw = Path(args.refilter).read_text(encoding="utf-8").splitlines()
+        keep = [s for s in (substantive(c) for c in raw) if s]
+        seeds = OUT / f"{args.tag}-seeds.txt"
+        seeds.write_text(chr(10).join(keep), encoding="utf-8")
+        print(f"{len(keep)} of {len(raw)} kept -> {seeds}")
+        for c in keep[:8]:
+            print("   ", c[:100])
+        return 0
+
+    key = read_api_key(args.key)
+    if not key:
+        print(f"No API key yet. Open {KEY_FILE} and replace the placeholder line with the key,"
+              f"\nor set YOUTUBE_API_KEY. Nothing else needs changing.", file=sys.stderr)
+        return 2
+
+    ids = list(args.video or [])
+    if args.corpus:
+        for r in corpus_rows(Path(args.corpus)):
+            if r.get("video_id") and r["video_id"] not in ids:
+                ids.append(r["video_id"])
+    ids = ids[: args.videos]
+    if not ids:
+        print("give --corpus or --video", file=sys.stderr)
+        return 2
+
+    seen, rows = set(), []
+    for i, vid in enumerate(ids, 1):
+        try:
+            got = fetch_comments(vid, key, args.per_video)
+        except Exception as exc:
+            # The key travels in the query string, and several urllib errors quote the URL they
+            # failed on. A key that reaches a log or a terminal transcript is a leaked key, so
+            # it is redacted on the way out rather than trusted not to appear.
+            msg = str(exc).replace(key, "<key>")
+            print(f"  [{i}/{len(ids)}] {vid}: {type(exc).__name__}: {msg}", file=sys.stderr)
+            continue
+        fresh = 0
+        for c in got:
+            words = c.split()
+            # A viewer comment, not an essay and not a single emoji. The bounds are what makes
+            # this usable as a training prompt: `build_dataset` feeds each one in as something
+            # a follower said, and neither a one-word cheer nor a five-paragraph story is that.
+            if not (args.min_words <= len(words) <= args.max_words):
+                continue
+            k = c.lower()
+            if k in seen:
+                continue
+            seen.add(k)
+            rows.append(c)
+            fresh += 1
+        print(f"  [{i}/{len(ids)}] {vid}: {len(got)} comments, {fresh} kept", flush=True)
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    out = OUT / f"{args.tag}-comments.txt"
+    out.write_text(chr(10).join(rows), encoding="utf-8")
+    print(f"{chr(10)}{len(rows)} distinct viewer comments -> {out}")
+
+    keep = [s for s in (substantive(c) for c in rows) if s]
+    seeds = OUT / f"{args.tag}-seeds.txt"
+    seeds.write_text(chr(10).join(keep), encoding="utf-8")
+    print(f"{len(keep)} of them are worth answering -> {seeds}")
+    print(f"  (dropped {len(rows) - len(keep)}: praise with no question in it, "
+          f"emoji-only, or too short once a name was stripped)")
+    for c in keep[:8]:
+        print("   ", c[:100])
+    return 0
+
+
 def cmd_seeds(args) -> int:
     rows = corpus_rows(Path(args.corpus))
     qs = questions_from(rows)
@@ -752,6 +925,18 @@ def main() -> int:
     d.add_argument("--videos", type=int, default=6)
     d.add_argument("--secs", type=int, default=180, help="seconds of audio taken per video")
     d.set_defaults(func=cmd_delivery)
+
+    cm = sub.add_parser("comments", help="real viewer comments, through the YouTube Data API")
+    cm.add_argument("--corpus", help="take the video list from this corpus")
+    cm.add_argument("--video", action="append", help="a video id; repeatable")
+    cm.add_argument("--key", help="API key; defaults to YOUTUBE_API_KEY in the environment")
+    cm.add_argument("--tag", default="viewers")
+    cm.add_argument("--refilter", help="re-run the filters over a saved comments file")
+    cm.add_argument("--videos", type=int, default=25)
+    cm.add_argument("--per-video", type=int, default=100)
+    cm.add_argument("--min-words", type=int, default=3)
+    cm.add_argument("--max-words", type=int, default=40)
+    cm.set_defaults(func=cmd_comments)
 
     q = sub.add_parser("seeds", help="pull the real questions out of a corpus")
     q.add_argument("corpus")

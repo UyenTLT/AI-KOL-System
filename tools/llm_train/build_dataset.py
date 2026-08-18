@@ -197,9 +197,36 @@ def parse_strings(text: str) -> list[str]:
     return [s.strip() for s in re.findall(r'"([^"\n]{6,140})"', text) if s.strip()]
 
 
+REAL_SEEDS = REPO / "datasets" / "style" / "viewers-seeds.txt"
+
+
+def real_seeds() -> list[str]:
+    """Comments real viewers actually left, if they have been harvested.
+
+    SEEDS above is hand-written and says so, with the admission that real comments are shorter,
+    blunter and more varied than anything a model invents unprompted. These are the real ones,
+    pulled through the YouTube Data API from the same videos the style corpus came from.
+
+    They SUPPLEMENT rather than replace. The written seeds deliberately cover situations the
+    comment section does not supply on demand -- somebody weighing a decision, somebody having
+    a bad day -- and losing that coverage to gain variety would be a poor trade.
+    """
+    if not REAL_SEEDS.is_file():
+        return []
+    return [l.strip() for l in REAL_SEEDS.read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
 def fan_messages(n: int, model: str) -> list[str]:
-    """Seeds plus generated variations, deduplicated."""
-    msgs = list(SEEDS)
+    """Seeds plus generated variations, deduplicated.
+
+    Real viewer comments go in first when they have been harvested, then the written seeds, then
+    generated ones only if the count is still short. The order is the point: the generated ones
+    are the weakest material here and should be the part that gets displaced.
+    """
+    real = real_seeds()
+    msgs = list(dict.fromkeys(real + SEEDS))
+    if real:
+        print(f"  seeds: {len(real)} real viewer comments + {len(SEEDS)} written", flush=True)
     client = _client()
     empty = 0
     # Bounded retries rather than break-on-first-failure: one badly formatted batch is normal
