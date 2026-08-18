@@ -392,6 +392,20 @@ Answer with ONLY the number of the best candidate. No explanation."""
 # is a blend. What it did do is corroborate: 49.2% of podcast turns carry a spoken marker
 # against 60.5% of sit-down turns, two independent corpora bracketing the same thing, where
 # hers carry one in 21.3%. The target sits between them rather than on either.
+# Targets measured on ANSWERS to real questions, not on people talking to camera.
+#
+# Everything before this was measured on a sit-down corpus, which is monologue: somebody with
+# nobody waiting, telling stories and taking positions. Sofia answers a comment, and 393 real
+# question-and-answer pairs from live streams say the two behave differently -- story shape 4.3%
+# against 14.5%, opinions 19.3% against 26.5%. Steering toward the monologue numbers pushed her
+# well past the answering ones: she now tells a story three times too often and states an
+# opinion nearly twice too often.
+#
+# The sample size mattered here and is worth recording. At 174 pairs the question-back rate for
+# answers measured 9.8%, HIGHER than monologue, and the conclusion drawn from it -- that she was
+# essentially finished on that metric -- was wrong. At 393 it is 4.8%, and she is still 2.6x
+# above it. Half the numbers moved materially between the two samples.
+#
 # `story` replaces `experience` rather than joining it, and the swap was forced by evidence.
 #
 # Adding `spoken` as a fourth target diluted the steering measurably: question-backs went from
@@ -407,7 +421,7 @@ Answer with ONLY the number of the best candidate. No explanation."""
 # The pool is doubled at the same time (k=8). With the generator ending on a question about
 # 70% of the time, four candidates leave a floor of 0.7^4 = 24% that no amount of selection can
 # get under; eight leaves 5.8%, which is the first time the floor sits below the target.
-SHAPE_TARGET = {"qback": 0.048, "story": 0.145, "opinion": 0.197, "spoken": 0.55}
+SHAPE_TARGET = {"qback": 0.048, "story": 0.043, "opinion": 0.193, "spoken": 0.46}
 
 
 class Shape:
