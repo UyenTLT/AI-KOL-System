@@ -360,6 +360,49 @@ _SAID = re.compile(
     r"|\b(?:I|he|she|they|we)\s+(?:was|were)\s+like\b|\bhe'?s like\b|\bshe'?s like\b", re.I)
 
 
+# Playfulness, measured as moves rather than as a mood.
+#
+# "Funny" is not detectable and this project already knows it: the chat's HUMOUR block names
+# specific things she can do to a sentence precisely because an instruction to be funny changed
+# nothing. The same reasoning applies to measuring it. What follows are the four moves that
+# leave a mark in the text.
+#
+# Deliberately NOT included: laughter markers. Auto-captions carry them in 38 turns out of
+# 1,624, which is a rounding error, and a metric that reads zero because the source cannot
+# express the thing looks like an answer when it is an absence.
+
+# Taking yourself down first, which is the move most of her persona's humour is built on.
+_SELF_DEPRECATE = re.compile(
+    r"\bwhich (?:says|tells you) more about me\b|\bnot (?:my|a) (?:proudest|finest)\b"
+    r"|\bI am not proud of (?:this|that|it)\b|\bembarrassing(?:ly)?\b|\bshamef\w+\b"
+    r"|\bI have no excuse\b|\bdo not judge me\b|\bI know how that sounds\b"
+    r"|\bmy own fault\b|\bI did that to myself\b|\bregret\w*\b", re.IGNORECASE)
+# Mock outrage, aimed at a person or a thing and obviously not meant.
+_MOCK_OUTRAGE = re.compile(
+    r"\bexcuse me\b|\bhow dare\b|\bthe audacity\b|\bthe nerve\b|\brude\b|\boutrageous\b"
+    r"|\bI beg your pardon\b|\bwe are not doing this\b|\babsolutely not\b|\bthe disrespect\b",
+    re.IGNORECASE)
+# Exaggeration played for effect. Anchored on the constructions rather than on adjectives,
+# which are too common to carry the signal on their own.
+_HYPERBOLE = re.compile(
+    r"\bI would rather (?:die|eat|walk)\b|\bliterally (?:dying|crying|screaming|sobbing)\b"
+    r"|\bthe worst thing that has ever\b|\bworst .{0,20}of my (?:life|entire life)\b"
+    r"|\bnever recovered\b|\bshould be (?:studied|illegal|arrested)\b"
+    r"|\bI will not be taking questions\b|\bcriminal\b|\bunforgivable\b", re.IGNORECASE)
+# Setting something up and pulling it away — a confident line, then the retraction.
+_UNDERCUT = re.compile(
+    r"\b(?:okay|well|alright),? (?:but|no)\b|\bactually,? no\b|\bwait,? no\b"
+    r"|\bor (?:so I|I) (?:thought|told myself)\b|\bin theory\b[^.!?]{0,40}\bin practice\b"
+    r"|\bone of them is\b|\bwhich is (?:not|hardly) the same\b|\bto be fair,? (?:no|it)\b",
+    re.IGNORECASE)
+
+
+def is_playful(text: str) -> bool:
+    """Any one of the four moves. One is enough — a turn is not funnier for stacking them."""
+    return bool(_SELF_DEPRECATE.search(text) or _MOCK_OUTRAGE.search(text)
+                or _HYPERBOLE.search(text) or _UNDERCUT.search(text))
+
+
 def is_story(text: str) -> bool:
     """Two of three narrative markers: past-tense first person, time moving, somebody speaking."""
     return sum((bool(_PAST_I.search(text)), bool(_WHEN.search(text)),
