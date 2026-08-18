@@ -363,7 +363,22 @@ Answer with ONLY the number of the best candidate. No explanation."""
 # is a blend. What it did do is corroborate: 49.2% of podcast turns carry a spoken marker
 # against 60.5% of sit-down turns, two independent corpora bracketing the same thing, where
 # hers carry one in 21.3%. The target sits between them rather than on either.
-SHAPE_TARGET = {"qback": 0.048, "experience": 0.321, "opinion": 0.197, "spoken": 0.55}
+# `story` replaces `experience` rather than joining it, and the swap was forced by evidence.
+#
+# Adding `spoken` as a fourth target diluted the steering measurably: question-backs went from
+# 18.8% of the dataset back up to 33.1%, and own-experience fell from 20.8% to 15.2%, against
+# targets of 4.8% and 32.1%. Four objectives were competing over four candidates, and each one
+# narrowed the pool for the next until the last had nothing left to choose from.
+#
+# So the count stays at four and the objectives get sharper instead. Telling something that
+# happened is the weaker half of the same idea — is_story requires the past-tense marker AND
+# structure, so steering on it steers both. The target comes from the sit-down corpus, where
+# 14.5% of turns are shaped as a story against 1.9% of hers.
+#
+# The pool is doubled at the same time (k=8). With the generator ending on a question about
+# 70% of the time, four candidates leave a floor of 0.7^4 = 24% that no amount of selection can
+# get under; eight leaves 5.8%, which is the first time the floor sits below the target.
+SHAPE_TARGET = {"qback": 0.048, "story": 0.145, "opinion": 0.197, "spoken": 0.55}
 
 
 class Shape:
@@ -386,9 +401,9 @@ class Shape:
 
     @staticmethod
     def feats(text: str) -> dict:
-        from harvest_talk import _FILLER, _OPINION, _PAST_I, _QBACK
+        from harvest_talk import _FILLER, _OPINION, _QBACK, is_story
         return {"qback": bool(_QBACK.search(text)),
-                "experience": bool(_PAST_I.search(text)),
+                "story": is_story(text),
                 "opinion": bool(_OPINION.search(text)),
                 "spoken": bool(_FILLER.search(text))}
 

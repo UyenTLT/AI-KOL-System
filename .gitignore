@@ -115,3 +115,8 @@ kols/*/voice/*.wav.*
 # tracked and always has been.
 kols/*/voice/ref_human.*
 kols/*/voice/ref_blend.wav
+
+# API keys, provided locally and never committed.
+.env
+*.key
+youtube-api-key.txt
