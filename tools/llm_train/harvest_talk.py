@@ -188,7 +188,36 @@ _SENT_END = re.compile(r"[.!?…]$")
 _SPEAKER_CHANGE = re.compile(r"\s*>>+\s*(?:[A-Z][A-Za-z .'-]{0,24}:)?\s*")
 
 
-def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[str]:
+def _delivery(cues: list[dict], text: str) -> dict:
+    """Where the speaker stopped, and for how long, inside one turn.
+
+    The timing is the whole reason to read subtitles rather than a transcript, and until now it
+    was being thrown away at the end of `turns()`. A caption cue carries the moment speech
+    resumed, so the gap between the end of one cue and the start of the next is a real silence
+    the speaker left — the thing that separates talking from reading aloud, and the thing this
+    project has already measured as its largest voice defect (2.09 pauses per 10 s of synthetic
+    speech against 6.79 for a human).
+
+    Cue ends are approximated from word count at a normal speaking rate, because json3 events
+    carry a start and not a duration. That biases every measurement the same way on both sides
+    of the comparison, which is what matters — this is a difference, not an absolute.
+    """
+    pauses, span = [], 0.0
+    for a, b in zip(cues, cues[1:]):
+        end_a = a["start"] + len(a["text"].split()) / 2.8
+        gap = b["start"] - end_a
+        if gap > 0.25:
+            pauses.append(gap)
+    if cues:
+        last = cues[-1]
+        span = (last["start"] + len(last["text"].split()) / 2.8) - cues[0]["start"]
+    words = len(text.split())
+    return {"secs": round(max(span, 0.1), 2),
+            "pauses": [round(p, 2) for p in pauses],
+            "wps": round(words / max(span, 0.1), 2)}
+
+
+def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[dict]:
     """Merge cues into utterance-sized turns, the unit a chat reply is comparable to.
 
     A caption cue is a display artefact — it breaks every 3 to 7 words wherever the line ran
@@ -199,6 +228,15 @@ def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[st
     pauses still produces comparable units.
     """
     out, buf, last_end = [], [], None
+
+    def flush():
+        if not buf:
+            return
+        text = re.sub(r"\s+", " ", " ".join(c["text"] for c in buf)).strip()
+        if len(text.split()) >= 4:
+            out.append({"text": text, **_delivery(buf, text)})
+        buf.clear()
+
     for c in cues:
         text = re.sub(r"\s+", " ", c["text"]).strip()
         if not text:
@@ -207,26 +245,22 @@ def turns(cues: list[dict], *, gap: float = 1.2, max_words: int = 70) -> list[st
         if _SPEAKER_CHANGE.search(text):
             parts = _SPEAKER_CHANGE.split(text)
             if buf and parts[0].strip():
-                buf.append(parts[0].strip())
-            if buf:
-                out.append(" ".join(buf))
-            buf = []
+                buf.append({"start": c["start"], "text": parts[0].strip()})
+            flush()
             text = " ".join(p.strip() for p in parts[1:] if p.strip())
             if not text:
                 last_end = c["start"]
                 continue
-        if last_end is not None and c["start"] - last_end > gap and buf:
-            out.append(" ".join(buf)); buf = []
-        buf.append(text)
+        if last_end is not None and c["start"] - last_end > gap:
+            flush()
+        buf.append({"start": c["start"], "text": text})
         # A cue carries no duration in json3 events we keep, so approximate the end from the
-        # word count at a normal speaking rate. Only used to detect pauses, never reported.
+        # word count at a normal speaking rate.
         last_end = c["start"] + len(text.split()) / 2.8
-        joined = " ".join(buf)
-        if len(joined.split()) >= max_words and _SENT_END.search(text):
-            out.append(joined); buf = []
-    if buf:
-        out.append(" ".join(buf))
-    return [t for t in (re.sub(r"\s+", " ", t).strip() for t in out) if len(t.split()) >= 4]
+        if sum(len(x["text"].split()) for x in buf) >= max_words and _SENT_END.search(text):
+            flush()
+    flush()
+    return out
 
 
 # ---------------------------------------------------------------- the rubric
@@ -262,6 +296,63 @@ _SURVEY = re.compile(r"\b(?:it depends|everyone is different|there are pros and 
 _FILLER = re.compile(r"\b(?:like|you know|I mean|kind of|kinda|sort of|basically|literally|"
                      r"anyway|actually|honestly)\b", re.I)
 _QBACK = re.compile(r"\?\s*$")
+
+
+# ---------------------------------------------------------------- delivery
+#
+# The second rubric, and a different question from the first. The first asks what she says; this
+# asks how it comes out — where she stops, how fast she goes, and where feeling lands. It exists
+# because every reply currently leaves the system with one fixed delivery instruction, so a joke
+# and a condolence are spoken identically, and because this project already measured pauses as
+# the largest single difference between its synthetic speech and a human recording.
+
+# Deliberately NOT measured from captions: laughter, exclamation, and where emotion lands.
+#
+# Checked rather than assumed, and the check killed three metrics that had already been written.
+# Across 1,624 harvested turns there is not one exclamation mark — YouTube's automatic captions
+# transcribe words and punctuate flatly, so an emotional peak and a shopping list come out
+# identically. Bracketed sound cues appear in 38 turns out of 1,624, which is a rounding error
+# rather than a signal.
+#
+# A metric that reads zero because the source cannot express the thing is worse than no metric:
+# it looks like an answer. Emotion and pausing are properties of the audio, so `delivery` below
+# measures them from the audio, with the same instrument tools/voice_eval already uses on ours.
+_TRAIL = re.compile(r"(?:\.\.\.|…)\s*$|\b(?:you know|I don'?t know|whatever)\s*[.…]*\s*$", re.I)
+# A restart or repair mid-thought: "I— I think", "it was, well, fine", "I mean".
+_REPAIR = re.compile(r"\bI mean\b|\bor rather\b|\bwell,? actually\b|\bsorry,? I\b"
+                     r"|\b(\w+)[,—-]+\s+\1\b", re.I)
+
+
+def measure_delivery(rows: list[dict]) -> dict:
+    """How the talk comes out, for rows that carry timing. Text-only corpora return {}."""
+    timed = [r for r in rows if isinstance(r, dict) and r.get("secs")]
+    if not timed:
+        return {}
+    secs = sum(r["secs"] for r in timed)
+    pauses = [p for r in timed for p in (r.get("pauses") or [])]
+    n = len(timed)
+    texts = [r["text"] for r in timed]
+
+    def pct(rx):
+        return round(100.0 * sum(1 for t in texts if rx.search(t)) / n, 1)
+
+    return {
+        "turns": n,
+        "pauses_per_10s": round(10.0 * len(pauses) / secs, 2) if secs else 0.0,
+        "median_pause_s": round(sorted(pauses)[len(pauses) // 2], 2) if pauses else 0.0,
+        "words_per_second": round(sum(len(t.split()) for t in texts) / secs, 2) if secs else 0.0,
+        "trails_off_pct": pct(_TRAIL),
+        "self_repair_pct": pct(_REPAIR),
+    }
+
+
+DELIVERY_LABELS = {
+    "pauses_per_10s": "silences left per 10 seconds of speech",
+    "median_pause_s": "how long a silence lasts, median seconds",
+    "words_per_second": "speaking rate, words per second",
+    "trails_off_pct": "turns that trail off rather than land",
+    "self_repair_pct": "turns where she restarts or corrects herself",
+}
 
 
 def measure(texts: list[str]) -> dict:
@@ -321,9 +412,12 @@ def our_replies(kol_id: str, limit: int | None = None) -> list[str]:
     return out[:limit] if limit else out
 
 
+def corpus_rows(path: Path) -> list[dict]:
+    return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+
+
 def corpus_texts(path: Path) -> list[str]:
-    return [json.loads(l)["text"] for l in path.read_text(encoding="utf-8").splitlines()
-            if l.strip()]
+    return [r["text"] for r in corpus_rows(path)]
 
 
 def print_table(rows: list[tuple], head: tuple) -> None:
@@ -369,10 +463,10 @@ def cmd_fetch(args) -> int:
             print(f"      failed: {type(exc).__name__}: {exc}", file=sys.stderr)
             continue
         tt = turns(v["cues"], gap=args.gap, max_words=args.max_words)
-        fresh = [t for t in tt if t not in seen]
-        seen.update(fresh)
+        fresh = [t for t in tt if t["text"] not in seen]
+        seen.update(t["text"] for t in fresh)
         for t in fresh:
-            rows.append({"text": t, "video_id": v["id"], "channel": v["channel"],
+            rows.append({**t, "video_id": v["id"], "channel": v["channel"],
                          "title": v["title"], "source": v["source"], "tag": args.tag})
         sources.append((v["title"] or v["id"], v["source"], len(tt), len(fresh)))
         print(f"      {v['source']}: {len(v['cues'])} cues -> {len(tt)} turns "
@@ -391,6 +485,122 @@ def cmd_fetch(args) -> int:
     return 0
 
 
+# Both sides are cut into windows of the same length, so a pause rate from a three-minute video
+# and one from a twelve-second reply are the same measurement rather than two different ones.
+WINDOW_S = 10.0
+MAX_AUDIO_S = 240.0
+
+
+def audio_delivery(paths: list[Path]) -> dict:
+    """Pausing and pitch movement measured from real audio, per 4-7.5 s chunk.
+
+    Uses tools/voice_eval/prosody.py rather than a second implementation, and not for tidiness:
+    that module high-passes at 80 Hz and floors the pitch tracker at 110 Hz because an earlier
+    hand-rolled version tracked a female voice an octave low and produced a fabricated figure
+    that reached a written conclusion. Reusing it means the number for a stranger's speech and
+    the number for ours were produced by the same instrument, which is the only way the
+    comparison means anything.
+    """
+    sys.path.insert(0, str(REPO / "tools" / "voice_eval"))
+    import prosody
+
+    # Fixed windows, not prosody.chunk(). That helper splits on silence and keeps only segments
+    # of four seconds or more, which is right for building a long corpus and wrong here: our
+    # rendered replies are 10-14 s of speech broken by exactly the pauses being measured, so
+    # every segment came out under the threshold and the whole side scored zero chunks. Silence
+    # is the signal, so it must not be what decides where the window ends.
+    rows = []
+    win = int(WINDOW_S * prosody.SR)
+    for p in paths:
+        try:
+            y = prosody.load_any(str(p))
+        except Exception as exc:
+            print(f"  skipped {p.name}: {type(exc).__name__}: {exc}", file=sys.stderr)
+            continue
+        y = y[: int(MAX_AUDIO_S * prosody.SR)]
+        for i in range(0, max(len(y) - win // 2, 1), win):
+            seg = y[i:i + win]
+            if len(seg) < 4 * prosody.SR:
+                continue
+            f = prosody.feats(seg)
+            if f and f.get("dur", 0) > 1.0:
+                rows.append(f)
+    if not rows:
+        return {}
+
+    def med(key):
+        v = sorted(r[key] for r in rows if r.get(key) is not None)
+        return round(v[len(v) // 2], 2) if v else 0.0
+
+    return {"chunks": len(rows), "pauses_per_10s": med("pause_rate"),
+            "pitch_range_st": med("f0_range_st"), "median_pitch_hz": med("f0_med"),
+            "loudness_sd_db": med("db_sd")}
+
+
+AUDIO_LABELS = {
+    "pauses_per_10s": "pauses per 10 s  — where she stops",
+    "pitch_range_st": "pitch range, semitones  — how much the voice moves",
+    "median_pitch_hz": "median pitch, Hz",
+    "loudness_sd_db": "loudness variation, dB  — where the emphasis lands",
+}
+
+
+def cmd_delivery(args) -> int:
+    """Download audio for a sample of the corpus and measure how it is actually spoken."""
+    import yt_dlp
+
+    ids = []
+    if args.corpus:
+        for r in corpus_rows(Path(args.corpus)):
+            if r.get("video_id") and r["video_id"] not in ids:
+                ids.append(r["video_id"])
+    ids = ids[:args.videos]
+    if not ids and not args.audio:
+        print("give --corpus or --audio", file=sys.stderr)
+        return 2
+
+    paths = [Path(a) for a in (args.audio or [])]
+    tmp = None
+    if ids:
+        tmp = tempfile.TemporaryDirectory()
+        td = Path(tmp.name)
+        print(f"downloading audio for {len(ids)} videos (a sample, not the corpus)", flush=True)
+        for vid in ids:
+            # The whole audio track, then trimmed after loading. Clipping during download with
+            # `download_ranges` + `force_keyframes_at_cuts` failed on half the videos with an
+            # ffmpeg crash, and an audio-only track for a twenty-minute video is a few MB — the
+            # clever version cost more than it saved.
+            opts = {"format": "bestaudio/best", "outtmpl": str(td / "%(id)s.%(ext)s"),
+                    "quiet": True, "no_warnings": True,
+                    "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "wav"}]}
+            try:
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    ydl.download([f"https://www.youtube.com/watch?v={vid}"])
+            except Exception as exc:
+                print(f"  {vid}: {type(exc).__name__}", file=sys.stderr)
+        paths += sorted(td.glob("*.wav"))
+
+    real = audio_delivery(paths)
+    if tmp:
+        tmp.cleanup()
+    if not real:
+        print("no audio could be measured", file=sys.stderr)
+        return 1
+
+    ours = {}
+    if args.ours:
+        clips = sorted(Path(args.ours).glob("*.wav"))[: args.videos * 4]
+        ours = audio_delivery(clips)
+
+    head = ("delivery", "real talk") + (("hers",) if ours else ())
+    rows = [(AUDIO_LABELS[k], real[k]) + ((ours.get(k, "-"),) if ours else ())
+            for k in AUDIO_LABELS]
+    print(f"\nreal: {real['chunks']} chunks"
+          + (f"    hers: {ours['chunks']} chunks" if ours else "") + "\n")
+    print_table(rows, head)
+    return 0
+
+
 def cmd_measure(args) -> int:
     texts = corpus_texts(Path(args.corpus))
     m = measure(texts)
@@ -399,6 +609,11 @@ def cmd_measure(args) -> int:
         return 1
     print(f"{Path(args.corpus).name} — {m['turns']} turns\n")
     print_table([(LABELS[k], m[k]) for k in LABELS], ("measure", "value"))
+    d = measure_delivery(corpus_rows(Path(args.corpus)))
+    if d:
+        print()
+        print_table([(DELIVERY_LABELS[k], d[k]) for k in DELIVERY_LABELS],
+                    ("delivery", "value"))
     return 0
 
 
@@ -458,6 +673,14 @@ def main() -> int:
     m = sub.add_parser("measure", help="the seven numbers for one corpus")
     m.add_argument("corpus")
     m.set_defaults(func=cmd_measure)
+
+    d = sub.add_parser("delivery", help="how it is spoken — pauses and pitch, from real audio")
+    d.add_argument("--corpus", help="take a video sample from this corpus")
+    d.add_argument("--audio", action="append", help="a local wav to measure instead; repeatable")
+    d.add_argument("--ours", help="a directory of our rendered wavs to compare against")
+    d.add_argument("--videos", type=int, default=6)
+    d.add_argument("--secs", type=int, default=180, help="seconds of audio taken per video")
+    d.set_defaults(func=cmd_delivery)
 
     c = sub.add_parser("compare", help="her replies against a real-talk corpus")
     c.add_argument("kol_id")
