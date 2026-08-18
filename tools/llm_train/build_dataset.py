@@ -357,7 +357,13 @@ Answer with ONLY the number of the best candidate. No explanation."""
 # The detectors are imported from the measurement rather than rewritten here. Two copies of
 # "what counts as an opinion" would drift, and then the dataset would be optimised against one
 # definition and reported against another.
-SHAPE_TARGET = {"qback": 0.048, "experience": 0.321, "opinion": 0.197}
+# `spoken` was added after harvesting a podcast corpus to see whether the genre taught
+# anything the sit-down one did not. It did not replace the target — podcast captions carry
+# no speaker labels, so two people merge into one measured turn and every figure from them
+# is a blend. What it did do is corroborate: 49.2% of podcast turns carry a spoken marker
+# against 60.5% of sit-down turns, two independent corpora bracketing the same thing, where
+# hers carry one in 21.3%. The target sits between them rather than on either.
+SHAPE_TARGET = {"qback": 0.048, "experience": 0.321, "opinion": 0.197, "spoken": 0.55}
 
 
 class Shape:
@@ -380,10 +386,11 @@ class Shape:
 
     @staticmethod
     def feats(text: str) -> dict:
-        from harvest_talk import _OPINION, _PAST_I, _QBACK
+        from harvest_talk import _FILLER, _OPINION, _PAST_I, _QBACK
         return {"qback": bool(_QBACK.search(text)),
                 "experience": bool(_PAST_I.search(text)),
-                "opinion": bool(_OPINION.search(text))}
+                "opinion": bool(_OPINION.search(text)),
+                "spoken": bool(_FILLER.search(text))}
 
     def rate(self, key: str) -> float:
         return self.c[key] / self.n if self.n else 0.0

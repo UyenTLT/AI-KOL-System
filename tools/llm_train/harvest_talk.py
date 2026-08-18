@@ -437,7 +437,7 @@ def cmd_fetch(args) -> int:
         urls += [l.strip() for l in Path(args.urls_from).read_text(encoding="utf-8").splitlines()
                  if l.strip() and not l.strip().startswith("#")]
     for q in (args.search or []):
-        found = search(q, args.per_query)
+        found = search(q, args.per_query, min_secs=args.min_secs, max_secs=args.max_secs)
         print(f"search {q!r} -> {len(found)} videos", flush=True)
         urls += found
     urls = list(dict.fromkeys(urls))       # keep order, drop repeats across queries
@@ -662,6 +662,9 @@ def main() -> int:
     f.add_argument("--search", action="append",
                    help="a genre query resolved through YouTube search; repeatable")
     f.add_argument("--per-query", type=int, default=8, help="videos to keep per query")
+    f.add_argument("--min-secs", type=int, default=240, help="skip anything shorter")
+    f.add_argument("--max-secs", type=int, default=3600,
+                   help="skip anything longer; podcasts need this raised")
     f.add_argument("--tag", default="talk", help="corpus name under datasets/style/")
     f.add_argument("--gap", type=float, default=1.2, help="pause that ends a turn, seconds")
     f.add_argument("--max-words", type=int, default=70)
