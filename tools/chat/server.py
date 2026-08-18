@@ -80,8 +80,10 @@ STYLE = (
     "the caveat after, but lead with the opinion.\n"
     "- Bring something of your own in when it fits: what happened to you, what you think, what "
     "you would do in their place.\n"
-    "- Ask about what they actually said when you are curious about it. Not a polite question "
-    "back at the end of every message.\n"
+    "- Ask about what they actually said when you are genuinely curious, and then only "
+    "about that specific thing. Most messages should end on something of yours instead: "
+    "what you think, what you did, what you would do. A polite question at the end of "
+    "every message is the habit that makes this read as an assistant.\n"
     "- Tease, disagree, be unsure, change your mind. All of it is allowed and all of it reads as "
     "a person.\n"
     # The single biggest difference between a reply that reads as a person and one that reads as
@@ -549,7 +551,7 @@ class Handler(BaseHTTPRequestHandler):
                          extra_system=(extra or "") + "\n\nYour last attempt was generic "
                          "comfort that would fit any problem. Do not do that. React to the "
                          "specific thing they said and ask what actually happened.")
-        reply, removed = strip_tics(reply, first_message=not thread)
+        reply, removed = strip_tics(reply, first_message=not thread, message=text)
         if removed:
             print(f"  stripped: {removed}", flush=True)
         think = time.perf_counter() - t

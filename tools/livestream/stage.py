@@ -111,13 +111,14 @@ ENGAGE = (
     "When they bring you a problem, engage with THAT problem:\n"
     "- React to the specific thing first. 'Your boss made you redo it twice?' is engaging; "
     "'that sounds hard' is not.\n"
-    "- Ask what actually happened. Which part went wrong, who said what, how long it went on. "
-    "Curiosity about the detail is what shows you are listening.\n"
+    "- If you genuinely want to know a detail, ask for THAT detail. Which part went wrong, "
+    "who said what, how long it went on. Ask because you want the answer, not because a "
+    "reply needs somewhere to go.\n"
     "- Take a side. If someone treated them badly, say so. Neutrality reads as not caring.\n"
     "- Banned, because they fit every problem and therefore answer none: 'take a walk', 'treat "
     "yourself', 'you've got this', 'hang in there', 'try not to worry', 'everything will be "
-    "fine', 'tomorrow is a new day'. If you find yourself reaching for one, ask a question "
-    "about what happened instead.\n"
+    "fine', 'tomorrow is a new day'. If you find yourself reaching for one, say what you "
+    "would actually do, or tell them about the time this happened to you, instead.\n"
     "- You do not have to fix it. Being interested in the details of someone's bad day is worth "
     "more than advice, and it is the part a stranger cannot do."
 )
@@ -315,9 +316,13 @@ SUBSTANCE = (
     "they know you saw who asked.\n"
     "- React to the person, not only the topic. If someone says they work nights, that is about "
     "them; the skincare is secondary.\n"
-    "- Turn it back to them when you actually want to know something specific — 'which one did "
-    "you try?', 'wait, how did that go?'. A generic 'what about you?' bolted onto the end is the "
-    "opposite of interest.\n"
+    "- END ON SOMETHING OF YOURS. What you think, what you did, what you would do. Most "
+    "replies should finish on a statement rather than a question. Measured against real "
+    "people talking, about one turn in twenty ends by handing the conversation back, and "
+    "yours were ending that way seven times in ten — a question bolted on so the other "
+    "person has something to reply to is the clearest sign nobody is home.\n"
+    "- Turn it back to them ONLY when you actually want to know something specific: "
+    "'which one did you try?', 'wait, how did that go?'. Never a generic 'what about you?'.\n"
     "- Play along. If they joke, joke back. If they tease you, take it. A stream is a room, not "
     "an inbox.\n"
     "\n" + ENGAGE
@@ -355,7 +360,20 @@ _OPENER_TIC = re.compile(
     re.IGNORECASE)
 
 
-def strip_tics(reply: str, *, first_message: bool) -> tuple[str, list[str]]:
+# Engagement formulas: a question whose only job is to give the other person something to reply
+# to. Each was observed in her own output. They are cut whatever else is in the sentence, since
+# there is no version of "what about you?" that carries information.
+_BOLTED_ON = re.compile(
+    r"^\s*(?:so\s+)?(?:what|how)\s+about\s+you\b"
+    r"|^\s*(?:what|how)(?:'s| is| was| are)\s+your\s+(?:go[- ]to|favou?rite|take|secret)\b"
+    r"|^\s*(?:do|have|did)\s+you\s+(?:ever|have any|got any|tried)\b"
+    r"|^\s*any\s+(?:tips|advice|thoughts|plans)\b"
+    r"|^\s*(?:right|you know|yeah)\s*\?\s*$"
+    r"|\bwhat\s+about\s+(?:you|yours)\s*\?\s*$",
+    re.IGNORECASE)
+
+
+def strip_tics(reply: str, *, first_message: bool, message: str = "") -> tuple[str, list[str]]:
     """Remove the openers and sign-offs that give an assistant away.
 
     Greetings are only stripped after the first message, because opening a conversation with
@@ -390,6 +408,33 @@ def strip_tics(reply: str, *, first_message: bool) -> tuple[str, list[str]]:
     sents = [s for s in re.split(r"(?<=[.!?…])\s+", out) if s.strip()]
     while len(sents) >= 3 and sents[-1].rstrip().endswith("?") and sents[-2].rstrip().endswith("?"):
         removed.append(sents.pop().strip())
+
+    # The bolted-on question, removed in code because the prompt could not do it.
+    #
+    # Measured against 1,624 turns of real sit-down talk, a person hands the conversation back
+    # in 5.3% of turns. She was doing it in 71.4%. Training moved the dataset to 18.8% and the
+    # deployed model still produced 58.3%, so the prompt was rewritten to say so in as many
+    # words — including the actual numbers — and the rate came back at 58.3%, unchanged to the
+    # decimal, while every other measure in the same run improved. That is the third time this
+    # project has watched a rule change the wording and leave the behaviour, and the standing
+    # answer to it is enforcement rather than instruction.
+    #
+    # Only the padding is cut. A question that names something the person actually said is the
+    # good kind and survives, which is why this needs the message and not just the reply.
+    if len(sents) >= 2 and sents[-1].rstrip().endswith("?"):
+        last = sents[-1].strip()
+        words = re.findall(r"[a-z']+", last.lower())
+        theirs = {w for w in re.findall(r"[a-z]{4,}", (message or "").lower())
+                  if w not in _LIFE_STOP}
+        shared = theirs & {w for w in words if len(w) >= 4}
+        # And only if something worth hearing is left behind. "Oh no. What went wrong?" reduces
+        # to "Oh no." under the rule above — a question genuinely engaged with what was said,
+        # cut to leave two words of sympathy, which is worse than the padding this is meant to
+        # remove. The same remaining-length guard the greeting and sign-off rules already use.
+        rest = " ".join(sents[:-1]).strip()
+        if len(rest) > 40 and (_BOLTED_ON.search(last) or (len(words) <= 8 and not shared)):
+            removed.append(sents.pop().strip())
+
     out = " ".join(sents).strip() or out
 
     return out or reply.strip(), removed

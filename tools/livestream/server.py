@@ -231,7 +231,7 @@ def answer(c: dict, hist: list) -> dict:
     text = sung["text"] if sung else respond(KOL, c["text"], mode, history=hist, asker=c.get("who"))[0]
     # The same cleanup the chat has had for a while. It was never wired in here, which is why
     # the stream still signed off with "thanks for asking" long after the chat had stopped.
-    text, removed = strip_tics(text, first_message=not EVENTS)
+    text, removed = strip_tics(text, first_message=not EVENTS, message=c.get("text", ""))
     if removed:
         print(f"  stripped: {removed}", flush=True)
     think = time.perf_counter() - t
