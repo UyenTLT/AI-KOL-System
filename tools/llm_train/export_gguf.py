@@ -44,10 +44,29 @@ def run(cmd: list[str], **kw) -> None:
         raise RuntimeError(f"failed (exit {p.returncode}):\n{tail}")
 
 
+def _stale(out: Path, src: Path) -> bool:
+    """Does `out` need rebuilding because `src` is newer?
+
+    Existence alone is the wrong test, and it silently shipped the wrong model once. After a
+    retrain the merge re-ran and the conversion skipped, because a GGUF from six days earlier
+    was sitting where the new one belonged — so `ollama create` registered the previous tune
+    under the current name, and every service pointed at it would have served the old weights
+    while every log said the new ones had been deployed.
+
+    Comparing modification times costs nothing and makes the skip mean "already up to date"
+    rather than "a file with this name exists".
+    """
+    if not out.exists():
+        return True
+    newest = max((f.stat().st_mtime for f in ([src] if src.is_file() else src.rglob("*"))
+                  if f.is_file()), default=0)
+    return newest > out.stat().st_mtime
+
+
 def merge(kol_id: str, base: Path, adapter: Path, out: Path) -> Path:
     """Fold the LoRA into the weights so nothing downstream needs to know about adapters."""
-    if (out / "model.safetensors.index.json").is_file() or (out / "model.safetensors").is_file():
-        print(f"  merged already exists -> {out}")
+    if ((out / "model.safetensors.index.json").is_file() or (out / "model.safetensors").is_file())             and not _stale(out / "config.json", adapter):
+        print(f"  merged is up to date -> {out}")
         return out
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -90,9 +109,12 @@ def convert(merged: Path, gguf: Path, outtype: str = "f16") -> Path:
     `ollama create --quantize` does q4_K_M with no extra binaries, but only from an unquantised
     source, so this stage now emits f16 and hands the quantising over.
     """
-    if gguf.is_file():
-        print(f"  gguf already exists -> {gguf}")
+    if not _stale(gguf, merged):
+        print(f"  gguf is up to date -> {gguf}")
         return gguf
+    if gguf.is_file():
+        print(f"  gguf is older than the merged weights, rebuilding it")
+        gguf.unlink()
     script = ensure_llama_cpp()
     gguf.parent.mkdir(parents=True, exist_ok=True)
     run([sys.executable, str(script), str(merged), "--outfile", str(gguf),
