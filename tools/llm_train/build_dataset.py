@@ -39,6 +39,8 @@ for sub in ("livetalking", "livestream"):
 
 OUT = REPO / "datasets"
 
+from stage import fix_vocative, strip_tics  # noqa: E402  same cleanup production runs
+
 # Deliberately terse, and deliberately not the persona. What the model must learn is how she
 # sounds; if the answer only appears when the whole character sheet is present, nothing has been
 # learned that the prompt was not already doing.
@@ -509,6 +511,23 @@ def build_conversations(kol_id: str, openers: list[str], turns: int, k: int,
         for turn in range(turns):
             survivors = []
             for c in candidates(kol_id, msg, k, model, thread=thread):
+                # Clean the candidate the way production cleans a reply, BEFORE judging it.
+                #
+                # Selection alone cannot get under its own floor: the generator ends on a
+                # question about 83% of the time, so eight candidates leave 0.83^8 = 25% where
+                # every one of them asks, and that is roughly where the run sat. Sixteen
+                # candidates would buy 4.8% at twice the cost, which is the expensive way to
+                # fix it.
+                #
+                # The cheap way is already written and already running in production, where it
+                # takes the same defect from 58.3% to 12.5%. Applying it here means the model
+                # learns the cleaned distribution instead of learning the raw one and relying
+                # on a cleaner at inference — and a habit removed from the weights costs
+                # nothing per reply, where a cleaner costs a rule that can be wrong.
+                c, _ = fix_vocative(c, None, kol_id)
+                c, _ = strip_tics(c, first_message=(turn == 0), message=msg)
+                if not c:
+                    continue
                 ok, why = judge(c, msg, mid=(turn > 0))
                 if ok:
                     survivors.append(c)
