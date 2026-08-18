@@ -297,6 +297,32 @@ _FILLER = re.compile(r"\b(?:like|you know|I mean|kind of|kinda|sort of|basically
                      r"anyway|actually|honestly)\b", re.I)
 _QBACK = re.compile(r"\?\s*$")
 
+# Story shape. Telling something that happened is not the same as mentioning it: "I went to
+# Taiwan" is a fact, and "so I got on the wrong bus, and forty minutes later I was at a
+# completely different lake" is a story. What separates them is structure — time moving
+# forward, and often somebody speaking.
+#
+# Measured with three independent markers rather than one, because any single one of them
+# fires on ordinary sentences: past tense alone is most of speech, a temporal connective alone
+# is "and then I agree", reported speech alone is a quote. A turn counts as narrative when at
+# least two of the three are present, which is the cheapest test that separates the two
+# examples above.
+_WHEN = re.compile(
+    r"\b(?:and then|so then|after that|before that|the next (?:day|morning|thing|week)|"
+    r"eventually|finally|at first|one day|last (?:night|week|month|year|summer)|"
+    r"a (?:while|few (?:days|weeks|months)) (?:ago|back)|by the time|halfway through|"
+    r"in the end|turns out|meanwhile|later that|minutes later|hours later|days later|the other day|that night|that morning)\b", re.I)
+_SAID = re.compile(
+    r"\b(?:he|she|they|I|we|and I|and he|and she)\s+(?:said|goes|go|told|asked|replied)\b"
+    r"|\b(?:I|he|she|they|we)\s+(?:was|were)\s+like\b|\bhe'?s like\b|\bshe'?s like\b", re.I)
+
+
+def is_story(text: str) -> bool:
+    """Two of three narrative markers: past-tense first person, time moving, somebody speaking."""
+    return sum((bool(_PAST_I.search(text)), bool(_WHEN.search(text)),
+                bool(_SAID.search(text)))) >= 2
+
+
 
 # ---------------------------------------------------------------- delivery
 #
@@ -375,6 +401,7 @@ def measure(texts: list[str]) -> dict:
         "median_words": words[n // 2],
         "concrete_detail_pct": round(concrete, 1),
         "own_experience_pct": round(pct(_PAST_I), 1),
+        "story_shape_pct": round(100.0 * sum(1 for t in texts if is_story(t)) / n, 1),
         "opinion_pct": round(pct(_OPINION), 1),
         "hands_turn_back_pct": round(pct(_QBACK), 1),
         "balanced_survey_pct": round(pct(_SURVEY), 1),
@@ -390,6 +417,7 @@ LABELS = {
     "median_words": "median words per turn",
     "concrete_detail_pct": "turns with a concrete detail (name, number, time)",
     "own_experience_pct": "turns telling something that happened to her",
+    "story_shape_pct": "turns shaped as a story (time moves, someone speaks)",
     "opinion_pct": "turns stating a preference or a verdict",
     "hands_turn_back_pct": "turns that hand the conversation back",
     "balanced_survey_pct": "turns answering with a survey of options  (lower is better)",
@@ -601,6 +629,46 @@ def cmd_delivery(args) -> int:
     return 0
 
 
+def questions_from(rows, *, min_words=4, max_words=18):
+    """Real questions, pulled out of harvested talk.
+
+    The question side is the part of somebody else's recording that is safe to reuse, and it is
+    also the part this pipeline most needs. `build_dataset.SEEDS` is hand-written, with a comment
+    admitting the problem: real comments are shorter, blunter and more varied than anything a
+    model invents unprompted. These are the real ones.
+
+    Filtered to what a viewer would plausibly ask: long enough to be a question rather than a
+    grunt, short enough not to be a monologue with a question mark at the end, and deduplicated
+    case-insensitively because a Q&A episode asks the same thing several ways.
+    """
+    seen, out = set(), []
+    for r in rows:
+        for sent in re.split(r"(?<=[.!?])\s+", r.get("text", "")):
+            sent = sent.strip()
+            if not sent.endswith("?"):
+                continue
+            words = sent.split()
+            if not (min_words <= len(words) <= max_words):
+                continue
+            key = re.sub(r"[^a-z ]", "", sent.lower()).strip()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(sent)
+    return out
+
+
+def cmd_seeds(args) -> int:
+    rows = corpus_rows(Path(args.corpus))
+    qs = questions_from(rows)
+    out = OUT / f"{Path(args.corpus).stem}-questions.txt"
+    out.write_text(chr(10).join(qs), encoding="utf-8")
+    print(f"{len(qs)} distinct questions -> {out}")
+    for q in qs[:8]:
+        print("   ", q)
+    return 0
+
+
 def cmd_measure(args) -> int:
     texts = corpus_texts(Path(args.corpus))
     m = measure(texts)
@@ -684,6 +752,10 @@ def main() -> int:
     d.add_argument("--videos", type=int, default=6)
     d.add_argument("--secs", type=int, default=180, help="seconds of audio taken per video")
     d.set_defaults(func=cmd_delivery)
+
+    q = sub.add_parser("seeds", help="pull the real questions out of a corpus")
+    q.add_argument("corpus")
+    q.set_defaults(func=cmd_seeds)
 
     c = sub.add_parser("compare", help="her replies against a real-talk corpus")
     c.add_argument("kol_id")
