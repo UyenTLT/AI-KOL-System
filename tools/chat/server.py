@@ -318,7 +318,7 @@ def thread_of(mem: dict) -> list:
 # definition. Two copies drifted once already: the chat stopped signing off months
 # before the stream did, because only one of them had the cleanup.
 sys.path.insert(0, str(REPO / 'tools' / 'livestream'))
-from stage import strip_tics, life_threads, deflected, brain_label, ENGAGE, PACE  # noqa: E402
+from stage import strip_tics, fix_vocative, life_threads, deflected, brain_label, ENGAGE, PACE  # noqa: E402
 
 
 def page(fan: str = "", body: str = "", **keep) -> bytes:
@@ -551,7 +551,9 @@ class Handler(BaseHTTPRequestHandler):
                          extra_system=(extra or "") + "\n\nYour last attempt was generic "
                          "comfort that would fit any problem. Do not do that. React to the "
                          "specific thing they said and ask what actually happened.")
+        reply, misnamed = fix_vocative(reply, fan, KOL)
         reply, removed = strip_tics(reply, first_message=not thread, message=text)
+        removed += [f"called them {n}" for n in misnamed]
         if removed:
             print(f"  stripped: {removed}", flush=True)
         think = time.perf_counter() - t

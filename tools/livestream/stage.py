@@ -373,6 +373,66 @@ _BOLTED_ON = re.compile(
     re.IGNORECASE)
 
 
+# A name used to address the person she is answering: after a greeting word, or set off by a
+# comma at the end of a sentence. Not a mention of somebody in her life — "Rocio starts my order"
+# is a subject, and the shapes below are vocatives.
+_VOCATIVE = re.compile(
+    r"(?:(?<=^)|(?<=[.!?]\s))(hey|hi|hello|oh|sure thing|yeah|yes|thanks|sorry|okay|ok)"
+    r"([,!]?\s+)([A-Z][a-z]{2,})\b"
+    r"|(,\s+)([A-Z][a-z]{2,})(?=[!.?])",
+    re.IGNORECASE)
+
+
+def _canon_names(kol_id: str) -> set[str]:
+    """Everybody she is allowed to name, from her own life file."""
+    import json
+    p = REPO / "kols" / kol_id / "life.json"
+    if not p.is_file():
+        return set()
+    try:
+        life = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return set()
+    blob = " ".join(x for v in life.values() if isinstance(v, list)
+                    for x in v if isinstance(x, str))
+    return {w.lower() for w in re.findall(r"\b[A-Z][a-z]{2,}\b", blob)}
+
+
+def fix_vocative(reply: str, asker: str | None, kol_id: str) -> tuple[str, list[str]]:
+    """Stop her calling the viewer by a name that is not theirs.
+
+    Measured over six replies each, with the correct name supplied in the prompt and an
+    instruction to use it: the tuned model addressed the viewer as "Alex", the base model as
+    "Avelino", and on the live stream a comment from "Boss" came back twice as "Taylor".
+    Neither model used the real name once in six. So the instruction achieves the worst of
+    both — it does not produce the name it was given, and it does produce a name.
+
+    On a stream this is not a subtle defect: everybody watching can see who asked. Enforced
+    here rather than asked for, and narrowly: a name she is entitled to use, from her own life
+    file, is left alone, and so is the asker's own name.
+    """
+    if not reply:
+        return reply, []
+    allowed = _canon_names(kol_id) | ({asker.lower()} if asker else set())
+    removed = []
+
+    def sub(m):
+        greet, gap, name = m.group(1), m.group(2), m.group(3)
+        if name is None:
+            gap, name = m.group(4), m.group(5)
+            greet = None
+        if name.lower() in allowed:
+            return m.group(0)
+        removed.append(name)
+        if asker:
+            return (f"{greet}{gap}{asker}" if greet else f"{gap}{asker}")
+        # No name to substitute, so drop the address and keep the sentence.
+        return f"{greet}" if greet else ""
+
+    out = _VOCATIVE.sub(sub, reply)
+    return re.sub(r"\s{2,}", " ", out).strip(), removed
+
+
 def strip_tics(reply: str, *, first_message: bool, message: str = "") -> tuple[str, list[str]]:
     """Remove the openers and sign-offs that give an assistant away.
 

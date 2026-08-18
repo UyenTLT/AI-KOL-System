@@ -209,7 +209,7 @@ def answer(c: dict, hist: list) -> dict:
     the same path — a fast route that behaves differently from the slow one is a bug generator.
     """
     import shutil
-    from stage import respond, perform, song_for, classify, strip_tics, MODES
+    from stage import respond, perform, song_for, classify, strip_tics, fix_vocative, MODES
 
     mode = c.get("mode") or classify(c["text"])
     t = time.perf_counter()
@@ -231,7 +231,9 @@ def answer(c: dict, hist: list) -> dict:
     text = sung["text"] if sung else respond(KOL, c["text"], mode, history=hist, asker=c.get("who"))[0]
     # The same cleanup the chat has had for a while. It was never wired in here, which is why
     # the stream still signed off with "thanks for asking" long after the chat had stopped.
+    text, misnamed = fix_vocative(text, c.get("who"), KOL)
     text, removed = strip_tics(text, first_message=not EVENTS, message=c.get("text", ""))
+    removed += [f"called them {n}" for n in misnamed]
     if removed:
         print(f"  stripped: {removed}", flush=True)
     think = time.perf_counter() - t
