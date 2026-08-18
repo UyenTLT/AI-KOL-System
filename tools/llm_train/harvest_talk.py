@@ -128,6 +128,43 @@ def search(query: str, limit: int = 10, *, min_secs: int = 240, max_secs: int = 
     return out
 
 
+def channel_videos(name_or_id: str, key: str, limit: int = 20,
+                   order: str = "viewCount") -> list[str]:
+    """Video ids from one channel, resolved by handle or id.
+
+    A named creator is a different proposition from a genre query, and the difference is worth
+    stating where the code does it rather than only in a commit message: a query samples how
+    people in general talk, a channel samples how one person does. That is more useful as a
+    target and more sensitive as material — so it is used the same way everything else here is,
+    for the numbers, and not for the words.
+
+    Ordered by view count rather than date by default: the popular videos are the ones where
+    whatever she does works, which is the thing being measured.
+    """
+    import urllib.parse
+    import urllib.request
+
+    cid = name_or_id
+    if not cid.startswith("UC"):
+        q = urllib.parse.urlencode({"part": "snippet", "type": "channel", "q": name_or_id,
+                                    "maxResults": 1, "key": key})
+        with urllib.request.urlopen(
+                "https://www.googleapis.com/youtube/v3/search?" + q, timeout=20) as r:
+            items = json.loads(r.read().decode("utf-8")).get("items", [])
+        if not items:
+            return []
+        cid = items[0]["id"]["channelId"]
+
+    q = urllib.parse.urlencode({"part": "snippet", "type": "video", "channelId": cid,
+                                "order": order, "maxResults": min(limit, 50),
+                                "videoDuration": "medium", "key": key})
+    with urllib.request.urlopen(
+            "https://www.googleapis.com/youtube/v3/search?" + q, timeout=20) as r:
+        data = json.loads(r.read().decode("utf-8"))
+    return [it["id"]["videoId"] for it in data.get("items", [])
+            if it.get("id", {}).get("videoId")]
+
+
 def fetch_one(url: str, *, asr_fallback: bool = True, whisper_model: str = "base.en") -> dict:
     """One video -> {title, id, cues}. Subtitles when they exist, ASR when they do not."""
     import yt_dlp
@@ -474,6 +511,14 @@ def cmd_fetch(args) -> int:
         found = search(q, args.per_query, min_secs=args.min_secs, max_secs=args.max_secs)
         print(f"search {q!r} -> {len(found)} videos", flush=True)
         urls += found
+    for ch in (args.channel or []):
+        key = read_api_key(getattr(args, "key", None))
+        if not key:
+            print("--channel needs the API key", file=sys.stderr)
+            return 2
+        vids = channel_videos(ch, key, args.per_query)
+        print(f"channel {ch!r} -> {len(vids)} videos", flush=True)
+        urls += [f"https://www.youtube.com/watch?v={v}" for v in vids]
     urls = list(dict.fromkeys(urls))       # keep order, drop repeats across queries
     if not urls:
         print("give --url, --urls-from or --search", file=sys.stderr)
@@ -1102,6 +1147,9 @@ def main() -> int:
     f.add_argument("--urls-from", help="a file with one URL per line, # for comments")
     f.add_argument("--search", action="append",
                    help="a genre query resolved through YouTube search; repeatable")
+    f.add_argument("--channel", action="append",
+                   help="a channel handle or id; its videos by view count. Repeatable")
+    f.add_argument("--key", help="API key for --channel; defaults to the environment or file")
     f.add_argument("--per-query", type=int, default=8, help="videos to keep per query")
     f.add_argument("--min-secs", type=int, default=240, help="skip anything shorter")
     f.add_argument("--max-secs", type=int, default=3600,
