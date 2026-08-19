@@ -154,8 +154,22 @@ def main() -> int:
             st.reconfigure(errors="replace")
         except Exception:
             pass
+    # Refuse the port if something already holds it, instead of binding over it. HTTPServer
+    # sets allow_reuse_address, so on Windows a second instance silently STEALS the port from
+    # the first. That happened here: two servers, the loser still answering /health with the
+    # model loaded while every conversion raised IndexError -- and _timbre_pass swallows a
+    # failed conversion by design, so the audio came out untouched and the only symptom was a
+    # latency measurement that looked like good news. Better to fail at startup and say so.
+    class _Server(ThreadingHTTPServer):
+        allow_reuse_address = False
+
+    try:
+        srv = _Server((args.host, args.port), Handler)
+    except OSError as exc:
+        print(f"  port {args.port} is already in use ({exc}). Another rvc_server is probably "
+              f"running -- stop that one rather than starting a second.", flush=True)
+        return 1
     load(args.kol)
-    srv = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"  rvc_server on http://{args.host}:{args.port}", flush=True)
     srv.serve_forever()
     return 0
