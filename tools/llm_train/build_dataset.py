@@ -303,7 +303,7 @@ def _load_module(name: str, path):
 
 
 def candidates(kol_id: str, msg: str, k: int, model: str,
-               thread: list[dict] | None = None) -> list[str]:
+               thread: list[dict] | None = None, move: str | None = None) -> list[str]:
     """Several answers to the same comment, generated under the full persona.
 
     `thread` is the conversation so far. It is passed through so a mid-conversation candidate is
@@ -364,6 +364,10 @@ def candidates(kol_id: str, msg: str, k: int, model: str,
         msgs.insert(1, {"role": "system", "content": CHAT_STYLE})
     if PLAY:
         msgs.insert(2, {"role": "system", "content": PLAY})
+    # One named mechanical move, when asked for. "Be funny" is a goal with nothing to
+    # execute; "take back part of what you just said" is an instruction.
+    if move:
+        msgs.insert(2, {"role": "system", "content": move})
     if LIFE:
         msgs.insert(2, {"role": "system", "content": LIFE})
     msgs += list(thread or [])
