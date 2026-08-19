@@ -170,6 +170,17 @@
           "owner_high_pass": "voice/ref_human.wav.owner_highpass",
           "owner_untouched": "voice/ref_human.wav.orig"
         }
+      },
+      "room_tone": {
+        "file": "kols/sofia-vargas/voice/roomtone.wav",
+        "range_db": 30.0,
+        "why": "Her reference clip was denoised, taking its speech-to-floor range from 16.8 dB to 54.2 dB, and the clone reproduces that: digital silence between phrases where a recording has a room. The tone is cut from the owner's own raw recording.\n\n30 dB is a deliberate middle. The level sweep against the CLEANED reference says use no bed at all (identity 0.9290 at none, 0.5533 at 18 dB) -- but that reference is a denoised artefact, and matching it closely is what the complaint was about. Against the RAW recording, which is what a person actually sounds like on a microphone, the bed nearly doubles similarity: 0.3953 without, 0.6713 with. The two references disagree because they measure different things, and 30 dB keeps most of the naturalness gain without burying the voice in noise."
+      },
+      "timbre_pass": {
+        "api": "http://127.0.0.1:9882",
+        "timeout": 30.0,
+        "why": "Her speaking voice is a zero-shot CosyVoice clone from a 6.5s reference; the RVC model is trained on 98.5 minutes of the same person. Measured against a clean baseline, identity 0.8945 -> 0.9290 (n=4, pooled sd 0.0074). Real but small: an earlier +0.42 figure was measured against a baseline that already had the room tone bed on it, which RVC discards when it resynthesises. Costs 0.97s per line with the model resident, against 6.4s through infer.cli.",
+        "requires": "RVC\\.venv\\Scripts\\python.exe tools\u000boice_eval\rvc_server.py"
       }
     },
     "avatar": {

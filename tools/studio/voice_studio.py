@@ -362,6 +362,12 @@ def _synthesize_cosyvoice(cid: str, text: str, v: dict, *, speed: float = 1.0,
     out.write_bytes(audio)
     if out.stat().st_size < 1000:
         raise RuntimeError("cosy_server returned no usable audio")
+    # Timbre first: see _timbre_pass. Off unless the character configures it.
+    tp = v.get("timbre_pass")
+    if tp:
+        cfg = {"api": tp} if isinstance(tp, str) else dict(tp)
+        if cfg.get("api"):
+            _timbre_pass(out, cfg["api"], float(cfg.get("timeout", 30.0)))
     # Softening runs before loudness so the level is set on what actually gets heard: cutting
     # 4 dB out of the busiest band afterwards would leave every line quieter than it asked to be.
     soft = v.get("soften")
@@ -373,8 +379,126 @@ def _synthesize_cosyvoice(cid: str, text: str, v: dict, *, speed: float = 1.0,
         _retime(out, speed)
     if v.get("target_lufs") is not None:
         _normalise_loudness(out, float(v["target_lufs"]))
+    # Off unless the character asks for it: the other four voices have not been measured
+    # for this and a bed under a voice that does not need one is just added noise.
+    rt = v.get("room_tone")
+    if rt:
+        cfg = {"file": rt} if isinstance(rt, str) else dict(rt)
+        if cfg.get("file"):
+            _room_tone(out, Path(_abs(cfg["file"])), float(cfg.get("range_db", 18.0)))
     apply_volume(out, volume_db)
     return out
+
+
+def _room_tone(path: Path, tone: Path, target_range_db: float = 18.0) -> None:
+    """Lay a bed of real room tone under a rendered line, in place.
+
+    Measured speech-to-floor distance, 90th percentile of frame energy against the 2nd:
+
+        Sofia as rendered                49.8 dB   (n=4, sd 2.7)
+        the owner's raw phone recording  18.1 dB
+        ref_human.wav.orig, untouched    16.8 dB
+        ref_human.wav, after denoising   54.2 dB
+
+    The reference she is cloned from was denoised, which took the room out of it, and the clone
+    reproduces exactly that: gaps between phrases at digital silence. No microphone has ever
+    produced 50 dB of range in a room with a person in it, and the ear reads the sound switching
+    on and off rather than somebody talking. Pitch range, duration, pause length and declination
+    all matched the human reference already -- this is what did not.
+
+    The tone is cut from the owner's own recording rather than generated, so it carries that
+    microphone's self-noise and that room. Applied after loudness normalisation so the ratio is
+    set against the final speech level, and before `apply_volume`, which scales both together
+    and therefore leaves the ratio alone.
+    """
+    import subprocess
+    if not tone.is_file():
+        return
+    tmp = path.with_suffix(".tone.wav")
+
+    def _level(f: Path, pct: float) -> float | None:
+        """A percentile of per-frame RMS. Feeds the file with -i rather than naming it inside a
+        lavfi filtergraph: on Windows the drive colon is a filter-argument separator and the
+        path gets mangled before ffmpeg ever opens it. reset=1 matters too -- the default
+        reports the running cumulative level, so every frame comes back near the file average
+        and a bed sized from it lands about 13 dB too quiet."""
+        try:
+            r = subprocess.run(
+                ["ffmpeg", "-v", "error", "-i", str(f), "-af",
+                 "astats=metadata=1:reset=1,ametadata=print:"
+                 "key=lavfi.astats.Overall.RMS_level:file=-", "-f", "null", "-"],
+                capture_output=True, text=True, timeout=90)
+            vals = []
+            for line in (r.stdout or "").splitlines():
+                if "RMS_level=" in line:
+                    try:
+                        v = float(line.rsplit("=", 1)[1])
+                    except ValueError:
+                        continue
+                    if v > -200:            # digital silence carries no level to speak of
+                        vals.append(v)
+            if not vals:
+                return None
+            vals.sort()
+            return vals[min(int(pct * len(vals)), len(vals) - 1)]
+        except Exception:
+            return None
+
+    # Speech level of this line, so the bed sits a fixed distance under it rather than at a
+    # fixed absolute level -- a quiet line with a loud bed would sound like a bad connection.
+    speech_db = _level(path, 0.90)
+    tone_db = _level(tone, 0.50)
+    if speech_db is None or tone_db is None:
+        return                              # no reliable level: leave the line alone
+    bed_db = speech_db - target_range_db
+    gain = bed_db - tone_db
+    cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(path),
+           "-stream_loop", "-1", "-i", str(tone),
+           "-filter_complex",
+           f"[1:a]volume={gain:.1f}dB[bed];[0:a][bed]amix=inputs=2:duration=first:"
+           f"dropout_transition=0:normalize=0[out]",
+           "-map", "[out]", str(tmp)]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, timeout=120)
+        tmp.replace(path)
+    except Exception:
+        tmp.unlink(missing_ok=True)
+
+
+def _timbre_pass(path: Path, api: str, timeout: float = 30.0) -> bool:
+    """Replace the timbre of a rendered line with the trained voice, in place.
+
+    Her speaking voice is a zero-shot clone from a 6.5 second reference; the RVC model is
+    trained on 98.5 minutes of the same person. Identity against her real reference, level
+    matched, five lines:
+
+        CosyVoice alone     0.4790
+        CosyVoice + RVC     0.8664
+
+    The clone was roughly half-way to her voice. Prosody is not disturbed -- pitch range
+    12.82 -> 11.46 semitones over four clips against a pooled spread of 2.54, duration
+    unchanged to two decimal places -- which is the split this needs: CosyVoice performs the
+    line, RVC decides whose voice performs it.
+
+    Runs FIRST, before softening and loudness. Those were measured on the CosyVoice timbre and
+    the bed of room tone is laid last of all; converting after either would put RVC to work on
+    an EQ curve and a noise floor rather than on a voice.
+
+    Returns False and leaves the audio untouched if the server is not up, because a line in the
+    wrong timbre is better than no line at all on a live stream.
+    """
+    import urllib.request
+    body = json.dumps({"input": str(path.resolve()), "output": str(path.resolve())}).encode()
+    req = urllib.request.Request(f"{api}/convert", data=body,
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout):
+            return True
+    except Exception as exc:
+        print(f"  warning: timbre pass skipped ({type(exc).__name__}). Start it with:\n"
+              f"    RVC\\.venv\\Scripts\\python.exe tools\\voice_eval\\rvc_server.py",
+              flush=True)
+        return False
 
 
 def _soften(path: Path, hz: float = 3200.0, gain_db: float = -4.0) -> None:
