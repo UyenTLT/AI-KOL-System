@@ -187,6 +187,35 @@
         "genuine_human_audio_seconds": 50.3,
         "reference_used_seconds": 6.5,
         "what_this_means": "Everything about how she sounds derives from 6.5 s of one recording. The 320-clip dataset is edge:es-MX-DaliaNeural bootstrap and its audio is gone; the RVC corpus was synthesised from CosyVoice. Measured consequences: she already sits at 0.93 identity against her own reference, index_rate and protect move nothing (spread 0.009 against within-cell noise 0.014), and pitch shifting moves her away from the human register (she is 206 Hz, the human is 211 Hz) while flattening her.\n\nNo processing knob will make her sound more human, because there is no more of the human to draw on. RVC's own guidance is roughly ten minutes. The one change that would raise the ceiling is a longer recording of the owner's voice -- ten minutes of ordinary speech, same microphone, quiet room -- after which the TTS can be fine-tuned instead of cloned zero-shot."
+      },
+      "human_trained_rvc_rejected": {
+        "tried": "2026-08-19",
+        "what": "Retrained RVC on the only genuine human audio in the project -- the owner's 50.3 s recording, which slices to 11 clips -- instead of on the CosyVoice-generated corpus the shipping model was trained on. 200 epochs, batch 4, kept as RVC/logs/sofia-vargas-human and never wired into the profile.",
+        "measured": {
+          "vs_raw_human": {
+            "cosyvoice_only": 0.3972,
+            "shipping_model": 0.4324,
+            "human_trained": 0.8286
+          },
+          "vs_cleaned_reference": {
+            "cosyvoice_only": 0.8995,
+            "shipping_model": 0.9273,
+            "human_trained": 0.4382,
+            "THE_OWNER_HERSELF": 0.4281
+          },
+          "median_f0_hz": {
+            "shipping_model": 205,
+            "human_trained": 260,
+            "the_owner": 188
+          },
+          "harshness_2_5khz": {
+            "shipping_model": 0.107,
+            "human_trained": 0.141,
+            "the_owner": 0.155
+          }
+        },
+        "why_it_is_off": "Rejected by ear. The numbers were good and the ear overruled them, which is the right order: 11 slices is far below RVC's guidance of roughly ten minutes, and no similarity metric hears the artefacts that come of it. The f0 was the visible warning -- 260 Hz against the owner's 188 -- and it should have been weighted more heavily than the similarity score.",
+        "what_survives": "The finding that ref_human.wav is over-denoised. THE OWNER'S OWN VOICE scores 0.4281 against it, so the reference is closer to a different speaker than to the person it was cut from. The shipping model scores 0.9273 against that reference, which means it faithfully reproduces the denoising artefact -- the most likely remaining explanation for 'still a bit robotic'. That is fixable without any training: ref_human.wav.orig is the same 6.5 s untouched, and cloning from it measured 0.659 against the raw human where the current chain measures 0.397."
       }
     },
     "avatar": {
