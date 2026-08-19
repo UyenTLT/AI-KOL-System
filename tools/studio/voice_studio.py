@@ -623,12 +623,6 @@ def synthesize(cid: str, text: str, *, speed: float = 1.0, volume_db: float = 0.
         if cosy:
             return _synthesize_cosyvoice(cid, text, cosy, speed=speed, volume_db=volume_db,
                                          out=out, instruct=instruct)
-    if not api_alive():
-        raise RuntimeError(
-            f"GPT-SoVITS api_v2 is not reachable at {TTS_API}. Start it with:\n"
-            "  cd GPT-SoVITS; .\\.venv\\Scripts\\python.exe api_v2.py -a 127.0.0.1 -p 9880 "
-            "-c GPT_SoVITS/configs/tts_infer.yaml")
-
     if ref_audio and _cosy_alive():
         # Clone through CosyVoice when it is up. Its zero-shot mode is markedly more expressive
         # than GPT-SoVITS on the base checkpoint — measured 16.84 semitones of pitch range
@@ -638,6 +632,17 @@ def synthesize(cid: str, text: str, *, speed: float = 1.0, volume_db: float = 0.
         # the entire point, so the drawback there is the goal here.
         return _clone_cosyvoice(text, _abs(ref_audio), ref_text or "", speed=speed,
                                 volume_db=volume_db, out=out)
+
+    # Ordering matters, and it was wrong: this guard sat FIRST, so a caller passing a
+    # reference clip was told "GPT-SoVITS is not reachable" even with CosyVoice up and
+    # ready to serve it. Cloning does not involve GPT-SoVITS unless CosyVoice is down.
+    # It stays, just after the branch that no longer needs it.
+
+    if not api_alive():
+        raise RuntimeError(
+            f"GPT-SoVITS api_v2 is not reachable at {TTS_API}. Start it with:\n"
+            "  cd GPT-SoVITS; .\\.venv\\Scripts\\python.exe api_v2.py -a 127.0.0.1 -p 9880 "
+            "-c GPT_SoVITS/configs/tts_infer.yaml")
 
     if ref_audio:      # ad-hoc clone: base weights + the caller's reference
         cfg = {"sovits": _abs(BASE_SOVITS), "gpt": _abs(BASE_GPT),

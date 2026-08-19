@@ -807,10 +807,21 @@ def respond(kol_id: str, message: str, mode: str | None = None,
     return chat(kol_id, message, **kw), mode
 
 
-def perform(kol_id: str, text: str, mode: str, out: Path, *, speed: float = 1.0) -> Path:
-    """Render what she says in the register for that mode."""
+def perform(kol_id: str, text: str, mode: str, out: Path, *, speed: float = 1.0,
+            voice: str | None = None) -> Path:
+    """Render what she says in the register for that mode.
+
+    `voice` takes the same candidate ids as perform_streamed. It matters here specifically
+    because the live server renders the OPENING sentence through this function and the rest
+    through perform_streamed -- miss it and the first sentence arrives in her own voice and
+    everything after it in the candidate, which sounds like a fault rather than a comparison.
+    """
     from voice_studio import synthesize
     out.parent.mkdir(parents=True, exist_ok=True)
+    ref = voice_ref(voice)
+    if ref:
+        return synthesize(kol_id, text, out=out, speed=speed * PACE,
+                          ref_audio=ref[0], ref_text=ref[1])
     return synthesize(kol_id, text, out=out, speed=speed * PACE,
                       instruct=MODES.get(mode, {}).get("instruct"))
 
@@ -912,8 +923,41 @@ def respond_streamed(kol_id: str, message: str, mode: str, history: list | None 
         yield None
 
 
+# ---------------------------------------------------------------- candidate voices
+#
+# A voice rebrand is a decision somebody has to make with their ears, and the only way to make
+# it fairly is to hear her ANSWER in each candidate rather than to hear a fixed demo line. These
+# are licensed synthetic voices that belong to nobody, kept because the original ask was for a
+# named idol's voice, which this project's rights_note forbids without consent.
+#
+# Selecting one clones from it with CosyVoice zero-shot, which is exactly what an actual switch
+# would do -- so what you hear in the demo is what you would get, before anything is retrained.
+
+def candidate_voices() -> list[dict]:
+    """The candidates on disk, brightest first. Empty when none have been installed."""
+    import json
+    f = REPO / "kols" / "sofia-vargas" / "voice" / "candidates" / "candidates.json"
+    if not f.is_file():
+        return []
+    try:
+        return json.loads(f.read_text(encoding="utf-8")).get("voices", [])
+    except Exception:
+        return []
+
+
+def voice_ref(voice_id: str | None) -> tuple[str, str] | None:
+    """(reference clip, its text) for a candidate, or None to use her own voice."""
+    if not voice_id or voice_id in ("sofia", "default", ""):
+        return None
+    for v in candidate_voices():
+        if v["id"] == voice_id:
+            f = REPO / v["file"]
+            return (str(f), v.get("ref_text", "")) if f.is_file() else None
+    return None
+
+
 def perform_streamed(kol_id: str, text: str, mode: str, out_dir: Path, stem: str,
-                     *, speed: float = 1.0):
+                     *, speed: float = 1.0, voice: str | None = None):
     """Render sentence by sentence, yielding each clip the moment it exists.
 
     Measured on one reply of 39 words: thinking took 3.96 s, synthesising the whole thing took
@@ -927,9 +971,17 @@ def perform_streamed(kol_id: str, text: str, mode: str, out_dir: Path, stem: str
     from voice_studio import synthesize
     out_dir.mkdir(parents=True, exist_ok=True)
     instruct = MODES.get(mode, {}).get("instruct")
+    ref = voice_ref(voice)
     for i, sent in enumerate(sentences(text)):
         p = out_dir / f"{stem}-{i:02d}.wav"
-        synthesize(kol_id, sent, out=p, speed=speed * PACE, instruct=instruct)
+        if ref:
+            # A candidate voice is a clone from a reference clip, so `instruct` does not apply --
+            # the delivery comes from the clip. Saying so here rather than passing it and having
+            # it quietly ignored.
+            synthesize(kol_id, sent, out=p, speed=speed * PACE,
+                       ref_audio=ref[0], ref_text=ref[1])
+        else:
+            synthesize(kol_id, sent, out=p, speed=speed * PACE, instruct=instruct)
         yield p.name
 
 

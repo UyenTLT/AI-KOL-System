@@ -296,7 +296,8 @@ def answer(c: dict, hist: list) -> dict:
                     def _open(sent=piece):
                         try:
                             from stage import perform as _p
-                            _p(KOL, sent, mode, CLIPS / f"{early_stem}-00.wav")
+                            _p(KOL, sent, mode, CLIPS / f"{early_stem}-00.wav",
+                               voice=c.get("voice"))
                             opener["ok"] = True
                         except Exception as exc:
                             print(f"  opener failed: {exc}", flush=True)
@@ -343,9 +344,10 @@ def answer(c: dict, hist: list) -> dict:
             clip = f"{stem}-00.wav"
             clips.append(clip)
             first_at = time.perf_counter() - t
-            gen = perform_streamed(KOL, " ".join(streamed[1:]), mode, CLIPS, stem + "b")
+            gen = perform_streamed(KOL, " ".join(streamed[1:]), mode, CLIPS, stem + "b",
+                                   voice=c.get("voice"))
         else:
-            gen = perform_streamed(KOL, text, mode, CLIPS, stem)
+            gen = perform_streamed(KOL, text, mode, CLIPS, stem, voice=c.get("voice"))
             clip = next(gen)
             clips.append(clip)
             first_at = time.perf_counter() - t
@@ -408,7 +410,7 @@ def answer_worker() -> None:
             EVENTS.append(ev)
 
 
-def page(body: str = "", **keep) -> bytes:
+def page(body: str = "", voice: str = "", **keep) -> bytes:
     from stage import MODES, brain_label
     svc = " ".join(
         f'<span>{n}: {"up" if u else "down"}</span>' for n, u in [
@@ -459,6 +461,20 @@ def page(body: str = "", **keep) -> bytes:
     transcript = "\n".join(turns) or '<p class="empty">Nothing said yet. Post a comment below.</p>'
 
     opts = "".join(f'<option value="{k}">{esc(v["label"])}</option>' for k, v in MODES.items())
+    # Candidate timbres, so a rebrand can be judged by hearing her ANSWER in each rather
+    # than by a fixed demo line. Absent until candidates are installed, and the control
+    # simply does not render then.
+    from stage import candidate_voices
+    cands = candidate_voices()
+    vopts = "".join(
+        f'<option value="{esc(v["id"])}"{" selected" if v["id"] == voice else ""}>'
+        f'{esc(v["id"])} — {v["f0_hz"]} Hz, {v["brightness_pct"]}% bright</option>'
+        for v in cands)
+    voice_row = ("" if not cands else
+        '<div><label for="voice">Voice (test)</label>'
+        '<select id="voice" name="voice">'
+        f'<option value="">her own voice</option>{vopts}'
+        '</select></div>')
     who = keep.get("who") or "guest"
     n = len(pending)
 
@@ -481,6 +497,7 @@ def page(body: str = "", **keep) -> bytes:
       <select id="mode" name="mode">
         <option value="">let her decide</option>{opts}
       </select></div>
+    {voice_row}
   </div>
   <label for="text">Comment</label>
   <textarea id="text" name="text" rows="2"
@@ -603,7 +620,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         with LOCK:
             PENDING.append({"who": g("who", "guest").strip() or "guest",
-                            "text": text, "mode": g("mode") or None})
+                            "text": text, "mode": g("mode") or None,
+                            "voice": g("voice") or None})
         self._redirect()
 
 def main() -> int:
