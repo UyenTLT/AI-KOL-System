@@ -45,7 +45,7 @@ def _profile(kol: str = "sofia-vargas") -> dict:
     return d.get("ai_assets", {}).get("voice_conversion", {})
 
 
-def load(kol: str = "sofia-vargas"):
+def load(kol: str = "sofia-vargas", warm: bool = True):
     """Load the model once. Everything after this is just inference."""
     global VC_OBJ
     # RVC resolves its own resources -- i18n locales, hubert weights, the model directory --
@@ -67,6 +67,7 @@ def load(kol: str = "sofia-vargas"):
     cfg = Config()
     VC_OBJ = VC(cfg)
     VC_OBJ.get_vc(model)
+    LOADED["kol"] = kol
     LOADED["model"] = model
     LOADED["index"] = str(REPO / vc_cfg["index"]) if vc_cfg.get("index") else ""
     best = vc_cfg.get("best_inference_settings", {})
@@ -77,23 +78,57 @@ def load(kol: str = "sofia-vargas"):
     # conversion, which measured 4.63 s against 0.97 s for every call after it -- and the first
     # real conversion is somebody waiting on a live stream. The reference clip is already here
     # and is the right length for the job.
+    if not warm:
+        return
     try:
         import tempfile
-        warm = Path(tempfile.gettempdir()) / "rvc_warmup.wav"
+        warm_f = Path(tempfile.gettempdir()) / "rvc_warmup.wav"
         t0 = time.perf_counter()
-        convert(str(REPO / "kols" / kol / "voice" / "ref_human.wav"), str(warm))
-        warm.unlink(missing_ok=True)
+        convert(str(REPO / "kols" / kol / "voice" / "ref_human.wav"), str(warm_f))
+        warm_f.unlink(missing_ok=True)
         print(f"  warmed in {time.perf_counter() - t0:.1f}s", flush=True)
     except Exception as exc:
         print(f"  warm-up skipped: {type(exc).__name__}: {exc}", flush=True)
 
 
-def convert(inp: str, outp: str, pitch: int = 0) -> dict:
+def _once(inp: str, outp: str, pitch: int, index_rate=None, protect=None):
+    # index_rate and protect are overridable per request. The profile calls its own defaults
+    # unvalidated -- the comparison that chose them did not survive, because RVC inference is
+    # nondeterministic and the runs were not repeated -- so they need to be sweepable.
+    return VC_OBJ.vc_single(
+        0, inp, pitch, "rmvpe", LOADED["index"],
+        LOADED["index_rate"] if index_rate is None else float(index_rate),
+        0, 0.25,
+        LOADED["protect"] if protect is None else float(protect))
+
+
+def convert(inp: str, outp: str, pitch: int = 0, index_rate=None, protect=None) -> dict:
+    """Convert, and if the model has fallen over, reload it once and try again.
+
+    This card runs with roughly 550 MB free -- desktop, Ollama and CosyVoice are all on it -- and
+    under that pressure the loaded model reaches a state where every call raises IndexError from
+    inside the pipeline, while /health still reports it loaded. It survives a run and then stops
+    working, which is the worst shape a failure can have here, because _timbre_pass treats a
+    failed conversion as "skip it" and the audio comes out in the old voice with nobody told.
+
+    So a failure is not passed straight through: the cache is dropped, the model is reloaded,
+    and the conversion is retried once. If it fails twice it is a real error and it propagates.
+    """
     import soundfile as sf
+    import traceback
     t0 = time.perf_counter()
-    _, wav = VC_OBJ.vc_single(
-        0, inp, pitch, "rmvpe", LOADED["index"], LOADED["index_rate"],
-        0, 0.25, LOADED["protect"])
+    try:
+        _, wav = _once(inp, outp, pitch, index_rate, protect)
+    except Exception:
+        print("  conversion failed, reloading the model:\n"
+              + traceback.format_exc(), flush=True)
+        try:
+            import torch
+            torch.cuda.empty_cache()
+        except Exception:
+            pass
+        load(LOADED.get("kol", "sofia-vargas"), warm=False)
+        _, wav = _once(inp, outp, pitch, index_rate, protect)
     if wav is None:
         raise RuntimeError("conversion returned nothing")
     sr, audio = wav
@@ -137,7 +172,8 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(n) or b"{}")
             self._send(200, convert(body["input"], body["output"],
-                                    int(body.get("pitch", 0))))
+                                    int(body.get("pitch", 0)),
+                                    body.get("index_rate"), body.get("protect")))
         except Exception as exc:
             self._send(500, {"error": f"{type(exc).__name__}: {exc}"})
 
