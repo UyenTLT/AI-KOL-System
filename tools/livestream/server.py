@@ -470,10 +470,22 @@ def page(body: str = "", voice: str = "", **keep) -> bytes:
         f'<option value="{esc(v["id"])}"{" selected" if v["id"] == voice else ""}>'
         f'{esc(v["id"])} — {v["f0_hz"]} Hz, {v["brightness_pct"]}% bright</option>'
         for v in cands)
+    # Her own voice is named and carries the same two numbers as the candidates. It read as
+    # "her own voice" with no name and no figures, which does not look like an option in a list
+    # of options -- it looks like the absence of one, and it cannot be compared at a glance
+    # against the voices it is being judged against.
+    import json as _json
+    _mf = REPO / "kols" / KOL / "voice" / "candidates" / "candidates.json"
+    try:
+        _me = _json.loads(_mf.read_text(encoding="utf-8")).get("sofia_today", {})
+        _own = (f'Sofia — her own voice, {_me.get("f0_hz", 190)} Hz, '
+                f'{_me.get("brightness_pct", 6.6)}% bright')
+    except Exception:
+        _own = "Sofia — her own voice"
     voice_row = ("" if not cands else
         '<div><label for="voice">Voice (test)</label>'
         '<select id="voice" name="voice">'
-        f'<option value="">her own voice</option>{vopts}'
+        f'<option value=""{"" if voice else " selected"}>{esc(_own)}</option>{vopts}'
         '</select></div>')
     who = keep.get("who") or "guest"
     n = len(pending)
