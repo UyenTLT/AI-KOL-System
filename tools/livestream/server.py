@@ -244,7 +244,7 @@ def history_for(who: str | None = None, limit: int = 4) -> list:
     return msgs[-limit * 2:]
 
 
-def answer(c: dict, hist: list) -> dict:
+def answer(c: dict, hist: list, publish=None) -> dict:
     """Turn one comment into a finished event: her words, and a clip of her saying them.
 
     Deliberately free of request handling so the prefetch thread and a direct click run exactly
@@ -280,6 +280,13 @@ def answer(c: dict, hist: list) -> dict:
         # waits, which is the half nobody is listening for yet.
         streamed = []
         opener = {}
+        # Published as soon as the first clip lands, then mutated in place as the rest of the
+        # answer arrives. The page polls /clips by stem, so appending to this list is all that
+        # is needed to keep feeding it.
+        ev_early = {"who": c["who"], "fan_text": c["text"], "text": "", "mode": mode,
+                    "label": MODES[mode]["label"], "clip": "", "clips": [], "think": 0.0,
+                    "speak": 0.0, "first_at": 0.0, "stem": "", "done": False,
+                    "at": f"{datetime.now():%H:%M:%S}"}
         try:
             for piece in respond_streamed(KOL, c["text"], mode, history=hist,
                                           asker=c.get("who")):
@@ -299,6 +306,19 @@ def answer(c: dict, hist: list) -> dict:
                             _p(KOL, sent, mode, CLIPS / f"{early_stem}-00.wav",
                                voice=c.get("voice"))
                             opener["ok"] = True
+                            # Go live NOW. Waiting for the rest of the answer to be WRITTEN
+                            # before publishing anything is what made the first word arrive at
+                            # 14.8 s while this clip had been sitting on disk for most of it:
+                            # the opener was rendered early and then withheld until the model
+                            # had finished a reply nobody had heard the start of yet.
+                            if publish is not None and not opener.get("published"):
+                                opener["published"] = True
+                                opener["at"] = time.perf_counter() - t
+                                ev_early.update({
+                                    "text": sent, "clip": f"{early_stem}-00.wav",
+                                    "stem": early_stem, "first_at": opener["at"]})
+                                ev_early["clips"].append(f"{early_stem}-00.wav")
+                                publish(ev_early)
                         except Exception as exc:
                             print(f"  opener failed: {exc}", flush=True)
                     early_stem = f"{datetime.now():%H%M%S}-{mode}-{uuid.uuid4().hex[:4]}"
@@ -323,11 +343,12 @@ def answer(c: dict, hist: list) -> dict:
         print(f"  stripped: {removed}", flush=True)
     think = time.perf_counter() - t
 
+    published = False
     stem = f"{datetime.now():%H%M%S}-{mode}-{uuid.uuid4().hex[:4]}"
     clip, clips, first_at = "", [], 0.0
+    ev_ref = {"clips": clips}
     t = time.perf_counter()
     speak = 0.0
-    ev_ref = {"clips": clips}
     try:
         # Render the opening sentence, hand it over, and finish the rest behind it.
         #
@@ -339,11 +360,25 @@ def answer(c: dict, hist: list) -> dict:
             # The opening sentence has been rendering since the model produced it. Wait for
             # that rather than starting again: it is normally already finished.
             opener["thread"].join(timeout=30)
+        # Only AFTER that join is it known whether the opener published. Asking before it
+        # produced a race that published one event and then built a second with the same stem:
+        # /clips answers with the first match, so the page polled the one-clip copy forever
+        # while the other filled up unread, and the answer stopped after a sentence.
+        published = bool(opener.get("published")) and not sung
+        if published:
+            ev_ref = ev_early
+            clips = ev_early["clips"]
+            stem = ev_early["stem"]
+            clip = ev_early["clip"]
+            first_at = ev_early["first_at"]
+            ev_early["text"] = text
+            ev_early["think"] = think
         if reuse and opener.get("ok"):
             stem = reuse
             clip = f"{stem}-00.wav"
-            clips.append(clip)
-            first_at = time.perf_counter() - t
+            if clip not in clips:          # already there when the opener published it
+                clips.append(clip)
+            first_at = first_at or (time.perf_counter() - t)
             gen = perform_streamed(KOL, " ".join(streamed[1:]), mode, CLIPS, stem + "b",
                                    voice=c.get("voice"))
         else:
@@ -374,6 +409,11 @@ def answer(c: dict, hist: list) -> dict:
         clip = ""
         print(f"  voice failed: {exc}", flush=True)
 
+    if published:
+        ev_early.update({"clip": clip, "stem": stem, "speak": speak, "first_at": first_at,
+                         "text": text, "think": think})
+        ev_early["already_published"] = True
+        return ev_early
     return {"who": c["who"], "fan_text": c["text"], "text": text, "mode": mode,
             "label": MODES[mode]["label"], "clip": clip, "clips": clips, "think": think,
             "speak": speak, "first_at": first_at, "stem": stem,
@@ -401,13 +441,17 @@ def answer_worker() -> None:
         if c is None:
             time.sleep(0.4)
             continue
+        def _publish(ev):
+            with LOCK:
+                EVENTS.append(ev)
         try:
-            ev = answer(c, hist)
+            ev = answer(c, hist, publish=_publish)
         except Exception as exc:
             print(f"  answer failed: {exc}", flush=True)
             continue
-        with LOCK:
-            EVENTS.append(ev)
+        if not ev.get("already_published"):
+            with LOCK:
+                EVENTS.append(ev)
 
 
 def page(body: str = "", voice: str = "", **keep) -> bytes:

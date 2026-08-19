@@ -90,7 +90,11 @@ ANSWERING = "Speak softly and warmly, at a natural everyday pace."
 #     1.00   5.61 s +/- 0.20, transcribes 1.00
 #     1.08   4.90 s +/- 0.32, transcribes 1.00   <- 13% quicker, nothing lost
 #     1.15   4.68 s +/- 0.37, transcribes 1.00
-PACE = 1.08
+# Back to natural. 1.08 was chosen for speed when the wait was the complaint, and it is an 8%
+# speed-up that a listener hears as slightly hurried. It also worked against the audio: clips
+# render slower than realtime once the timbre pass is in the chain, so shortening every clip
+# made playback run out of audio sooner and the answer stopped before it finished.
+PACE = 1.00
 
 
 # Filler that sounds supportive and engages with nothing. Every one of these fits any problem
