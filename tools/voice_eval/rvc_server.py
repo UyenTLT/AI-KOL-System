@@ -99,6 +99,15 @@ def convert(inp: str, outp: str, pitch: int = 0) -> dict:
     sr, audio = wav
     Path(outp).parent.mkdir(parents=True, exist_ok=True)
     sf.write(outp, audio, sr)
+    # Hand the cached blocks back between conversions. This card has ~550 MB free with the
+    # desktop, Ollama and CosyVoice already on it, and CosyVoice runs immediately before every
+    # one of these. Holding torch's allocator cache makes the two evict each other: an isolated
+    # conversion takes 0.3-0.5 s, and the same conversion inside the live path measured 3.7 s.
+    try:
+        import torch
+        torch.cuda.empty_cache()
+    except Exception:
+        pass
     return {"out": outp, "seconds": round(time.perf_counter() - t0, 3), "sr": sr}
 
 
