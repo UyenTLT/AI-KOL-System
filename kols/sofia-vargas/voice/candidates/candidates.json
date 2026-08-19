@@ -8,14 +8,6 @@
   },
   "voices": [
     {
-      "id": "en-GB-Maisie",
-      "file": "kols/sofia-vargas/voice/candidates/en-GB-Maisie.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 295,
-      "range_st": 6.66,
-      "brightness_pct": 23.4
-    },
-    {
       "id": "en-US-Ana",
       "file": "kols/sofia-vargas/voice/candidates/en-US-Ana.wav",
       "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
@@ -32,68 +24,30 @@
       "brightness_pct": 17.8
     },
     {
-      "id": "en-GB-Sonia",
-      "file": "kols/sofia-vargas/voice/candidates/en-GB-Sonia.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 203,
-      "range_st": 11.6,
-      "brightness_pct": 14.6
-    },
-    {
-      "id": "en-US-Ava",
-      "file": "kols/sofia-vargas/voice/candidates/en-US-Ava.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 201,
-      "range_st": 9.99,
-      "brightness_pct": 20.8
-    },
-    {
       "id": "en-US-Aria",
       "file": "kols/sofia-vargas/voice/candidates/en-US-Aria.wav",
       "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
       "f0_hz": 199,
       "range_st": 11.25,
       "brightness_pct": 25.3
-    },
-    {
-      "id": "en-AU-Natasha",
-      "file": "kols/sofia-vargas/voice/candidates/en-AU-Natasha.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 195,
-      "range_st": 13.24,
-      "brightness_pct": 18.5
-    },
-    {
-      "id": "en-GB-Libby",
-      "file": "kols/sofia-vargas/voice/candidates/en-GB-Libby.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 190,
-      "range_st": 12.16,
-      "brightness_pct": 18.6
-    },
-    {
-      "id": "en-US-Michelle",
-      "file": "kols/sofia-vargas/voice/candidates/en-US-Michelle.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 189,
-      "range_st": 10.37,
-      "brightness_pct": 10.7
-    },
-    {
-      "id": "en-US-Jenny",
-      "file": "kols/sofia-vargas/voice/candidates/en-US-Jenny.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 177,
-      "range_st": 11.42,
-      "brightness_pct": 16.6
-    },
-    {
-      "id": "en-US-Emma",
-      "file": "kols/sofia-vargas/voice/candidates/en-US-Emma.wav",
-      "ref_text": "I got the bus going the wrong way on Sunday and ended up at a lake I had never heard of. I stayed an hour because it was beautiful.",
-      "f0_hz": 175,
-      "range_st": 12.48,
-      "brightness_pct": 12.5
     }
-  ]
+  ],
+  "pruned": {
+    "kept": [
+      "en-US-Ana",
+      "en-US-Aria",
+      "ko-KR-SunHi"
+    ],
+    "dropped": [
+      "en-GB-Maisie",
+      "en-GB-Sonia",
+      "en-US-Ava",
+      "en-AU-Natasha",
+      "en-GB-Libby",
+      "en-US-Michelle",
+      "en-US-Jenny",
+      "en-US-Emma"
+    ],
+    "rule": "speaker similarity >= 0.70 between reference clips counts as the same voice. Measured because the demo list read as one person: several of these sit at 0.7-0.8 to each other before cloning, and zero-shot cloning converges them further (Emma vs Sonia 0.78 -> 0.81)."
+  }
 }
