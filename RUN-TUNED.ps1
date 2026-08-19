@@ -12,6 +12,7 @@ $Root = $PSScriptRoot
 $Py   = Join-Path $Root ".venv\Scripts\python.exe"
 $FtPy = Join-Path $Root "finetune\.venv\Scripts\python.exe"
 $CvPy = Join-Path $Root "CosyVoice\.venv\Scripts\python.exe"
+$RvPy = Join-Path $Root "RVC\.venv\Scripts\python.exe"
 
 # port, label, python, script, needs the tuned brain
 # The fine-tune is served by Ollama now, not by tools/llm_train/serve.py. Same weights, merged
@@ -19,7 +20,12 @@ $CvPy = Join-Path $Root "CosyVoice\.venv\Scripts\python.exe"
 # 4-bit, which is 1.06 s a reply instead of 2.56. serve.py still works and is still the fastest
 # way to try a fresh adapter without exporting, but it is not what production should run.
 $Services = @(
-  @{ Port=9881;  Name="CosyVoice";  Py=$CvPy; Script="tools\voice_eval\cosy_server.py"; Brain=$false },
+  @{ Port=9881;  Name="CosyVoice";  Py=$CvPy; Script="tools\voice_eval\cosy_server.py"; Brain=$false; Ready=20 },
+  # The timbre pass. Without it she still speaks, but in the zero-shot voice rather than the
+  # trained one -- a warning on stdout and nothing louder, so it is easy to miss that she has
+  # quietly reverted. Slow to come up: it loads the model and then converts once at startup, so
+  # that the first viewer question does not pay the 4.6 s the first conversion costs.
+  @{ Port=9882;  Name="RVC voice";  Py=$RvPy; Script="tools\voice_eval\rvc_server.py"; Brain=$false; Ready=90 },
   @{ Port=8777;  Name="Livestream"; Py=$Py;   Script="tools\livestream\server.py";      Brain=$true  },
   @{ Port=8779;  Name="Chat 1:1";   Py=$Py;   Script="tools\chat\server.py";            Brain=$true  },
   @{ Port=8778;  Name="RVC demo";   Py=$Py;   Script="tools\voice_eval\rvc_demo.py";    Brain=$false },
@@ -62,11 +68,23 @@ foreach ($s in $Services) {
 }
 
 "waiting for them to come up..."
-Start-Sleep -Seconds 12
 foreach ($s in $Services) {
-  $url = if ($s.Port -eq 9881) { "http://127.0.0.1:9881/health" }
-         else { "http://127.0.0.1:$($s.Port)/" }
-  try   { $r = Invoke-WebRequest $url -UseBasicParsing -TimeoutSec 8; $st = "HTTP $($r.StatusCode)" }
-  catch { $st = "not answering yet" }
+  if ($s.Port -eq 9881 -or $s.Port -eq 9882) { $url = "http://127.0.0.1:$($s.Port)/health" }
+  else { $url = "http://127.0.0.1:$($s.Port)/" }
+  # Poll rather than sleep a flat 12 seconds. The voice servers load models and one of them
+  # warms itself up, so a single early check reports them broken when they are only slow.
+  if ($s.Ready) { $budget = $s.Ready } else { $budget = 15 }
+  $st = "not answering yet"
+  $t0 = Get-Date
+  while (((Get-Date) - $t0).TotalSeconds -lt $budget) {
+    try {
+      $r = Invoke-WebRequest $url -UseBasicParsing -TimeoutSec 5
+      $st = "HTTP $($r.StatusCode) after $([int]((Get-Date) - $t0).TotalSeconds)s"
+      break
+    } catch { Start-Sleep -Seconds 2 }
+  }
   "  {0,-12} {1,-22} {2}" -f $s.Name, "http://127.0.0.1:$($s.Port)", $st
 }
+""
+"Sofia speaks through CosyVoice, then RVC replaces the timbre with her trained voice."
+"If RVC voice is not up she still talks, in the zero-shot voice, and only its log says so."
