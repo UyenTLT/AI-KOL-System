@@ -325,6 +325,22 @@
         "all_checkpoints_load": true,
         "metadata_correct": "40k / f0=1 / v2 on all seven"
       }
+    },
+    "brain": {
+      "model": "sofia-vargas-tuned (Qwen2.5-7B + QLoRA, q4_K_M)",
+      "trained": "2026-08-20",
+      "examples": 820,
+      "humour_share": 0.35,
+      "source": "537 existing + 283 pairs rewritten from curveball-steering/conversations_humor_large into her voice",
+      "measured_after": {
+        "probe_guards_tripped": "2 of 12 (was 4-6)",
+        "question_back": "0 of 12 (was 2)",
+        "invented_dead_pet": "not once (was once in two runs)",
+        "biography": "5 of 6 location questions right; says \"I lived in Taiwan for a bit\" once, which is false"
+      },
+      "known_costs": "Her biography loosened: 35% of training is now questions about somebody else's life, and she occasionally borrows one. And the invented cafe got WORSE -- Cafe Buena Vista now comes with a neighbourhood and an owner called Maria, because training on humour rewards the confident specific detail that makes a joke land, which is the same move that makes a fake business sound real. If the biography drift spreads, lower the humour share rather than adding rules.",
+      "not_measured": "Whether she is funny. is_playful fires on 0.3% of lines that made a real person laugh and an LLM judge scored 56% on the same task, so the improvement above is from reading the answers and should be checked the same way.",
+      "rollback": "datasets/sofia-vargas-chat-train.prehumor.jsonl is the pre-humour training set"
     }
   },
   "meta": {
