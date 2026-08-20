@@ -960,7 +960,8 @@ def voice_ref(voice_id: str | None) -> tuple[str, str] | None:
     return None
 
 
-def speech_chunks(text: str, *, first_max: int = 90, rest_max: int = 260) -> list[str]:
+def speech_chunks(text: str, *, first_max: int = 90, rest_max: int = 260,
+                  whole_max: int = 340) -> list[str]:
     """Group sentences into chunks that render FASTER than they play.
 
     One clip per sentence sounds like the obvious split and it is why the answer stutters. The
@@ -978,6 +979,16 @@ def speech_chunks(text: str, *, first_max: int = 90, rest_max: int = 260) -> lis
     the end of a paragraph. Giving the engine three sentences at once lets it place the emphasis
     across them instead.
     """
+    # Short enough to say in one breath: render it as ONE clip. Every clip boundary is a seam,
+    # and a seam is heard however carefully the pieces are joined -- the browser has to swap
+    # source, and each clip carries its own leading and trailing silence. Splitting a four-second
+    # answer to save a second of waiting trades a wait nobody minds for a gap everybody hears.
+    #
+    # Above this length the split comes back, because a long answer rendered whole means silence
+    # until the whole thing exists, and rendering is only just faster than speech.
+    if len(text.strip()) <= whole_max:
+        return [text.strip()] if text.strip() else []
+
     out, cur = [], ""
     for sent in sentences(text):
         cap = first_max if not out else rest_max

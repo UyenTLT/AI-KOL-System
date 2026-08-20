@@ -310,8 +310,16 @@ def answer(c: dict, hist: list, publish=None) -> dict:
                 # starting the voice is what the previous version did, and it measured no
                 # faster than not streaming at all — the two costs were still paid end to end
                 # instead of at the same time.
-                if len(streamed) == 1:
-                    def _open(sent=piece):
+                # Only split off an opener once the answer is long enough to NEED one. The
+                # opener is always its own clip, so starting it on sentence one puts a seam in
+                # every answer -- including the short ones that would have rendered whole in
+                # about the same time. A seam is heard; a second of waiting on a short answer is
+                # not. Above this length the split earns its keep, because rendering the whole
+                # thing first would mean silence until all of it exists.
+                from stage import speech_chunks as _sc
+                _sofar = " ".join(streamed)
+                if len(streamed) > 1 and len(_sofar) > 340 and not opener.get("thread"):
+                    def _open(sent=streamed[0]):
                         try:
                             from stage import perform as _p
                             _p(KOL, sent, mode, CLIPS / f"{early_stem}-00.wav",
