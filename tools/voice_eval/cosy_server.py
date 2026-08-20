@@ -217,7 +217,7 @@ def mode_for_reference(ref_path: str) -> dict | None:
     a transcript, and there is no field for a delivery instruction. Rather than patch the
     engine (it is gitignored, so the edit would have to live in patches/ and be re-applied),
     the server resolves the character from the clip it was handed and applies whatever mode
-    that character's profile declares. sofia-vargas is configured for `instruct`, so the
+    that character's profile declares. sofia-hsu is configured for `instruct`, so the
     avatar gets the same voice as the studio instead of the flatter zero-shot one.
     """
     try:

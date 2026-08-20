@@ -30,9 +30,9 @@ pool = [r for r in rows if r.get("topic") in KEEP and YOU.search(r["prompt"])]
 random.seed(11); random.shuffle(pool)
 print(f"  {len(pool)} of {len(rows)} questions are personal AND on a topic a viewer would ask")
 
-MODEL = "sofia-vargas-tuned"
-no_cjk = not speaks_cjk("sofia-vargas")
-SYS = (build_system_prompt("sofia-vargas") + "\n\n"
+MODEL = "sofia-hsu-tuned"
+no_cjk = not speaks_cjk("sofia-hsu")
+SYS = (build_system_prompt("sofia-hsu") + "\n\n"
        "You are shown a question and a funny answer somebody else wrote. Answer the SAME question "
        "with the same comic move, in your own voice and out of your own life.\n"
        "- Keep what makes it funny: the exaggeration, the undercut, the absurdly exact detail.\n"
@@ -48,7 +48,7 @@ for i, r in enumerate(pool[:LIMIT]):
     if i and i % 50 == 0:
         print(f"  {i}/{LIMIT}, kept {len(kept)}", flush=True)
     try:
-        life = life_threads("sofia-vargas", message=r["prompt"])
+        life = life_threads("sofia-hsu", message=r["prompt"])
     except Exception:
         life = ""
     msgs = [{"role": "system", "content": SYS}]

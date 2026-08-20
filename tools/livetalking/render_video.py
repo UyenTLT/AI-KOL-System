@@ -12,11 +12,11 @@ the way `avatars/wav2lip_avatar.py` loads them. The only thing added is a batch 
 the whole utterance instead of a queue that keeps up with a clock.
 
 Audio comes from the character's configured voice, so the file matches what the avatar would
-have said live — CosyVoice 2 for sofia-vargas, GPT-SoVITS for the rest.
+have said live — CosyVoice 2 for sofia-hsu, GPT-SoVITS for the rest.
 
-    LiveTalking\\.venv\\Scripts\\python.exe tools\\livetalking\\render_video.py sofia-vargas ^
+    LiveTalking\\.venv\\Scripts\\python.exe tools\\livetalking\\render_video.py sofia-hsu ^
         --text "Okay so, I honestly did not expect this to work." ^
-        --avatar-id sofia-vargas_v2 --out renders/sofia_talking.mp4
+        --avatar-id sofia-hsu_v2 --out renders/sofia_talking.mp4
 
     ... --audio some.wav        # speak an existing clip instead of synthesising
 """

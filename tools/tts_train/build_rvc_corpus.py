@@ -3,9 +3,9 @@
 
 ## Why this exists rather than reusing the dataset on disk
 
-`kols/sofia-vargas/voice/dataset/sofia-vargas.list` still lists 320 clips and the profile still
+`kols/sofia-hsu/voice/dataset/sofia-hsu.list` still lists 320 clips and the profile still
 says 30.2 minutes, but the audio is gone and it would be the wrong audio anyway: every entry is
-named `sofia-vargas_bs_*` — `bs` for bootstrap — and that corpus was spoken by
+named `sofia-hsu_bs_*` — `bs` for bootstrap — and that corpus was spoken by
 `edge:es-MX-DaliaNeural` to bootstrap GPT-SoVITS before she had a voice of her own. Training RVC
 on it would produce a model of the bootstrap timbre, not of Sofia.
 
@@ -27,8 +27,8 @@ range on the conversational wording against 8.17 on a whispered one — so the c
 through registers instead of rendering 320 lines in one. It widens the pitch distribution the
 model is fitted to, which is the distribution a sung line will land outside of otherwise.
 
-    python tools/tts_train/build_rvc_corpus.py sofia-vargas
-    python tools/tts_train/build_rvc_corpus.py sofia-vargas --limit 40      # a quick sample
+    python tools/tts_train/build_rvc_corpus.py sofia-hsu
+    python tools/tts_train/build_rvc_corpus.py sofia-hsu --limit 40      # a quick sample
 """
 from __future__ import annotations
 

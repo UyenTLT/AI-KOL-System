@@ -19,7 +19,7 @@ strengths and scores each on three axes that pull against each other:
 A setting only wins if it clears the noise *and* keeps similarity high. The strongest denoise
 is rarely the best one.
 
-    .venv\\Scripts\\python.exe tools\\voice_eval\\denoise_ref.py kols/sofia-vargas/voice/ref_human.wav
+    .venv\\Scripts\\python.exe tools\\voice_eval\\denoise_ref.py kols/sofia-hsu/voice/ref_human.wav
     .venv\\Scripts\\python.exe tools\\voice_eval\\denoise_ref.py <in.wav> --apply --out <out.wav>
 """
 from __future__ import annotations

@@ -396,7 +396,7 @@ def build(state: dict, out: Path) -> Path:
          "image-to-video, (b) commission/record a real base video, or (c) accept a stock face "
          "for now. Needs a decision on which — (a) is the only fully local route."),
         ("2", "Rights decision: leftover real-person voice data", BAD,
-         "kols/sofia-vargas/voice/ holds a dataset built from a podcast recording during "
+         "kols/sofia-hsu/voice/ holds a dataset built from a podcast recording during "
          "pipeline testing. It conflicts with the synthetic-only policy chosen for this project. "
          "It was NOT deleted without approval — please confirm whether to remove it."),
         ("3", "Multi-speaker audio is not yet supported", WARN,

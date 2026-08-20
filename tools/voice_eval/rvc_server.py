@@ -39,13 +39,13 @@ VC_OBJ = None
 LOADED = {"model": None}
 
 
-def _profile(kol: str = "sofia-vargas") -> dict:
+def _profile(kol: str = "sofia-hsu") -> dict:
     p = REPO / "kols" / kol / "profile.json"
     d = json.loads(p.read_text(encoding="utf-8"))
     return d.get("ai_assets", {}).get("voice_conversion", {})
 
 
-def load(kol: str = "sofia-vargas", warm: bool = True):
+def load(kol: str = "sofia-hsu", warm: bool = True):
     """Load the model once. Everything after this is just inference."""
     global VC_OBJ
     # RVC resolves its own resources -- i18n locales, hubert weights, the model directory --
@@ -54,7 +54,7 @@ def load(kol: str = "sofia-vargas", warm: bool = True):
     import os
     os.chdir(RVC)
     # These four are read from the environment deep inside RVC (`f'{os.getenv("weight_root")}/
-    # {sid}'`), so an unset one fails as the literal path "None/sofia-vargas.pth". infer.cli
+    # {sid}'`), so an unset one fails as the literal path "None/sofia-hsu.pth". infer.cli
     # sets them at import; nothing sets them for a caller that imports the modules directly.
     os.environ.setdefault("weight_root", str(RVC / "assets" / "weights"))
     os.environ.setdefault("index_root", str(RVC / "logs"))
@@ -127,7 +127,7 @@ def convert(inp: str, outp: str, pitch: int = 0, index_rate=None, protect=None) 
             torch.cuda.empty_cache()
         except Exception:
             pass
-        load(LOADED.get("kol", "sofia-vargas"), warm=False)
+        load(LOADED.get("kol", "sofia-hsu"), warm=False)
         _, wav = _once(inp, outp, pitch, index_rate, protect)
     if wav is None:
         raise RuntimeError("conversion returned nothing")
@@ -183,7 +183,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=9882)
-    ap.add_argument("--kol", default="sofia-vargas")
+    ap.add_argument("--kol", default="sofia-hsu")
     args = ap.parse_args()
     for st in (sys.stdout, sys.stderr):
         try:

@@ -57,7 +57,7 @@ DEFAULT_INSTRUCT = ("Speak warmly and conversationally, like talking to a close 
 
 # The one piece of real human speech in the repo, and the reference the CosyVoice conditions
 # clone from. Rights confirmed by the owner (commit 6b00847).
-HUMAN_RAW = REPO / "kols/sofia-vargas/voice/raw/kols_sofia-vargas_raw voice.m4a"
+HUMAN_RAW = REPO / "kols/sofia-hsu/voice/raw/kols_sofia-hsu_raw voice.m4a"
 HUMAN_SPAN = (7.7, 14.2)
 HUMAN_TEXT = ("and paper. I want you to write down in one section all the good things "
               "that he's done for you.")
@@ -155,9 +155,9 @@ def render_gsv(cid: str, text: str) -> Path:
 
 
 def render_cosy(which: str, text: str, instruct: str) -> tuple[Path, dict]:
-    ref_synth = REPO / "kols/sofia-vargas/voice/ref.wav"
-    ref_synth_text = (REPO / "kols/sofia-vargas/voice/ref.txt").read_text(
-        encoding="utf-8").strip() if (REPO / "kols/sofia-vargas/voice/ref.txt").is_file() else ""
+    ref_synth = REPO / "kols/sofia-hsu/voice/ref.wav"
+    ref_synth_text = (REPO / "kols/sofia-hsu/voice/ref.txt").read_text(
+        encoding="utf-8").strip() if (REPO / "kols/sofia-hsu/voice/ref.txt").is_file() else ""
 
     if which == "zs-synth":
         body = {"text": text, "mode": "zero_shot", "ref": str(ref_synth),

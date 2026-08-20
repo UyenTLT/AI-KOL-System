@@ -40,7 +40,7 @@ for sub in ("studio", "livetalking", "voice_eval", "livestream"):
 CLIPS = Path(os.getenv("KOL_STREAM_DIR") or (REPO / "renders" / "livestream"))
 CLIPS.mkdir(parents=True, exist_ok=True)
 
-KOL = os.getenv("KOL_ID", "sofia-vargas")
+KOL = os.getenv("KOL_ID", "sofia-hsu")
 
 # The whole stream, newest last. Kept in memory on purpose: this is a demo stage, and a stream
 # that survives a restart would only make it harder to start a clean one for the next person.

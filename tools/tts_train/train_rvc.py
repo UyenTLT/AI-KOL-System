@@ -25,8 +25,8 @@ Stages, all of which can be re-run independently:
     train      fine-tune from the pretrained f0G40k / f0D40k pair
     index      the retrieval index that gives RVC its name
 
-    python tools/tts_train/train_rvc.py sofia-vargas --epochs 150
-    python tools/tts_train/train_rvc.py sofia-vargas --stage train --epochs 20 --batch 4
+    python tools/tts_train/train_rvc.py sofia-hsu --epochs 150
+    python tools/tts_train/train_rvc.py sofia-hsu --stage train --epochs 20 --batch 4
 """
 from __future__ import annotations
 

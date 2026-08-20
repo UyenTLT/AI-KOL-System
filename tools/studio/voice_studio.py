@@ -17,7 +17,7 @@ Three capabilities:
     python tools/studio/voice_studio.py list
     python tools/studio/voice_studio.py say lena-chen "大家好" --speed 1.0 -o out.wav
     python tools/studio/voice_studio.py clone ref.wav "Hello there" -o out.wav
-    python tools/studio/voice_studio.py script sofia-vargas "unboxing a new sunscreen"
+    python tools/studio/voice_studio.py script sofia-hsu "unboxing a new sunscreen"
 """
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ BASE_GPT = ("GPT-SoVITS/GPT_SoVITS/pretrained_models/gsv-v2final-pretrained/"
 # `edge_voice` is the timbre each was bootstrapped from, and is also the zero-shot fallback
 # if its weights are ever missing.
 CHARACTERS = [
-    {"id": "sofia-vargas", "name": "Sofia Vargas", "lang": "en",
+    {"id": "sofia-hsu", "name": "Sofia Vargas", "lang": "en",
      "edge_voice": "es-MX-DaliaNeural",
      "blurb": "Warm Latin-American host, honest-review energy",
      "sample": "Honestly, this is my favourite thing I have tried all month."},
@@ -94,7 +94,7 @@ def gsv_block(cid: str) -> dict:
     """The GPT-SoVITS half of a character's voice config.
 
     Usually that is the voice block itself. When a character has moved to another engine —
-    sofia-vargas to CosyVoice 2 — the GPT-SoVITS setup is kept under `gpt_sovits_previous`,
+    sofia-hsu to CosyVoice 2 — the GPT-SoVITS setup is kept under `gpt_sovits_previous`,
     and everything that speaks api_v2 (the fine-tuned check, the weight lookup, LiveTalking)
     has to read it from there.
 
@@ -614,7 +614,7 @@ def synthesize(cid: str, text: str, *, speed: float = 1.0, volume_db: float = 0.
     applies to instruction-controlled engines. Ignored elsewhere, since GPT-SoVITS has no
     equivalent control — a caller that depends on it should check the engine first.
     """
-    # A profile can name a different engine. sofia-vargas moved to CosyVoice 2 in
+    # A profile can name a different engine. sofia-hsu moved to CosyVoice 2 in
     # instruction-controlled mode on 2026-08-04, chosen by ear and backed by measurement
     # (see her profile's voice.chosen_because). An ad-hoc clone still goes to GPT-SoVITS,
     # because that path is about a caller-supplied reference rather than the character's own.
@@ -683,7 +683,7 @@ def synthesize(cid: str, text: str, *, speed: float = 1.0, volume_db: float = 0.
     out.write_bytes(audio)
     if not out.is_file() or out.stat().st_size < 1000:
         raise RuntimeError("api_v2 returned no usable audio")
-    # Level this path too, or the voices drift apart. Measured before adding it: sofia-vargas
+    # Level this path too, or the voices drift apart. Measured before adding it: sofia-hsu
     # (levelled) sat at -15.7 LUFS while the four GPT-SoVITS voices ran -21.6 to -23.9 — an
     # 8.2 dB spread, plainly audible the moment two of them appear in the same video. An
     # ad-hoc clone has no profile to read, so it keeps whatever level it was given.

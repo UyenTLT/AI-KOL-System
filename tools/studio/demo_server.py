@@ -516,7 +516,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         out = self._new("tts")
         t = time.perf_counter()
-        synthesize(g("voice", "sofia-vargas"), text, out=out,
+        synthesize(g("voice", "sofia-hsu"), text, out=out,
                    speed=float(g("speed", "1.0")), volume_db=float(g("volume_db", "0")))
         meta = (f"<span><b>{time.perf_counter()-t:.1f}</b> s</span>"
                 f"<span>{out.stat().st_size/1024:.0f} KB</span>"
@@ -560,10 +560,10 @@ class Handler(BaseHTTPRequestHandler):
                        "text/html; charset=utf-8")
             return
         t = time.perf_counter()
-        r = write_sales_script(g("voice", "sofia-vargas"), info,
+        r = write_sales_script(g("voice", "sofia-hsu"), info,
                                angle=g("angle", "honest"), seconds=int(g("seconds", "15")))
         out = self._new("sell")
-        synthesize(g("voice", "sofia-vargas"), r["script"], out=out)
+        synthesize(g("voice", "sofia-hsu"), r["script"], out=out)
         known = [k for k, v in r["facts"].items() if v and not k.startswith("__")]
         # Worth surfacing rather than hiding: when this line is non-empty the extractor invented
         # a price or a link and verification threw it away. That is the handbook's second rule

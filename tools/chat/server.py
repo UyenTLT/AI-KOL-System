@@ -45,7 +45,7 @@ for sub in ("studio", "livetalking", "chat"):
 
 CLIPS = Path(os.getenv("KOL_CHAT_DIR") or (REPO / "renders" / "chat"))
 CLIPS.mkdir(parents=True, exist_ok=True)
-KOL = os.getenv("KOL_ID", "sofia-vargas")
+KOL = os.getenv("KOL_ID", "sofia-hsu")
 
 # Transcripts live with the fan's memory file so a conversation survives a restart, which is the
 # entire point of a chat that claims to remember you.

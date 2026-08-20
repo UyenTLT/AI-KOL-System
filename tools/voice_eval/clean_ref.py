@@ -18,7 +18,7 @@ ceiling so nothing clips.
 Order matters. Normalise first and you amplify the room along with the voice, then ask the
 separator to work on a louder mess. Separate first, then normalise what is left.
 
-    .venv\\Scripts\\python.exe tools\\voice_eval\\clean_ref.py kols/sofia-vargas/voice/ref_human.wav.orig
+    .venv\\Scripts\\python.exe tools\\voice_eval\\clean_ref.py kols/sofia-hsu/voice/ref_human.wav.orig
     .venv\\Scripts\\python.exe tools\\voice_eval\\clean_ref.py <in> --apply --out <out>
 """
 from __future__ import annotations
@@ -57,7 +57,7 @@ def separate(src: Path, workdir: Path) -> Path:
     """Pull the voice out as its own stem with Demucs.
 
     NOT the right tool for preparing a CosyVoice reference clip, on this project's own
-    measurements — see sofia-vargas' profile, reference_cleanup. Demucs wins on rumble by a wide
+    measurements — see sofia-hsu' profile, reference_cleanup. Demucs wins on rumble by a wide
     margin (19.6 dB against 5.5 dB for a plain high-pass) and loses on the two things that turned
     out to matter more: its artefacts raise high-frequency noise, and a render cloned from the
     separated stem scores 0.4968 against the original speaker where the high-passed one scores

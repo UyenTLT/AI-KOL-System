@@ -35,7 +35,7 @@ from harvest_talk import is_playful, is_story, _OPINION, _FILLER
 from stage import deflected
 import build_dataset as B
 
-MODEL = "sofia-vargas-tuned"
+MODEL = "sofia-hsu-tuned"
 seeds = list(B.real_seeds())[:40]
 
 def score(t):
@@ -50,7 +50,7 @@ def score(t):
 
 first, best = [], []
 for q in seeds:
-    cands = [c for c in B.candidates("sofia-vargas", q, 6, MODEL) if c and c.strip()]
+    cands = [c for c in B.candidates("sofia-hsu", q, 6, MODEL) if c and c.strip()]
     if not cands:
         continue
     first.append(cands[0])

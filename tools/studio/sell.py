@@ -18,9 +18,9 @@ Four angles, because one script rarely fits:
     problem     name the problem first, then the product as the answer
     demo        walk through using it, as if on camera
 
-    python tools/studio/sell.py sofia-vargas --file product.txt
-    python tools/studio/sell.py sofia-vargas --file product.txt --angle hook --seconds 10
-    python tools/studio/sell.py sofia-vargas --file product.txt --all --say
+    python tools/studio/sell.py sofia-hsu --file product.txt
+    python tools/studio/sell.py sofia-hsu --file product.txt --angle hook --seconds 10
+    python tools/studio/sell.py sofia-hsu --file product.txt --all --say
 """
 from __future__ import annotations
 

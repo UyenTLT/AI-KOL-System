@@ -16,7 +16,7 @@ what happens when the files come back, and it is not "concatenate them":
   whether the brief was understood, and they are printed together for exactly that.
 
     python tools/llm_train/merge_answers.py returned/
-    python tools/llm_train/merge_answers.py returned/ --out datasets/sofia-vargas-gold.jsonl
+    python tools/llm_train/merge_answers.py returned/ --out datasets/sofia-hsu-gold.jsonl
 """
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("folder", help="directory holding the answers-*.jsonl files sent back")
-    ap.add_argument("--kol", default="sofia-vargas")
+    ap.add_argument("--kol", default="sofia-hsu")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
     for stream in (sys.stdout, sys.stderr):

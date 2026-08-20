@@ -19,7 +19,7 @@ Two limits worth knowing before using the output for anything:
   anything without repeats — including comparisons between checkpoints.
 
     from rvc_pipeline import convert
-    convert(Path("song.wav"), Path("sofia.wav"), kol_id="sofia-vargas")
+    convert(Path("song.wav"), Path("sofia.wav"), kol_id="sofia-hsu")
 """
 from __future__ import annotations
 
@@ -61,7 +61,7 @@ def available(kol_id: str) -> bool:
         return False
 
 
-def convert(src: Path, dst: Path, *, kol_id: str = "sofia-vargas", pitch: int = 0,
+def convert(src: Path, dst: Path, *, kol_id: str = "sofia-hsu", pitch: int = 0,
             index_rate: float | None = None, protect: float | None = None,
             timeout: int = 600) -> dict:
     """Put `src` through the KOL's voice. Returns what was done, including any warning."""

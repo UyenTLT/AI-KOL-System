@@ -25,7 +25,7 @@ and hoped for:
   three-minute song takes about a minute to convert. So conversion happens ahead of time via
   `prepare_all`, never while someone is waiting.
 
-    python tools/livestream/songs.py sofia-vargas --prepare
+    python tools/livestream/songs.py sofia-hsu --prepare
 """
 from __future__ import annotations
 

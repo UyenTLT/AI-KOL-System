@@ -16,7 +16,7 @@ fp16 was tried first and is *slower* here, not faster: 0.66x on a short line, 0.
 one. The ONNX stages run on CPU on Windows, and the conversion overhead outweighs the gain.
 
     from stream_speak import speak_streaming
-    speak_streaming("sofia-vargas", long_text, on_chunk=..., on_done=...)
+    speak_streaming("sofia-hsu", long_text, on_chunk=..., on_done=...)
 """
 from __future__ import annotations
 

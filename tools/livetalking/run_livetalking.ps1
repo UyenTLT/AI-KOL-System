@@ -41,7 +41,7 @@ if (-not $voice) { throw "$KolId has no ai_assets.voice block" }
 #
 # That plugin only knows `inference_zero_shot` — it has no field for a delivery instruction —
 # so cosy_server resolves the character from the reference clip it is handed and applies
-# whatever mode the profile declares. sofia-vargas is on `instruct`, so the avatar speaks in
+# whatever mode the profile declares. sofia-hsu is on `instruct`, so the avatar speaks in
 # the same voice as the studio rather than the flatter zero-shot one. Nothing inside
 # LiveTalking is patched for this.
 $TtsPlugin = "gpt-sovits"
@@ -100,7 +100,7 @@ if ($Model -eq "wav2lip" -and -not (Test-Path $modelFile)) {
 }
 # The avatar comes from the KOL's own profile unless one is named on the command line. It used
 # to default to `wav2lip256_avatar1`, the sample shipped with LiveTalking — which meant the
-# obvious invocation (`run_livetalking.ps1 sofia-vargas`) started her voice behind a stranger's
+# obvious invocation (`run_livetalking.ps1 sofia-hsu`) started her voice behind a stranger's
 # face, and did so silently. The profile already records which avatar is hers; the sample has
 # been deleted, and nothing should point at it by default.
 if (-not $AvatarId) {

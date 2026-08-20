@@ -112,11 +112,11 @@ if __name__ == "__main__":
     repo = Path(sys.argv[1])
     N = int(sys.argv[2]) if len(sys.argv) > 2 else 45
 
-    clips = sorted((repo / "kols/sofia-vargas/voice/dataset").glob("*.wav"))
+    clips = sorted((repo / "kols/sofia-hsu/voice/dataset").glob("*.wav"))
     syn = [f for f in (feats(load_any(c)) for c in random.sample(clips, min(N, len(clips)))) if f]
     g_syn = summarise("SYNTHETIC bootstrap — what she is trained on", syn)
 
-    raw = repo / "kols/sofia-vargas/voice/raw/kols_sofia-vargas_raw voice.m4a"
+    raw = repo / "kols/sofia-hsu/voice/raw/kols_sofia-hsu_raw voice.m4a"
     g_real = None
     if raw.is_file():
         real = [f for f in (feats(c) for c in chunk(load_any(raw))) if f]

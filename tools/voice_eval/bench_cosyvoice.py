@@ -52,7 +52,7 @@ HUMAN_REF_TEXT = ("and paper. I want you to write down in one section all the go
 
 
 def cut_human_ref(dst: Path) -> Path:
-    raw = REPO / "kols/sofia-vargas/voice/raw/kols_sofia-vargas_raw voice.m4a"
+    raw = REPO / "kols/sofia-hsu/voice/raw/kols_sofia-hsu_raw voice.m4a"
     if not raw.is_file():
         raise SystemExit(f"missing raw human clip: {raw}")
     start, end = HUMAN_REF_SPAN
@@ -85,7 +85,7 @@ def main() -> int:
     cosy = CosyVoice2(str(model_dir), load_jit=False, load_trt=False, fp16=args.fp16)
     print(f"[load] model ready in {time.perf_counter()-t0:.1f} s  ·  sr={cosy.sample_rate}")
 
-    synth_ref = REPO / "kols/sofia-vargas/voice/ref.wav"
+    synth_ref = REPO / "kols/sofia-hsu/voice/ref.wav"
     synth_text = ("Let me be blunt about the moisturiser: I am still undecided about it, "
                   "mainly because results took much too long.")
     human_ref = cut_human_ref(out / "ref_human_16k.wav")

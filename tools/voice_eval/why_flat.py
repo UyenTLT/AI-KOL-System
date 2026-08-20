@@ -20,7 +20,7 @@ number in this repo, and every arm is measured identically, so whatever the wind
 to the absolute figure it does it to all four equally.
 
     .venv\Scripts\python.exe tools\voice_eval\why_flat.py
-    .venv\Scripts\python.exe tools\voice_eval\why_flat.py --kol sofia-vargas --runs 2
+    .venv\Scripts\python.exe tools\voice_eval\why_flat.py --kol sofia-hsu --runs 2
 """
 from __future__ import annotations
 
@@ -65,7 +65,7 @@ def render_and_measure(kol: str, text: str, instruct: str | None, speed: float,
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--kol", default="sofia-vargas")
+    ap.add_argument("--kol", default="sofia-hsu")
     ap.add_argument("--runs", type=int, default=1, help="repeats per arm; the engine is stochastic")
     args = ap.parse_args()
 

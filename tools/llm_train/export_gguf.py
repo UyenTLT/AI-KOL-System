@@ -17,7 +17,7 @@ The conversion needs llama.cpp's `convert_hf_to_gguf.py`. It is a pure-Python sc
 step, no compiler — so this clones the repository and uses it directly rather than asking anyone
 to install a toolchain.
 
-    finetune\\.venv\\Scripts\\python.exe tools\\llm_train\\export_gguf.py sofia-vargas
+    finetune\\.venv\\Scripts\\python.exe tools\\llm_train\\export_gguf.py sofia-hsu
 """
 from __future__ import annotations
 

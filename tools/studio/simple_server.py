@@ -14,7 +14,7 @@ clip you cannot listen to.
 
     .venv\\Scripts\\python.exe tools\\studio\\simple_server.py            # :8774
 
-Needs GPT-SoVITS api_v2 on :9880, CosyVoice on :9881 for sofia-vargas, Ollama on :11434 for
+Needs GPT-SoVITS api_v2 on :9880, CosyVoice on :9881 for sofia-hsu, Ollama on :11434 for
 scenario mode, and the LiveTalking venv for video.
 """
 from __future__ import annotations
@@ -108,7 +108,7 @@ def avatar_options(sel: str) -> str:
                      for i in ids) or '<option value="">(no avatars built)</option>'
 
 
-def page(body: str, *, voice="", text="", scenario="", avatar="sofia-vargas_v2") -> bytes:
+def page(body: str, *, voice="", text="", scenario="", avatar="sofia-hsu_v2") -> bytes:
     text = text or "Honestly, this is my favourite thing I have tried all month."
     scenario = scenario or "unboxing a new sunscreen she actually likes, honest-review tone"
     doc = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -144,7 +144,7 @@ def page(body: str, *, voice="", text="", scenario="", avatar="sofia-vargas_v2")
   <label for="vt">What should she say</label>
   <textarea id="vt" name="text" rows="3">{esc(text)}</textarea>
   <div class="row">
-    <div><label for="v2">Voice</label><select id="v2" name="voice">{options(voice or "sofia-vargas")}</select></div>
+    <div><label for="v2">Voice</label><select id="v2" name="voice">{options(voice or "sofia-hsu")}</select></div>
     <div><label for="av">Avatar</label><select id="av" name="avatar">{avatar_options(avatar)}</select></div>
   </div>
   <button type="submit">Render the video</button>
@@ -290,7 +290,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def _video(self, form, voice):
         text = (form.get("text") or "").strip()
-        avatar = form.get("avatar") or "sofia-vargas_v2"
+        avatar = form.get("avatar") or "sofia-hsu_v2"
         if not text:
             self._send(page(error("Nothing to say", "Type some text first."), voice=voice),
                        "text/html; charset=utf-8")
@@ -322,7 +322,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if form.get("withvideo"):
             t1 = time.perf_counter()
-            name, _ = self._render_video(voice, script, "sofia-vargas_v2")
+            name, _ = self._render_video(voice, script, "sofia-hsu_v2")
             body = result(f"{voice} — her own words, on video", name, script,
                           f"script {wrote:.1f} s · video {time.perf_counter()-t1:.1f} s",
                           video=True)

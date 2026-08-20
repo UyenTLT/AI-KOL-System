@@ -24,7 +24,7 @@ only from them would teach her to respond to compliments. So the real ones suppl
 an actual audience and the written seeds supply the situations that matter and rarely arrive on
 demand: somebody weighing a decision, somebody having a bad day.
 
-    python tools/llm_train/make_writing_pack.py sofia-vargas --count 150
+    python tools/llm_train/make_writing_pack.py sofia-hsu --count 150
 """
 from __future__ import annotations
 

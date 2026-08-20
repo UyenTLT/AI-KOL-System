@@ -431,7 +431,7 @@ def _characters() -> list[dict]:
 
 
 def check_tts(params: dict) -> dict:
-    cid = (params or {}).get("character") or "sofia-vargas"
+    cid = (params or {}).get("character") or "sofia-hsu"
     text = (params or {}).get("text") or "Honestly, this is my favourite thing I have tried all month."
     up, _ = probe(f"{GSV_API}/docs")
     if not up:
@@ -455,7 +455,7 @@ def check_tts(params: dict) -> dict:
 def check_roundtrip(params: dict) -> dict:
     """Synthesise, then transcribe the result back. Catches the failure that listening
     casually does not: audio that sounds fine but says the wrong words."""
-    cid = (params or {}).get("character") or "sofia-vargas"
+    cid = (params or {}).get("character") or "sofia-hsu"
     text = (params or {}).get("text") or "Honestly, this is my favourite thing I have tried all month."
     first = check_tts({"character": cid, "text": text})
     if first["status"] != "ok":
@@ -491,7 +491,7 @@ def check_roundtrip(params: dict) -> dict:
 # ----------------------------------------------------------------------------- brain
 
 def check_brain(params: dict) -> dict:
-    kol = (params or {}).get("kol") or "sofia-vargas"
+    kol = (params or {}).get("kol") or "sofia-hsu"
     msg = (params or {}).get("message") or "Does this serum work for oily skin?"
     up, _ = probe(f"{OLLAMA}/api/tags")
     if not up:

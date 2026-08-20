@@ -16,7 +16,7 @@ the assistant habits being trained out. Reusing it is deliberate: the training s
 by this function, so scoring with anything else would be measuring a different thing than the
 one optimised for.
 
-    finetune\\.venv\\Scripts\\python.exe tools\\llm_train\\evaluate.py sofia-vargas
+    finetune\\.venv\\Scripts\\python.exe tools\\llm_train\\evaluate.py sofia-hsu
 """
 from __future__ import annotations
 

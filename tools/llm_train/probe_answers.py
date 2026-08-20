@@ -50,7 +50,7 @@ PROBES = [
 # businesses she has been caught inventing before
 _INVENT = re.compile(r"\b(?:caf[eé]|coffee shop|restaurant|bar|store|shop)\s+(?:called\s+)?"
                      r"[A-Z][A-Za-z']+(?:\s+[A-Z][A-Za-z']+)?", re.I)
-no_cjk = not speaks_cjk("sofia-vargas")
+no_cjk = not speaks_cjk("sofia-hsu")
 
 print(f"{'probe':<9} {'register':<9} {'w':>3}  flags        answer")
 print("-" * 108)
@@ -58,11 +58,11 @@ bad_total = 0
 for tag, q in PROBES:
     mode = classify(q)
     t = time.perf_counter()
-    a = respond("sofia-vargas", q, mode)[0]
+    a = respond("sofia-hsu", q, mode)[0]
     # the server cleans up before anyone hears it; measuring the raw reply measures
     # something no viewer is ever served
     a, _ = strip_tics(a, first_message=False, message=q)
-    a, _ = fix_vocative(a, None, "sofia-vargas")
+    a, _ = fix_vocative(a, None, "sofia-hsu")
     el = time.perf_counter() - t
     flags = []
     if deflected(a): flags.append("DEFLECT")

@@ -1303,7 +1303,7 @@ class Handler(BaseHTTPRequestHandler):
         b = self._body()
         try:
             if path == "/api/studio/say":
-                out = vsx.synthesize(b.get("character", "sofia-vargas"),
+                out = vsx.synthesize(b.get("character", "sofia-hsu"),
                                      (b.get("text") or "").strip(),
                                      speed=float(b.get("speed", 1.0)),
                                      volume_db=float(b.get("volume_db", 0.0)),
@@ -1320,7 +1320,7 @@ class Handler(BaseHTTPRequestHandler):
                             "file": rel(out)})
             elif path == "/api/studio/script":
                 self._json({"script": vsx.write_script(
-                    b.get("character", "sofia-vargas"), (b.get("scenario") or "").strip(),
+                    b.get("character", "sofia-hsu"), (b.get("scenario") or "").strip(),
                     seconds=int(b.get("seconds", 18)))})
             elif path == "/api/studio/character":
                 self._json({"character": vsx.create_character((b.get("prompt") or "").strip())})

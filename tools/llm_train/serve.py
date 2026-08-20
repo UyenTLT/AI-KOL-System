@@ -214,7 +214,7 @@ def main() -> int:
         except Exception:
             pass
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--kol", default="sofia-vargas")
+    ap.add_argument("--kol", default="sofia-hsu")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=11435)
     ap.add_argument("--base", default=str(BASE))

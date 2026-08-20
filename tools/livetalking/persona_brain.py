@@ -192,7 +192,7 @@ _CURE_RE = re.compile(r"治好|治愈|治癒|根治"
                       re.IGNORECASE)
 # Every other rule below carries both a Chinese and an English pattern; this one carried
 # only Chinese, so "DM me and we can negotiate a discount" passed unblocked. That gap sat
-# exactly where it was least likely to be noticed: sofia-vargas is an English-only persona,
+# exactly where it was least likely to be noticed: sofia-hsu is an English-only persona,
 # so the rule protecting her from privately negotiating a deal never fired in her language.
 # Found by tools/selftest, which asserts both directions rather than only the blocks.
 _NEGOTIATE_RE = re.compile(

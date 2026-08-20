@@ -379,7 +379,7 @@ def main() -> int:
         description="Crawl podcast/video/local audio into a GPT-SoVITS training set.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    ap.add_argument("kol_id", help="KOL id, e.g. sofia-vargas")
+    ap.add_argument("kol_id", help="KOL id, e.g. sofia-hsu")
     ap.add_argument("--url", action="append", default=[], help="source URL (repeatable)")
     ap.add_argument("--file", action="append", default=[], help="local file or directory (repeatable)")
     ap.add_argument("--lang", default="auto", choices=["auto", "zh", "en", "ja", "ko", "yue"])

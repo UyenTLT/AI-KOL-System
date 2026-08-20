@@ -4,10 +4,10 @@
   "kols": [
     {
       "id": "sofia-vargas",
-      "name": "Sofia Vargas",
-      "handle": "@sofiavargasreal",
+      "name": "Sofia Hsu",
+      "handle": "@sofiahsu",
       "category": "lifestyle",
-      "ethnicity": "Latina (Colombian)",
+      "ethnicity": "Taiwanese-American",
       "status": "active",
       "created_at": "2026-06-20",
       "path": "kols/sofia-vargas/"
@@ -92,7 +92,11 @@
       "status": "draft",
       "created_at": "2026-07-13",
       "role": "R2-active-seller",
-      "markets": ["taiwan", "americas", "europe"],
+      "markets": [
+        "taiwan",
+        "americas",
+        "europe"
+      ],
       "path": "kols/lena-chen/"
     },
     {
@@ -104,7 +108,10 @@
       "status": "draft",
       "created_at": "2026-07-13",
       "role": "R1-soft-seller",
-      "markets": ["taiwan", "japan-affinity"],
+      "markets": [
+        "taiwan",
+        "japan-affinity"
+      ],
       "path": "kols/lin-wanqing/"
     }
   ]

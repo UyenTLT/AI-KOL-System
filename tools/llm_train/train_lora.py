@@ -14,7 +14,7 @@ it has into a habit it keeps.
 Only the base weights are quantised. The LoRA adapters train in bfloat16, which is what makes
 4-bit training stable rather than a slow way to get a broken model.
 
-    finetune\\.venv\\Scripts\\python.exe tools\\llm_train\\train_lora.py sofia-vargas
+    finetune\\.venv\\Scripts\\python.exe tools\\llm_train\\train_lora.py sofia-hsu
     ... --epochs 3 --rank 16
 """
 from __future__ import annotations

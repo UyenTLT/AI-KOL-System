@@ -940,7 +940,7 @@ def respond_streamed(kol_id: str, message: str, mode: str, history: list | None 
 def candidate_voices() -> list[dict]:
     """The candidates on disk, brightest first. Empty when none have been installed."""
     import json
-    f = REPO / "kols" / "sofia-vargas" / "voice" / "candidates" / "candidates.json"
+    f = REPO / "kols" / "sofia-hsu" / "voice" / "candidates" / "candidates.json"
     if not f.is_file():
         return []
     try:

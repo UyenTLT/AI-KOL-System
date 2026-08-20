@@ -12,7 +12,7 @@ Tk and winsound ship with Python, so there is nothing to install and nothing to 
 
 Engines it talks to, each shown live in the status bar:
     :9880  GPT-SoVITS      the four fine-tuned voices
-    :9881  CosyVoice 2     sofia-vargas
+    :9881  CosyVoice 2     sofia-hsu
     :11434 Ollama          scenario writing
 """
 from __future__ import annotations
@@ -121,7 +121,7 @@ def main() -> int:
 
     # ---- voice + text -----------------------------------------------------------
     chars = characters()
-    ids = [c["id"] for c in chars] or ["sofia-vargas"]
+    ids = [c["id"] for c in chars] or ["sofia-hsu"]
     names = {c["id"]: f"{c.get('name', c['id'])}  ·  {c.get('lang','')}" for c in chars}
 
     tk.Label(outer, text="VOICE", font=lbl, bg=BG, fg=FAINT, anchor="w").pack(fill="x")
@@ -243,8 +243,8 @@ def main() -> int:
     tk.Label(opts, text="   avatar", font=mono, bg=BG, fg=FAINT).pack(side="left", padx=(14, 0))
     av = tk.StringVar(value=(avatars() or [""])[0])
     av_list = avatars() or [""]
-    if "sofia-vargas_v2" in av_list:
-        av.set("sofia-vargas_v2")
+    if "sofia-hsu_v2" in av_list:
+        av.set("sofia-hsu_v2")
     ttk.Combobox(opts, textvariable=av, values=av_list, state="readonly", width=20,
                  font=mono).pack(side="left", padx=(4, 0))
 

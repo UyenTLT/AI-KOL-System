@@ -20,7 +20,7 @@ Two design choices that matter more than the sampling:
 * **The filter is the same guard that runs in production**, plus the style checks. A sample that
   would be blocked when spoken has no business being taught as a target.
 
-    python tools/llm_train/build_dataset.py sofia-vargas --n 250
+    python tools/llm_train/build_dataset.py sofia-hsu --n 250
 """
 from __future__ import annotations
 

@@ -55,7 +55,7 @@ if ($Base) {
 } else {
   $env:OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1"
   $env:KOL_LLM_TUNED   = "1"
-  $env:KOL_LLM_MODEL   = "sofia-vargas-tuned"
+  $env:KOL_LLM_MODEL   = "sofia-hsu-tuned"
   "brain: fine-tuned q4_K_M through Ollama (short prompt, rules kept)"
 }
 

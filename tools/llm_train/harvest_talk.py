@@ -35,7 +35,7 @@ than made silently by a default flag.
     python tools/llm_train/harvest_talk.py measure datasets/style/storytime.jsonl
 
     # how far is she from it, right now
-    python tools/llm_train/harvest_talk.py compare sofia-vargas --against datasets/style/storytime.jsonl
+    python tools/llm_train/harvest_talk.py compare sofia-hsu --against datasets/style/storytime.jsonl
 
 Subtitle fetching and ASR need network and yt-dlp; `measure` and `compare` are offline and are
 what the rest of the pipeline actually consumes.

@@ -37,7 +37,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "tools" / "studio"))
 sys.path.insert(0, str(REPO / "tools" / "livetalking"))
 
-KOL = "sofia-vargas"
+KOL = "sofia-hsu"
 CLIPS = Path(os.getenv("KOL_RENDER_DIR") or (REPO / "renders" / "sofia"))
 CLIPS.mkdir(parents=True, exist_ok=True)
 

@@ -43,7 +43,7 @@ for sub in ("studio", "tts_train", "voice_eval"):
 CLIPS = Path(os.getenv("KOL_RVC_DEMO_DIR") or (REPO / "renders" / "rvc_demo"))
 CLIPS.mkdir(parents=True, exist_ok=True)
 
-KOL = "sofia-vargas"
+KOL = "sofia-hsu"
 RESULTS: list[dict] = []
 
 CSS = """

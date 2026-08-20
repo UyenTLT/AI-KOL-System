@@ -48,7 +48,7 @@ M = {
     "base_pct": 83,        # same run, base model carrying the full 3,645-char persona prompt
     "tuned_prompt": 129,   # chars of system prompt the tuned model needs
     "base_prompt": 3645,
-    "train_rows": 303,     # datasets/sofia-vargas-chat-train.jsonl
+    "train_rows": 303,     # datasets/sofia-hsu-chat-train.jsonl
     "val_rows": 32,
     "tok_gguf": 30.7,      # RUN-TUNED.ps1 — merged q4_K_M through Ollama
     "tok_hf": 13,          # same weights served through transformers 4-bit
@@ -530,9 +530,9 @@ def build(st: dict, out: Path) -> Path:
         v = k["voice"]
         voice = ("fine-tuned" if v.get("sovits") and v.get("gpt") else
                  "dataset ready" if v.get("clips") else "—")
-        if k["id"] == "sofia-vargas":
+        if k["id"] == "sofia-hsu":
             voice = "CosyVoice 2"
-        state_cell = ("Complete — reference build", OK) if k["id"] == "sofia-vargas" else \
+        state_cell = ("Complete — reference build", OK) if k["id"] == "sofia-hsu" else \
                      ("Images ready", OK) if k["images"] >= 20 else \
                      ("Voice ready, no images", WARN) if voice == "fine-tuned" else \
                      ("Started", WARN) if k["images"] else ("Profile only", MUTED)
