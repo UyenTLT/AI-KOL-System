@@ -960,6 +960,40 @@ def voice_ref(voice_id: str | None) -> tuple[str, str] | None:
     return None
 
 
+def speech_chunks(text: str, *, first_max: int = 90, rest_max: int = 260) -> list[str]:
+    """Group sentences into chunks that render FASTER than they play.
+
+    One clip per sentence sounds like the obvious split and it is why the answer stutters. The
+    cost of a clip is mostly fixed -- CosyVoice takes about 4 s whether the line is two words or
+    twenty, and the timbre pass adds ~1.3 s on top -- so seven sentences pay that seven times.
+    Measured on one reply: 7 clips holding 22.5 s of speech took 28 s to render, which is slower
+    than realtime, so the player drains its buffer and stops mid-answer every time.
+
+    Grouping amortises the fixed cost over more audio. The first chunk stays short because it is
+    the only one the listener is waiting on; everything after it is rendered while she is already
+    talking, so it should be as large as the prosody allows.
+
+    Larger chunks also sound better. Each clip is spoken as a complete utterance -- full final
+    lengthening, full falling contour -- so one sentence per clip makes every sentence land like
+    the end of a paragraph. Giving the engine three sentences at once lets it place the emphasis
+    across them instead.
+    """
+    out, cur = [], ""
+    for sent in sentences(text):
+        cap = first_max if not out else rest_max
+        if cur and len(cur) + 1 + len(sent) > cap:
+            out.append(cur)
+            cur = sent
+        else:
+            cur = f"{cur} {sent}".strip()
+        if not out and len(cur) >= first_max:
+            out.append(cur)
+            cur = ""
+    if cur:
+        out.append(cur)
+    return out or ([text] if text.strip() else [])
+
+
 def perform_streamed(kol_id: str, text: str, mode: str, out_dir: Path, stem: str,
                      *, speed: float = 1.0, voice: str | None = None):
     """Render sentence by sentence, yielding each clip the moment it exists.
@@ -976,7 +1010,7 @@ def perform_streamed(kol_id: str, text: str, mode: str, out_dir: Path, stem: str
     out_dir.mkdir(parents=True, exist_ok=True)
     instruct = MODES.get(mode, {}).get("instruct")
     ref = voice_ref(voice)
-    for i, sent in enumerate(sentences(text)):
+    for i, sent in enumerate(speech_chunks(text)):
         p = out_dir / f"{stem}-{i:02d}.wav"
         if ref:
             # A candidate voice is a clone from a reference clip, so `instruct` does not apply --

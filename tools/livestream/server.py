@@ -137,11 +137,21 @@ document.addEventListener('DOMContentLoaded', function(){
     var clips = (el.getAttribute('data-clips') || '').split(' ').filter(Boolean);
     var stem = el.getAttribute('data-stem') || '';
     var at = 0;
+    // Fetch the NEXT clip while the current one is still playing. Setting src on 'ended' means
+    // the browser only starts fetching and decoding once the audio has already stopped, which
+    // is heard as a gap between every clip even when the whole answer is finished rendering.
+    // A second element pulls it into the cache first, so the swap plays immediately.
+    var ahead = new Audio();
+    ahead.preload = 'auto';
+    function preload(i){
+      if(i < clips.length){ ahead.src = '/media/' + clips[i]; ahead.load(); }
+    }
     function advance(){
       if(at >= clips.length) return false;
       el.src = '/media/' + clips[at];
       var q = el.play();
       if(q && q.catch) q.catch(function(){});
+      preload(at + 1);
       return true;
     }
     el.addEventListener('ended', function(){
@@ -161,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function(){
               clips = s.clips;
               clearInterval(poll);
               advance();
+              preload(at + 1);
             } else if(s.done || tries > 60){
               clearInterval(poll);
             }
