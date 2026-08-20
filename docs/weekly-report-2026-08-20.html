@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Sofia — Weekly Report</title>
+<style>
+  @page { size: A4; margin: 10mm 11mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, sans-serif; color: #14181a; font-size: 8.4pt;
+         line-height: 1.34; margin: 0; }
+  h1 { font-size: 15.5pt; margin: 0 0 1mm; letter-spacing: -.2px; }
+  .sub { color: #5d6b6e; font-size: 7.9pt; margin-bottom: 2.6mm;
+         border-bottom: 1.5px solid #0e6e68; padding-bottom: 2mm; }
+  h2 { font-size: 9.2pt; margin: 3mm 0 1.2mm; color: #0e6e68;
+       text-transform: uppercase; letter-spacing: .6px; }
+  ul { margin: 0; padding-left: 4.2mm; }
+  li { margin-bottom: 0.7mm; }
+  b { color: #0b3f3c; }
+  table { border-collapse: collapse; width: 100%; margin: 1.5mm 0 0; font-size: 8.1pt; }
+  th { text-align: left; color: #5d6b6e; font-weight: 600; padding: 1mm 2mm 1mm 0;
+       border-bottom: 1px solid #cfd8d8; }
+  td { padding: 1.1mm 2mm 1.1mm 0; border-bottom: 1px solid #eceff0; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .up { color: #17694a; font-weight: 600; }
+  .two { display: flex; gap: 6mm; }
+  .two > div { flex: 1; }
+  .note { page-break-inside: avoid; background: #f4f7f7; border-left: 2.5px solid #0e6e68; padding: 1.6mm 2.2mm;
+          margin-top: 1.5mm; font-size: 8.5pt; }
+  .foot { margin-top: 4mm; padding-top: 2mm; border-top: 1px solid #cfd8d8;
+          color: #7d8a8c; font-size: 7.6pt; }
+  code { font-family: Consolas, monospace; font-size: 8.3pt; background: #eef2f2;
+         padding: 0 1px; }
+</style></head><body>
+
+<h1>AI KOL &mdash; Weekly Report</h1>
+<div class="sub">Sofia &middot; week ending 20 August 2026 &middot; 31 commits</div>
+
+<h2>1. What I did this week</h2>
+<ul>
+  <li><b>Voice quality.</b> Her voice was a zero-shot clone from 6.5&nbsp;s of audio. Added the trained RVC model as a timbre pass, served resident so it costs ~1&nbsp;s instead of 6.4&nbsp;s.</li>
+  <li><b>Response latency and continuity.</b> Answers publish as soon as the first audio exists, and short answers render as one continuous clip.</li>
+  <li><b>Humour training.</b> Took two labelled HuggingFace datasets (SMILE-Next, conversations_humor), rewrote 283 Q&amp;A pairs into her voice, retrained the model.</li>
+  <li><b>Voice options.</b> Added a voice picker to the demo with 3 licensed candidate timbres, for a possible rebrand. Declined to clone the named idol voices &mdash; real people, no consent, and against the project's own rights policy.</li>
+  <li><b>Test tooling.</b> A 12-question probe aimed at known failure modes, so changes are checked the same way each time.</li>
+</ul>
+
+<h2>2. Improved on last week</h2>
+<div class="two">
+<div>
+<table>
+  <tr><th>Measure</th><th>Before</th><th>Now</th></tr>
+  <tr><td>Voice identity vs reference</td><td class="n">0.894</td><td class="n up">0.929</td></tr>
+  <tr><td>Pauses inside one answer</td><td class="n">1&ndash;6</td><td class="n up">0</td></tr>
+  <tr><td>Audio clips per answer</td><td class="n">7</td><td class="n up">1</td></tr>
+  <tr><td>Render vs speech (RTF)</td><td class="n">1.23</td><td class="n up">0.83</td></tr>
+</table>
+</div>
+<div>
+<table>
+  <tr><th>Measure</th><th>Before</th><th>Now</th></tr>
+  <tr><td>Probe failures (of 12)</td><td class="n">4&ndash;6</td><td class="n up">2</td></tr>
+  <tr><td>Ends on a question back</td><td class="n">2 / 12</td><td class="n up">0 / 12</td></tr>
+  <tr><td>Invents a fake bereavement</td><td class="n">sometimes</td><td class="n up">not seen</td></tr>
+  <tr><td>Generic comfort replies</td><td class="n">present</td><td class="n up">gone</td></tr>
+</table>
+</div>
+</div>
+<div class="note"><b>Correction worth recording:</b> the metric used all week to measure humour was invalid. Checked against two labelled datasets, it fires on 0.3% of lines that actually made a person laugh, and slightly more often on deliberately flat answers than funny ones. Whether she is funnier is therefore a human judgement, not a measured one. The gains above use other, validated measures.</div>
+
+<h2>3. Current problem &mdash; making her answer more intelligently</h2>
+<ul>
+  <li><b>She invents specifics.</b> Asked for her usual caf&eacute; she names "Caf&eacute; Buena Vista in Little Havana, owner Maria." It does not exist. Humour training worsened this: the confident exact detail that lands a joke also makes a fake business sound real.</li>
+  <li><b>Biography drifts.</b> After training, 1 answer in 6 about where she lives is wrong (she claims to have lived in Taiwan; she lives in Miami).</li>
+  <li><b>Root cause:</b> retrieval supplies her real life to the model, but <i>nothing checks the answer against it</i>. There is no step that asks "is this fact in her file?"</li>
+  <li><b>Proposed fix:</b> verify named entities in each reply against <code>life.json</code>, and refuse or regenerate when a place, person or business appears that is not hers. This is code, not prompting &mdash; every prompt-based fix attempted this week failed to move behaviour.</li>
+</ul>
+
+<h2>4. How RAG works here</h2>
+<ul>
+  <li><b>Store:</b> <code>life.json</code>, ~130 hand-written facts in typed sections &mdash; stories, biography, opinions, people, ongoing threads, knowledge.</li>
+  <li><b>Retrieval:</b> keyword overlap, not embeddings. The choice is deliberate: ranking ~50 short strings does not justify an embedding model inside the response budget.</li>
+  <li><b>Anchors bypass retrieval.</b> Five core facts are injected every turn. Sampling a fact means that on turns it is not drawn she has no evidence for her own biography &mdash; which is how she once denied a trip written in her own file.</li>
+  <li><b>Per-character alias map.</b> "Taiwan" matches nothing, because every story names Taipei, Tainan or Jiufen. The alias map expands the query so a place is found under all its names.</li>
+  <li><b>Conditional sections.</b> Biography and factual knowledge load only when the question reaches for them; unused reference costs tokens in and seconds of speech out.</li>
+  <li><b>Also used in training.</b> Retrieval runs during dataset generation too, so the model is fitted on answers already grounded in her real life.</li>
+</ul>
+
+<div class="foot">All figures reproducible via <code>tools/llm_train/probe_answers.py</code> and the voice evaluation scripts.</div>
+</body></html>
