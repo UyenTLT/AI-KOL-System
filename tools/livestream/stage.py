@@ -90,11 +90,53 @@ ANSWERING = "Speak softly and warmly, at a natural everyday pace."
 #     1.00   5.61 s +/- 0.20, transcribes 1.00
 #     1.08   4.90 s +/- 0.32, transcribes 1.00   <- 13% quicker, nothing lost
 #     1.15   4.68 s +/- 0.37, transcribes 1.00
-# Back to natural. 1.08 was chosen for speed when the wait was the complaint, and it is an 8%
-# speed-up that a listener hears as slightly hurried. It also worked against the audio: clips
-# render slower than realtime once the timbre pass is in the chain, so shortening every clip
-# made playback run out of audio sooner and the answer stopped before it finished.
+# 2026-08-24: raised to 1.08 for speed. 2026-08-25: back DOWN to 0.925, which is a reversal
+# of that request by the same person a day later -- the brief changed from 'ultra fast' to
+# 'slow, gentle, unhurried', and those want opposite numbers from this one knob.
+#
+# What it costs, and it is not free: 0.925 stretches every clip by ~8%, so there is ~8% more
+# audio to synthesise and TTFA goes UP. Slower speech and shorter waiting are the same
+# trade-off measured from opposite ends. The underrun risk the old note worried about still
+# does not apply, because a reply is one clip and exists in full before playback starts.
 PACE = 1.00
+
+
+# How long a live answer is allowed to run. A cap, not a request: the comment register already
+# asks for two short sentences and she writes four or five anyway, which is this project's
+# recurring finding that a mechanism moves what wording does not.
+#
+# Measured on eight live prompts through the tuned model, same prompt, only the cap changing:
+#
+#     uncapped (160)   4.55 s   37 words   5 sentences
+#     cap 40           3.43 s   31 words   3 sentences
+#     cap 30           2.94 s   24 words   2 sentences
+#
+# The cap does a second job: it keeps a reply under `speech_chunks`' 340-character whole_max, so
+# the answer renders as ONE clip. Every clip boundary is a seam you can hear. Above the cap,
+# `finish_reason` is checked and a half-finished sentence is dropped rather than spoken.
+#
+# 2026-08-24 tightened 64 -> 32; 2026-08-25 raised again to 60 on request. Measured end to end
+# through stage.perform, four live comments per setting:
+#
+#     cap 64    think 4.12 s   render 8.17 s   TTFA 11.39 s   ~10 s of audio
+#     cap 32    think 3.95 s   render 6.00 s   TTFA 11.32 s   ~5 s of audio
+#
+# Synthesis is roughly linear in output length once the fixed cost is paid, so the length of
+# the text is the only lever on this stack that moves render time -- there is no faster engine
+# setting to reach for. 60 buys longer, less clipped answers and pays for them in render time.
+# It also brings a reply closer to speech_chunks' 340-character whole_max: above that the
+# answer splits into two clips and the seam between them is audible.
+LIVE_MAX_TOKENS = 40
+
+# Dropping history removed the only signal that she was already talking to somebody, and
+# greetings came back with it: measured on the same eight prompts, 0/8 with history, 3/8
+# without. An instruction was tried and is not here because it did not work -- 4/12 with it
+# against 3/8 without, which is the same number, and this project has enough of those.
+#
+# The control that does work was already in the pipeline. `strip_tics` removes the opener
+# before anything is synthesised, and LIVE_MAX_TOKENS is what guarantees it runs first: under
+# 340 characters the early-opener split in server.answer never fires, so no sentence is spoken
+# ahead of the cleanup. The cap and the greeting fix hold each other up.
 
 
 # Filler that sounds supportive and engages with nothing. Every one of these fits any problem
@@ -259,9 +301,20 @@ def life_threads(kol_id: str, n: int = 4, message: str | None = None) -> str:
     # trip names Taipei, Tainan or Jiufen and not one of them contains the word "Taiwan". The
     # alias map is per-character and lives in her file, since which words mean the same thing
     # depends entirely on whose life it is.
+    # Alias groups are matched against the RAW words of the message, not against `keys`, because
+    # `keys` drops anything under three letters and some of the most load-bearing words in a
+    # comment are two: "ex" above all. Measured: asked "tell me about your ex", the ex-lore that
+    # is written down in her file was never surfaced -- "ex" could not become a key, so the
+    # dating group never fired, so nothing outranked a story about her brother's football shirt
+    # and she answered "I do not talk about that one" while holding the answer.
+    #
+    # Only the GROUP trigger is loosened. Scoring still uses three-letter words, so firing a
+    # group has to pull in longer synonyms ("boyfriend", "dating", "relationship") for the lines
+    # to rank -- which is why those words belong in the group and in the lines themselves.
+    raw = set(re.findall(r"[a-z]+", (message or "").lower()))
     for group, words in (life.get("aliases") or {}).items():
         family = {group.lower()} | {str(w).lower() for w in words}
-        if keys & family:
+        if (keys & family) or (raw & family):
             keys |= family
 
     blocks = []
@@ -343,7 +396,19 @@ _GREETING = re.compile(
     r"(?:hey|hi|hello)?[,!\s]*"          # the second greeting, when there is one
     # The name after it — two characters minimum. With `*` this also swallowed a following
     # bare "I", turning "Hey there! I slept fine" into "Slept fine".
-    r"(?:[A-ZÀ-Ỹ][\wÀ-ỹ'-]+)?[,!.\s]*",
+    #
+    # And the two-character minimum was not enough, because the whole pattern is IGNORECASE:
+    # `[A-ZÀ-Ỹ]` therefore matches lowercase too, so ANY word of two or more letters was read
+    # as a vocative. Measured on a live reply: "Hey there! No big plans, just might grab some
+    # sushi" was cleaned to "Big plans, just might grab some sushi" — the greeting stripper
+    # ate the "No" and the answer came out meaning the opposite of what she said. Spoken
+    # aloud, to somebody who asked what she was doing this weekend.
+    #
+    # A vocative after a greeting is punctuated: "Hey Mai," or "Hey Mai!". A word that runs
+    # straight on into the sentence is part of the sentence. Requiring the punctuation is what
+    # separates the two, and it fails safe — an unpunctuated "Hey Mai I love this" keeps the
+    # name, which is untidy, where the old behaviour reversed her meaning.
+    r"(?:[A-ZÀ-Ỹ][\wÀ-ỹ'-]+[,!.]+)?[\s]*",
     re.IGNORECASE)
 _SIGNOFF = re.compile(
     r"(?:^|(?<=[.!?…]))\s*[^.!?…]*?\b(?:"
@@ -402,6 +467,101 @@ def _canon_names(kol_id: str) -> set[str]:
     return {w.lower() for w in re.findall(r"\b[A-Z][a-z]{2,}\b", blob)}
 
 
+# At most this many sentences in a reply, and the character budget that catches the case
+# sentences cannot. A cap on TOKENS bounds the cost; this bounds the SHAPE, and they are not
+# the same thing -- measured at cap 70, four replies in six still ran to three sentences.
+MAX_SENTENCES = 2
+# The brief is 25 words, which is what actually tracks how long a reply feels.
+# The character number stays as a backstop for pathologically long words.
+MAX_WORDS_LATIN = 25
+MAX_CHARS_LATIN = 190
+# 70 was too generous: a 59-character Chinese reply is five clauses, because the
+# register has no full stops to break it up. 42 is about two.
+MAX_CHARS_CJK = 35
+
+
+def limit_sentences(text: str, max_n: int = MAX_SENTENCES) -> str:
+    """Cut a reply back to at most `max_n` sentences.
+
+    The token cap cannot do this job. It bounds how much she may generate, not how many
+    sentences fit inside it, so raising it for fuller answers immediately brought three- and
+    four-sentence replies back. This is the shape control, applied after the text exists.
+
+    Two passes, because one of them does not work on her Chinese. Threads-style Traditional
+    Chinese has no full stops at all -- that is the register, and it is what her training data
+    teaches -- so splitting on terminal punctuation sees the whole reply as a single sentence
+    and passes it through untouched. A character budget catches those, and it is tighter for
+    CJK because a Chinese character carries far more than a Latin one.
+    """
+    if not text:
+        return text
+    parts = [p for p in re.split(r"(?<=[.!?…。！？])\s+", text.strip()) if p.strip()]
+    if len(parts) > max_n:
+        text = " ".join(parts[:max_n]).strip()
+    cjk = len(re.findall(r"[一-鿿]", text))
+    is_cjk = cjk > len(text) * 0.3
+    # Latin is bounded by WORDS first: 25 of them is the brief, and a word count is what a
+    # reader experiences as length. CJK has no spaces, so it stays on characters.
+    if not is_cjk:
+        w = text.split()
+        if len(w) > MAX_WORDS_LATIN:
+            text = " ".join(w[:MAX_WORDS_LATIN]).rstrip(" ,;:-")
+            if text and text[-1] not in ".!?…":
+                text += "."
+    budget = MAX_CHARS_CJK if is_cjk else MAX_CHARS_LATIN
+    if len(text) > budget:
+        # Cut at a boundary rather than mid-word. Chinese has no spaces, so fall back to the
+        # commas and pause marks that carry its phrasing.
+        cut = max(text.rfind(c, 0, budget) for c in " ，、,")
+        text = (text[:cut] if cut > budget * 0.45 else text[:budget]).rstrip(" ,;，、")
+    return text.strip()
+
+
+# Names that are placeholders rather than people. Addressing somebody as "guest" is worse
+# than not addressing them at all.
+_ANON = {"guest", "anon", "anonymous", "viewer", "user", "someone", "fan", "test", ""}
+
+# Whether every reply must carry the commenter's name. A product decision, kept as one line
+# because it is the kind of thing that gets reversed: real people do NOT name you in every
+# message, so this trades a little naturalness for a lot of personalisation.
+ALWAYS_NAME = True
+
+
+def ensure_name(reply: str, asker: str | None) -> tuple[str, bool]:
+    """Make sure the commenter is addressed by name, inserting it if the model did not.
+
+    Measured before this existed: with the name in the prompt AND an instruction to use it,
+    she used it in 1 reply out of 6. That is the same shape as every other behaviour on this
+    project -- the instruction is a request, and the number only moves when something enforces
+    it. `fix_vocative` already corrects a WRONG name; this covers the commoner case of no name
+    at all.
+
+    Two insertion points, because prepending blindly reads badly:
+      * if the reply opens with a greeting, the name goes inside it -- "Hey!" -> "Hey Mark!",
+        which is where a person would put it.
+      * otherwise it goes in front as a vocative. Deliberately NOT as "Hi <name>", because
+        `strip_tics` removes greetings after the first message and would take the name with it.
+
+    Returns (reply, inserted).
+    """
+    who = (asker or "").strip()
+    if not ALWAYS_NAME or who.lower() in _ANON:
+        return reply, False
+    if re.search(r"\b" + re.escape(who) + r"\b", reply, re.IGNORECASE):
+        return reply, False          # she already used it
+    m = re.match(r"^\s*(hey|hi|hello|morning|yo)\b(?![^.!?]*\b" + re.escape(who) + r"\b)",
+                 reply, re.IGNORECASE)
+    if m:
+        return reply[:m.end()] + " " + who + reply[m.end():], True
+    body = reply.lstrip()
+    # Lowercase the first letter so the vocative reads as one sentence, but never touch a
+    # standalone "I" or an acronym -- "Mark, i had" is her register, "Mark, iPhone" is not.
+    first = body.split(" ", 1)[0]
+    if body[:1].isupper() and first not in ("I", "I'm", "I've", "I'll") and not first.isupper():
+        body = body[0].lower() + body[1:]
+    return f"{who}, {body}", True
+
+
 def fix_vocative(reply: str, asker: str | None, kol_id: str) -> tuple[str, list[str]]:
     """Stop her calling the viewer by a name that is not theirs.
 
@@ -437,7 +597,8 @@ def fix_vocative(reply: str, asker: str | None, kol_id: str) -> tuple[str, list[
     return re.sub(r"\s{2,}", " ", out).strip(), removed
 
 
-def strip_tics(reply: str, *, first_message: bool, message: str = "") -> tuple[str, list[str]]:
+def strip_tics(reply: str, *, first_message: bool, message: str = "",
+               text_mode: bool = False) -> tuple[str, list[str]]:
     """Remove the openers and sign-offs that give an assistant away.
 
     Greetings are only stripped after the first message, because opening a conversation with
@@ -501,6 +662,22 @@ def strip_tics(reply: str, *, first_message: bool, message: str = "") -> tuple[s
 
     out = " ".join(sents).strip() or out
 
+    # TEXT CHANNELS ONLY: drop the closing full stop. character.md §四 puts it plainly — she
+    # types like she is messaging a friend at 1am, periods are mostly absent, and a period at
+    # the END of a message reads as anger. A reply that closes on one is a small, constant tell
+    # that a machine wrote it.
+    #
+    # Deliberately narrow, and each limit is load-bearing:
+    #   - the LAST character only. Internal periods stay, so "Full sentences. With periods." is
+    #     still available to her as the annoyed register.
+    #   - a bare "." only. "!" "?" and "…" all carry tone she chose, and an ellipsis is a
+    #     trailing thought, so none of them are touched.
+    #   - never in voice mode. The synthesiser uses final punctuation for phrase-final
+    #     lengthening and falling contour, so removing it there would flatten the last word of
+    #     every clip to buy a typographic habit nobody can hear.
+    if text_mode and out.endswith(".") and not out.endswith(("..", "…")):
+        out = out[:-1].rstrip()
+
     return out or reply.strip(), removed
 
 
@@ -522,9 +699,17 @@ def _humour_block() -> str:
         for node in tree.body:
             if isinstance(node, ast.Assign) and isinstance(node.value, ast.Constant):
                 for t in node.targets:
-                    if isinstance(t, ast.Name) and t.id in ("HUMOUR", "PLAYFUL_EXAMPLES"):
+                    if isinstance(t, ast.Name) and t.id in ("HUMOUR", "BANTER_ENGINE",
+                                                            "PLAYFUL_EXAMPLES"):
                         found[t.id] = node.value.value
-        out = [found[k] for k in ("HUMOUR", "PLAYFUL_EXAMPLES") if found.get(k)]
+        # BANTER_ENGINE SUPERSEDES HUMOUR rather than stacking on it. The two say overlapping
+        # things — undercut yourself, be specific, read the room — and sending both would pay
+        # twice for one instruction. Prompt size is not free here: measured, ~2100 characters of
+        # extra system text costs about 1.6 s before she starts speaking, so a block that
+        # duplicates another one is a second and a half of silence for nothing.
+        # HUMOUR stays as the fallback so a checkout without BANTER_ENGINE still has the rules.
+        rules = found.get("BANTER_ENGINE") or found.get("HUMOUR")
+        out = [x for x in (rules, found.get("PLAYFUL_EXAMPLES")) if x]
     except Exception:
         pass
     return '\n\n'.join(out).strip()
@@ -656,7 +841,7 @@ def classify(message: str) -> str:
 def _client():
     from openai import OpenAI
     return OpenAI(base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
-                  api_key="ollama")
+                  api_key=os.getenv("KOL_LLM_API_KEY", "ollama"))
 
 
 SONG_PROMPT = """You are writing a few original lines to perform live for a viewer who asked
@@ -805,7 +990,10 @@ def respond(kol_id: str, message: str, mode: str | None = None,
     if asker:
         sysmsg += (f"\n\nThis comment is from {asker}. Talk to them, and use their name when "
                    f"it fits naturally.")
-    kw = {"extra_system": sysmsg, "history": history}
+    # Same cap as the streamed path. This is the fallback the server drops to when a sentence
+    # trips the guard, and a fallback that answers at twice the length of the normal path is a
+    # second behaviour nobody asked for.
+    kw = {"extra_system": sysmsg, "history": history, "max_tokens": LIVE_MAX_TOKENS}
     if model:
         kw["model"] = model
     return chat(kol_id, message, **kw), mode
@@ -890,16 +1078,45 @@ def respond_streamed(kol_id: str, message: str, mode: str, history: list | None 
     tuned = os.getenv("KOL_LLM_TUNED", "").strip().lower() in ("1", "true", "yes")
     msgs = [{"role": "system", "content": build_system_prompt(kol_id, tuned=tuned)},
             {"role": "system", "content": sysmsg},
-            {"role": "system", "content": language_directive(message, trad)}]
+            {"role": "system", "content": language_directive(message, trad,
+                    tuple(str(x).lower() for x in
+                          ((__import__('persona_brain').load_profile(kol_id)
+                            .get('identity', {}) or {}).get('languages') or [])))}]
     msgs += list(history or [])
     msgs.append({"role": "user", "content": message})
 
-    client = OpenAI(base_url=DEFAULT_BASE_URL, api_key="ollama")
-    buf, sent_out = "", []
-    for chunk in client.chat.completions.create(
-            model=model or os.getenv("KOL_LLM_MODEL", DEFAULT_MODEL), messages=msgs,
-            temperature=0.6, max_tokens=160, stream=True):
-        if not chunk.choices or not chunk.choices[0].delta.content:
+    client = OpenAI(base_url=DEFAULT_BASE_URL, api_key=os.getenv("KOL_LLM_API_KEY", "ollama"))
+    buf, sent_out, finish = "", [], None
+    _mdl = model or os.getenv("KOL_LLM_MODEL", DEFAULT_MODEL)
+    try:
+        # See persona_brain.REASONING_EFFORT: a thinking model spends max_tokens on reasoning
+        # and returns a fragment, which at LIVE_MAX_TOKENS=40 means every answer is a fragment.
+        _rk = {}
+        if not DEFAULT_BASE_URL.startswith(("http://127.0.0.1", "http://localhost")):
+            _eff = os.getenv("KOL_LLM_REASONING", "minimal")
+            if _eff:
+                _rk["reasoning_effort"] = _eff
+        _stream = client.chat.completions.create(
+            model=_mdl, messages=msgs, temperature=0.6,
+            max_tokens=LIVE_MAX_TOKENS, stream=True, **_rk)
+    except Exception as _exc:
+        # Same fallback as persona_brain._complete, for the streamed path. Opening the stream
+        # is where a dead endpoint shows up; once it is open, failures mid-stream are handled
+        # by the caller falling back to the whole-reply path.
+        if DEFAULT_BASE_URL.startswith(("http://127.0.0.1", "http://localhost")):
+            raise
+        print(f"  [brain] {type(_exc).__name__} from {DEFAULT_BASE_URL} - falling back to "
+              f"the local model", flush=True)
+        from openai import OpenAI as _OA
+        client = _OA(base_url="http://127.0.0.1:11434/v1", api_key="ollama")
+        _stream = client.chat.completions.create(
+            model=os.getenv("KOL_LLM_LOCAL_MODEL", "sofia-hsu-tuned"), messages=msgs,
+            temperature=0.6, max_tokens=LIVE_MAX_TOKENS, stream=True)
+    for chunk in _stream:
+        if not chunk.choices:
+            continue
+        finish = chunk.choices[0].finish_reason or finish
+        if not chunk.choices[0].delta.content:
             continue
         buf += chunk.choices[0].delta.content
         while True:
@@ -916,6 +1133,12 @@ def respond_streamed(kol_id: str, message: str, mode: str, history: list | None 
             sent_out.append(piece)
             yield piece
     tail = sanitize_for_speech(buf, trad).strip()
+    # A cap that lands mid-sentence leaves a fragment in the buffer, and a fragment handed to
+    # the voice is spoken — she stops in the middle of a word and the clip just ends. Only
+    # dropped when the model actually ran out of budget (`finish_reason == "length"`); a reply
+    # that simply ended without a full stop is still hers and is still said.
+    if tail and finish == "length" and tail[-1] not in ".!?…":
+        tail = ""
     if tail:
         if check_reply(message, tail, no_cjk=no_cjk):
             yield None
@@ -960,8 +1183,67 @@ def voice_ref(voice_id: str | None) -> tuple[str, str] | None:
     return None
 
 
+# Three models want one 12 GB card and there is not room. Measured, the language model
+# sitting resident makes the VOICE 2.2x slower and wildly less predictable:
+#
+#     ollama resident   RTF 1.93   (0.84-2.81)
+#     ollama unloaded   RTF 0.87   (0.83-0.94)
+#
+# The spikes to 3-4 are where the 20-30 second replies come from, and a stream that answers
+# in 9 seconds and then in 31 reads as broken rather than slow.
+#
+# So the model is pushed out of VRAM after it has finished writing and before the voice starts.
+# The pipeline is strictly sequential -- generate, then render -- so nothing is lost by not
+# holding it. It costs a reload on the next comment (+2.6 s measured, from page cache), which
+# is a certain small price for removing an occasional large one. That is a deliberate trade
+# AGAINST the median in favour of the worst case.
+#
+# Local Ollama only. A hosted brain has no VRAM here to free, and `keep_alive` is not honoured
+# through the OpenAI-compatible endpoint, so this uses Ollama's native API.
+UNLOAD_BRAIN = os.getenv("KOL_UNLOAD_BRAIN", "1").strip().lower() in ("1", "true", "yes")
+
+
+def unload_brain() -> float:
+    """Push the local model out of VRAM. Returns seconds taken, or -1 if it did not apply."""
+    import json as _json
+    import time as _time
+    import urllib.request as _u
+    from persona_brain import DEFAULT_BASE_URL, DEFAULT_MODEL
+    base = os.getenv("OLLAMA_BASE_URL", DEFAULT_BASE_URL)
+    if not UNLOAD_BRAIN or not base.startswith(("http://127.0.0.1", "http://localhost")):
+        return -1.0
+    model = os.getenv("KOL_LLM_MODEL", DEFAULT_MODEL)
+    host = base.split("/v1")[0]
+    body = _json.dumps({"model": model, "keep_alive": 0}).encode()
+    req = _u.Request(f"{host}/api/generate", data=body,
+                     headers={"Content-Type": "application/json"})
+    t0 = _time.perf_counter()
+    try:
+        _u.urlopen(req, timeout=15).read()
+        return _time.perf_counter() - t0
+    except Exception:
+        return -1.0        # never let a housekeeping call break an answer
+
+
+# Above this length an answer is SPLIT so the first piece can be spoken while the rest is
+# still rendering. Below it, one clip, because a seam is audible and a short answer renders
+# fast enough that nobody is waiting on it.
+#
+# 340 was chosen when clips rendered SLOWER than they play -- RTF 1.20-1.31 -- and at that
+# rate splitting guarantees the player drains its buffer and stops mid-answer. That is why
+# chunking was reverted. With the current post-chain RTF is 0.80-0.94, i.e. the server fills
+# faster than playback drains, so the split is safe again and worth a lot:
+#
+#     one clip, whole answer     time to first audio  10.15 s
+#     split, first piece only    time to first audio   5.09 s
+#
+# 150 rather than 340: at 340 a typical reply (150-200 chars) never split at all, so the
+# mechanism existed and never fired.
+WHOLE_MAX = int(os.getenv("KOL_WHOLE_MAX", "150"))
+
+
 def speech_chunks(text: str, *, first_max: int = 90, rest_max: int = 260,
-                  whole_max: int = 340) -> list[str]:
+                  whole_max: int = WHOLE_MAX) -> list[str]:
     """Group sentences into chunks that render FASTER than they play.
 
     One clip per sentence sounds like the obvious split and it is why the answer stutters. The

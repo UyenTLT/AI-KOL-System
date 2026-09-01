@@ -1,0 +1,2 @@
+# No third-party dependencies. The room is stdlib http.server plus the shared
+# live_ui template; everything that needs a model is proxied to the GPU box.

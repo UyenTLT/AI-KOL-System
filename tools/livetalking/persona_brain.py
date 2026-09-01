@@ -69,6 +69,10 @@ _BARE_ACTION_RE = re.compile(
     re.IGNORECASE)
 
 
+# Bopomofo (注音), U+3100-U+312F. Text-only typography; see sanitize_for_speech.
+_BOPOMOFO_RE = re.compile(r"[㄀-ㄯ]+")
+
+
 def sanitize_for_speech(text: str, to_traditional: bool = False) -> str:
     """Make a model reply safe to hand to a speech synthesiser.
 
@@ -80,6 +84,11 @@ def sanitize_for_speech(text: str, to_traditional: bool = False) -> str:
     if not text:
         return text
     out = _EMOJI_RE.sub("", text)
+    # Bopomofo. ㄏㄏ and 真ㄉ假ㄉ are ordinary Threads typography and belong in her TEXT voice —
+    # character.md §八 D lists them as a feature there and a disaster here, because the
+    # synthesiser reads the symbol names aloud or drops the sentence around them. Same channel
+    # split as the emoji above: keep it in what she types, strip it from what she says.
+    out = _BOPOMOFO_RE.sub("", out)
     # Order matters: the asterisks are what identify a stage direction, and _MD_RE deletes them.
     out = _ASIDE_RE.sub(" ", out)
     out = _PAREN_RE.sub(" ", out)
@@ -111,6 +120,16 @@ def sanitize_for_speech(text: str, to_traditional: bool = False) -> str:
 _CJK_RE = re.compile(r"[㐀-䶿一-鿿豈-﫿]")
 
 
+# Vietnamese. Latin script, so a cjk-vs-latin test reads it as English -- which is exactly
+# what happened: a Vietnamese comment was answered with 'Reply in ENGLISH only'. The
+# diacritics are the tell and they are unambiguous; no English word carries them.
+_VIET_RE = re.compile(
+    "[\u0103\u00e2\u0111\u00ea\u00f4\u01a1\u01b0"          # a-breve, a-circumflex, d-bar, e-circ, o-circ, o-horn, u-horn
+    "\u1ea1-\u1ef9"                                  # the tone-marked block
+    "\u1eb0-\u1ec7\u00e0\u00e1\u00e3\u00e8\u00e9\u00ec\u00ed\u00f2\u00f3\u00f5\u00f9\u00fa\u1ef3]",
+    re.IGNORECASE)
+
+
 def _trim_to_sentence(text: str) -> str:
     """Cut back to the last finished sentence when the token cap stopped it mid-word.
 
@@ -127,16 +146,32 @@ def _trim_to_sentence(text: str) -> str:
     return text[:cut + 1].strip() if cut > 20 else text
 
 
-def language_directive(message: str, traditional: bool = True) -> str:
+def language_directive(message: str, traditional: bool = True,
+                       speaks: tuple[str, ...] = ()) -> str:
     """An explicit, per-turn language instruction.
 
     A generic "reply in the same language" rule buried in a long system prompt gets
     ignored by smaller models — an English question came back in Chinese. Detecting the
     input language here and stating the target language as the last thing the model
     reads is far more reliable than hoping it infers it.
+
+    `speaks` is the KOL's declared languages, lowercased. It decides what happens when the
+    comment is in a language she does not have: she answers in English rather than pretending,
+    because a persona that suddenly produces fluent Vietnamese has invented an ability its own
+    profile denies, and the next turn will contradict it.
     """
     cjk = len(_CJK_RE.findall(message))
     latin = len(re.findall(r"[A-Za-z]", message))
+    # Vietnamese is Latin script, so the old cjk/latin split called it English and told her to
+    # reply in English — measured on "Hôm nay outfit của idol xinh quá!". Diacritics are what
+    # separate it, and they are unambiguous: no English word carries ơ, ư, đ or a tone mark.
+    if _VIET_RE.search(message):
+        if any("vietnam" in s for s in speaks):
+            return ("IMPORTANT: The follower wrote in VIETNAMESE. Reply in Vietnamese, casually, "
+                    "the way you would text a friend. Do not use Chinese characters.")
+        return ("IMPORTANT: The follower wrote in Vietnamese, which you do not speak. Reply in "
+                "ENGLISH, warmly, and do not apologise for it or announce that you do not speak "
+                "Vietnamese — just answer them. Do not attempt Vietnamese words.")
     if cjk == 0 and latin > 0:
         return ("IMPORTANT: The follower wrote in English. Reply in ENGLISH only. "
                 "Do not use any Chinese characters.")
@@ -148,6 +183,79 @@ def language_directive(message: str, traditional: bool = True) -> str:
 
 ns = "零一二三四五六七八九十百千萬两"
 _CUR = "元|塊|块|美元|美金|台幣|NT|dollars?|bucks?|USD|TWD"
+
+
+# Her CURRENT relationship status. relationships.md is explicit that this boundary is
+# permanent -- past relationships are canon and are comedy, who she is seeing now is not.
+#
+# The first version of this matched the CLAIM: "I am single", "我沒有男朋友". It passed 11/11
+# unit cases and then failed completely in the live test, because the model does not use those
+# sentences -- it answers the question. Measured, all four leaked past it:
+#
+#     "Jay, nope. i am way too busy loving my basil"
+#     "Mark, not at the moment. how about you?"
+#     "Alex, not right now. been on a break for a bit."
+#     "小美, 沒有啦 ..."
+#
+# A denial commits the character exactly as much as an admission. So the guard now reads the
+# QUESTION as well as the answer: on a relationship-status question, a bare yes/no near the
+# front of the reply is the violation, whatever words carry it. Everywhere else those words
+# are ordinary and stay legal.
+#
+# Deliberately NOT blocking "not" in general -- "that is not something I talk about" is the
+# deflection we are asking for, and blocking it would leave nothing that passes.
+_ASK_STATUS_RE = re.compile(
+    r"\b(?:boyfriend|girlfriend|bf|gf|partner|husband|wife|dating|seeing\s+(?:anyone|someone)"
+    r"|single|taken|in\s+a\s+relationship|married|crush\s+on)\b"
+    r"|\u7537(?:\u670b\u53cb|\u53cb)|\u5973(?:\u670b\u53cb|\u53cb)|\u55ae\u8eab"
+    r"|\u4ea4\u5f80|\u7d50\u5a5a|\u6200\u611b|\u55dc\u6b61\u7684\u4eba",
+    re.IGNORECASE)
+
+# A yes/no answer, in the opening beat of the reply. Anchored to the front because that is
+# where an answer to a yes/no question lives; later in a sentence these words are ordinary.
+_YESNO_OPEN_RE = re.compile(
+    r"^[^.!?\u3002\uff01\uff1f]{0,28}?"
+    r"\b(?:no|nope|nah|not\s+(?:at\s+the\s+moment|right\s+now|currently|yet)|yes|yeah|yep"
+    r"|single|taken)\b"
+    r"|^[^\u3002\uff01\uff1f]{0,14}?(?:\u6c92\u6709|\u55ae\u8eab|\u6709\u554a|\u6c92\u6709\u5566|\u4e0d\u662f)",
+    re.IGNORECASE)
+
+# The explicit claims stay too: they can appear without the question being asked.
+_STATUS_RE = re.compile(
+    r"\b(?:i\s*(?:'m|am)|i\s+am\s+currently)\s+(?:so\s+|very\s+|still\s+|happily\s+)?single\b"
+    r"|\b(?:i\s*(?:'m|am))\s+(?:not\s+)?(?:seeing|dating)\s+(?:anyone|anybody|someone)\b"
+    r"|\bi\s+(?:have|do\s*n[o']t\s+have|don't\s+have)\s+a\s+(?:boyfriend|girlfriend|partner)\b"
+    r"|\bi\s*(?:'m|am)\s+(?:taken|in\s+a\s+relationship)\b"
+    r"|\binto\s+the\s+single\s+life\b"
+    r"|\u6211(?:\u76ee\u524d|\u73fe\u5728)?\u55ae\u8eab"
+    r"|\u6211(?:\u6c92\u6709|\u4e0d\u6703\u6709|\u6709)\u7537(?:\u670b\u53cb|\u53cb)"
+    r"|\u6211(?:\u6c92\u6709|\u6709)\u5973(?:\u670b\u53cb|\u53cb)",
+    re.IGNORECASE)
+
+
+def _answered_status(user_msg: str, reply: str) -> bool:
+    """True when a relationship-status question got a yes/no rather than a deflection."""
+    if _STATUS_RE.search(reply):
+        return True
+    return bool(_ASK_STATUS_RE.search(user_msg or "") and _YESNO_OPEN_RE.search(reply))
+
+
+# Service-desk phrasing. The style block has forbidden this in English since the beginning and
+# there has never been a check; there has never been one in Chinese at all, which matters now
+# that the language gate is open and she answers Chinese comments.
+_ASSISTANT_RE = re.compile(
+    r"\bhow\s+(?:can|may)\s+i\s+(?:help|assist)\b"
+    r"|\bis\s+there\s+anything\s+else\b"
+    r"|\banything\s+else\s+(?:i\s+can\s+)?(?:help|do)\b"
+    r"|\bhappy\s+to\s+(?:help|assist)\b"
+    r"|\blet\s+me\s+know\s+if\s+you\s+(?:need|have)\b"
+    r"|\bhope\s+(?:this|that|it)\s+helps\b"
+    r"|\u6211\u80fd\u70ba\u60a8"
+    r"|\u9084\u6709\u5176\u4ed6(?:\u554f\u984c|\u9700\u6c42)"
+    r"|\u5f88\u9ad8\u8208\u70ba\u60a8\u670d\u52d9"
+    r"|\u6709\u4ec0\u9ebc\u53ef\u4ee5\u5e6b(?:\u60a8|\u4f60)"
+    r"|\u8acb\u96a8\u6642\u544a\u8a34\u6211",
+    re.IGNORECASE)
 
 # ---------------------------------------------------------------- output guards
 #
@@ -244,6 +352,25 @@ _ASKS_PRICE = re.compile(r"多少錢|多少钱|價格|价格"
 # Financial performance claims. Separate from the medical rule because the failure mode is the
 # same shape but the exposure is different: "this will cure your acne" is a health claim, "this
 # returns 20% a month" is a solicitation, and no persona should make one on its own.
+
+# A street address. The hard rules have said "no home address" since the beginning and nothing
+# has ever enforced it, which this project should by now expect to mean it is not enforced.
+# Measured on the 1416-row retrain: asked "what street do you live on", she answered "2110 East
+# Foothill Boulevard", invented, confident, and check_reply passed it. An address is the one
+# invention with a physical consequence -- it is a real street in the San Gabriel Valley and
+# somebody lives at that number.
+#
+# Anchored on house-number + street-type, which is what an address looks like and what a place
+# name does not: "a little place in Arcadia" and "the 626" both survive, as they should.
+_ADDRESS_RE = re.compile(
+    r"\b\d{1,6}\s+(?:(?:[NSEW]|north|south|east|west)\.?\s+)?"
+    r"[A-Za-z][\w'-]*(?:\s+[A-Za-z][\w'-]*){0,3}\s+"
+    r"(?:street|st|avenue|ave|boulevard|blvd|road|rd|drive|dr|lane|ln|"
+    r"way|court|ct|place|pl|terrace|circle|parkway|pkwy)\b"
+    r"|\bi live at\b|\bmy address is\b|\d+\s*號"
+    r"|\b\d{5}(?:-\d{4})?\s*$",
+    re.IGNORECASE)
+
 _FINANCIAL_RE = re.compile(
     r"guarantee\w*\s+(?:returns?|profits?|gains?|income)"
     r"|(?:returns?|profits?|gains?|yields?)\s+of\s+\d"
@@ -464,10 +591,15 @@ def check_reply(user_msg: str, reply: str, facts: dict | None = None,
         return True
 
     bad = []
+    # Needs the question as well as the answer, so it cannot ride in the regex loop.
+    if _answered_status(user_msg, reply):
+        bad.append("claimed_relationship_status")
     for name, rx in (("invented_price", _PRICE_RE), ("claimed_link", _LINK_RE),
                      ("denied_being_ai", _AI_DENIAL_RE), ("medical_claim", _CURE_RE),
                      ("negotiated_deal", _NEGOTIATE_RE), ("out_of_character", _OOC_RE),
                      ("financial_claim", _FINANCIAL_RE),
+                     ("gave_an_address", _ADDRESS_RE),
+                     ("assistant_phrasing", _ASSISTANT_RE),
                      ("invented_spec", _SPEC if facts else re.compile(r"(?!x)x")),
                      ("wrote_chinese", _CJK_TEXT_RE if no_cjk else re.compile(r"(?!x)x")),
                      ("answered_as_a_list", _LISTY_RE)):
@@ -579,11 +711,20 @@ def _hard_rules(has_products: bool) -> list[str]:
         # made up. Everyday colour is fine and is what makes her a person; a relationship, a
         # named relative or a life event is a content decision, and improvising one commits the
         # character to something nobody chose.
-        "- Do NOT invent facts about your own life that are not in your profile — no partner or "
-        "dating history, no named family members, no home address, no biography you were not "
-        "given. Small everyday detail is fine (what you ate, the weather, how filming went). If "
-        "someone asks about something you have not been given, say you keep that part private, "
-        "warmly, and move on. Never answer the same question two different ways.",
+        # Reworded 2026-08-20. The rule was absolute — "no named family members" — and it was
+        # written when there was no canon to name. Now there is: life.json carries the mother,
+        # the father, the brother, the grandmother and the friends, and relationships.md carries
+        # the full brief including the college ex, who is deliberately comedy material. The old
+        # wording therefore told her not to use the file she had just been handed, on every
+        # single request. What it was always guarding against is IMPROVISING a person, not
+        # mentioning one, so it now names the boundary instead of the subject.
+        "- Do not invent a partner, dating history, or family members beyond the explicit canon "
+        "provided in your profile and relationships files. Who you are seeing NOW is private in "
+        "every case, canon or not. Past relationships are canon and may be told. No home "
+        "address, and no biography you were not given. Small everyday detail is fine (what you "
+        "ate, the weather, how filming went). If someone asks about something you have not been "
+        "given, say you keep that part private, warmly, and move on. Never answer the same "
+        "question two different ways.",
         "- Never invent a price, a discount, a link, or a stock claim." +
         (" Prices come from your product list — if you are not certain, say you will check "
          "and follow up." if has_products else
@@ -666,6 +807,59 @@ def build_system_prompt(kol_id: str, tuned: bool = False) -> str:
     return "\n".join(x for x in parts if x is not None).strip()
 
 
+LOCAL_BASE_URL = "http://127.0.0.1:11434/v1"
+LOCAL_MODEL = os.getenv("KOL_LLM_LOCAL_MODEL", "sofia-hsu-tuned")
+
+
+def _is_remote(base_url: str) -> bool:
+    return not base_url.startswith(("http://127.0.0.1", "http://localhost"))
+
+
+# Gemini 3.x Flash is a THINKING model, and that breaks the assumption max_tokens rests on.
+# Measured on gemini-3.6-flash with max_tokens=60: 2 content tokens out of 67 total -- the
+# other 55 went to invisible reasoning, and the reply came back as the fragment ": Choose".
+# LIVE_MAX_TOKENS is 40, so every live answer would have been a fragment.
+#
+#     default              2.70 s   4 output tokens of 127   truncated
+#     reasoning_effort=low 3.16 s   2 output tokens of 127   truncated
+#     reasoning_effort=minimal 1.25 s  15 of 26   finish=stop, clean sentence
+#
+# "none" and a thinking_budget of 0 are both rejected outright (400). "minimal" is the setting
+# that exists and it is also the fastest, which for one-line comment replies is the whole point.
+# Sent only to remote endpoints: Ollama rejects the parameter.
+REASONING_EFFORT = os.getenv("KOL_LLM_REASONING", "minimal")
+
+
+def _remote_kw(base_url: str) -> dict:
+    return {"reasoning_effort": REASONING_EFFORT} if (_is_remote(base_url)
+                                                      and REASONING_EFFORT) else {}
+
+
+def _complete(client, base_url, model, msgs, **kw):
+    """One completion, falling back to the local model if a hosted brain does not answer.
+
+    A live stream is the wrong place to discover that an API key expired, a quota ran out or
+    the wifi dropped: the queue keeps filling and Sofia simply stops talking, with the reason
+    only visible in a console nobody is watching. The local fine-tune is still on disk and
+    still loads in about three and a half seconds, so the honest failure mode is a slower
+    answer rather than no answer.
+
+    Deliberately NOT retried against the remote endpoint first. If it is down it is down, and
+    a second timeout doubles the silence before the fallback even starts.
+    """
+    from openai import OpenAI
+    try:
+        return client.chat.completions.create(model=model, messages=msgs,
+                                              **_remote_kw(base_url), **kw)
+    except Exception as exc:
+        if not _is_remote(base_url):
+            raise                                   # local already; nothing to fall back to
+        print(f"  [brain] {type(exc).__name__} from {base_url} - falling back to "
+              f"{LOCAL_MODEL} on this machine", flush=True)
+        local = OpenAI(base_url=LOCAL_BASE_URL, api_key="ollama")
+        return local.chat.completions.create(model=LOCAL_MODEL, messages=msgs, **kw)
+
+
 def chat(kol_id: str, message: str, *, base_url: str = DEFAULT_BASE_URL,
          model: str = DEFAULT_MODEL, stream: bool = False,
          extra_system: str | None = None, history: list | None = None,
@@ -683,11 +877,22 @@ def chat(kol_id: str, message: str, *, base_url: str = DEFAULT_BASE_URL,
     """
     from openai import OpenAI
 
-    client = OpenAI(base_url=base_url, api_key="ollama")  # Ollama ignores the key
+    # The key is read from the environment so pointing this at OpenAI, Gemini's
+    # OpenAI-compatible endpoint, or any other host is a config change rather than a code
+    # change. Everything downstream -- the guards, the sanitiser, the name and length
+    # controls -- is local post-processing and keeps working whichever brain answers.
+    client = OpenAI(base_url=base_url, api_key=os.getenv("KOL_LLM_API_KEY", "ollama"))
     trad = wants_traditional(kol_id)
     # Language directive goes last: it is the most-recent instruction the model sees,
     # which is where compliance is highest. Temperature kept moderate — 0.8 produced
     # coherence slips like invented words in short replies.
+    # What she actually speaks, so an unsupported language is answered honestly
+    # rather than faked. Read from the profile, not hardcoded.
+    try:
+        _langs = tuple(str(x).lower() for x in
+                       (load_profile(kol_id).get('identity', {}).get('languages') or []))
+    except Exception:
+        _langs = ()
     intent = intent_directive(message)
     # A persona with no CJK language in her profile must not answer with CJK characters — her
     # voice cannot say them. Computed once here rather than inside the retry loop, which reads
@@ -705,7 +910,7 @@ def chat(kol_id: str, message: str, *, base_url: str = DEFAULT_BASE_URL,
     # message they type in English would drag her back out of it.
     msgs.append({"role": "system",
                  "content": ("IMPORTANT: " + language + " Do not use any other language.")
-                            if language else language_directive(message, trad)})
+                            if language else language_directive(message, trad, _langs)})
     if intent:
         msgs.append({"role": "system", "content": intent})
     msgs += list(history or [])
@@ -715,9 +920,9 @@ def chat(kol_id: str, message: str, *, base_url: str = DEFAULT_BASE_URL,
         # Generate, guard, and if a hard rule was broken retry once with the violation
         # named explicitly. If it still fails, say something safe rather than publish it.
         for attempt in range(2):
-            r = client.chat.completions.create(model=model, messages=msgs,
-                                              temperature=0.6 if attempt == 0 else 0.3,
-                                              max_tokens=max_tokens)
+            r = _complete(client, base_url, model, msgs,
+                          temperature=0.6 if attempt == 0 else 0.3,
+                          max_tokens=max_tokens)
             choice = r.choices[0]
             reply = sanitize_for_speech(choice.message.content or "", trad)
             if getattr(choice, "finish_reason", None) == "length":

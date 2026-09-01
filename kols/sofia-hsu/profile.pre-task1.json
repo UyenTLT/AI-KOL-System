@@ -51,7 +51,7 @@
       "reference_text": "Honestly, I have been using it for about three weeks now, and the texture is really lovely. It sinks in fast, and it does not leave that sticky feeling at all.",
       "reference_lang": "en",
       "reference_span": "7.7-14.2s of voice/raw/kols_sofia-vargas_raw voice.m4a",
-      "instruct": "Speak softly and warmly, at a natural everyday pace.",
+      "instruct": "Speak softly and sweetly, warm and close to the microphone.",
       "chosen": "2026-08-04",
       "chosen_because": "Picked by ear from a side-by-side against the other candidates. The measurements agree: 16.33 semitones of pitch range and 7.25 pauses per 10 s, against 10.43 and 3.75 for the fine-tuned GPT-SoVITS voice, with the real human clip at 14.10 and 4.62. It also holds her register at 194.9 Hz where plain zero-shot cloning drifted to 163.9 Hz, and does not drag: 8.3 s for a line zero-shot took 11.2 s to say.",
       "rights_note": "The reference recording in voice/raw/ is the PROJECT OWNER'S OWN VOICE, confirmed by them on 2026-08-04. Consent is therefore inherent and needs no third-party clearance, and this is consistent with CUDA_SETUP.md section I, which forbids cloning a real person's voice *without permission* rather than forbidding it outright. Note only that Sofia's earlier synthetic-bootstrap voice belonged to nobody, whereas this one is a real identifiable person's — worth remembering if the persona is ever sold, transferred, or operated by someone else.",
@@ -145,7 +145,12 @@
           "originals": "ref_human.wav.orig (untouched capture), ref_human.wav.prev (high-pass version)"
         }
       },
-      "soften": false,
+      "soften": {
+        "hz": 3200,
+        "gain_db": -4,
+        "why": "A 4 dB dip at 3.2 kHz, where a voice reads as harsh. Measured over four runs each: 13.6%+/-0.3 of the 2-5 kHz band before, 10.7%+/-0.7 after, with speaker similarity unchanged inside noise (0.657 to 0.645). Set to false to turn it off.",
+        "rejected": "Raising pitch by resampling reached 217 Hz at +2 semitones and cost both harshness (13.8 to 18.3%) and identity (0.633 to 0.534) — formants move with the pitch, giving a smaller voice rather than a softer one. Rewording the delivery instruction appeared to raise her register by 13 Hz over three runs and lower it by 14 over the next four; the spread is +/-5.3 Hz and the effect is not real."
+      },
       "voice_change_2026_08_13": {
         "what": "Her speaking voice is now a blend, not the owner's recording. An edge-tts synthetic voice (en-US-AvaNeural) put through her own RVC model — the result is neither voice: 0.41 similarity to the owner, and audibly not Ava either.",
         "why": "Asked for a softer, more feminine voice. The owner's recording sits at 182.9 Hz, the low edge of the female range, and nothing downstream can move that without moving identity: resampling +2 semitones reached 217 Hz but pushed harshness 13.8 to 18.3% and similarity 0.633 to 0.534, because formants travel with the pitch.",
@@ -211,17 +216,7 @@
         },
         "why_it_is_off": "Rejected by ear. The numbers were good and the ear overruled them, which is the right order: 11 slices is far below RVC's guidance of roughly ten minutes, and no similarity metric hears the artefacts that come of it. The f0 was the visible warning -- 260 Hz against the owner's 188 -- and it should have been weighted more heavily than the similarity score.",
         "what_survives": "The finding that ref_human.wav is over-denoised. THE OWNER'S OWN VOICE scores 0.4281 against it, so the reference is closer to a different speaker than to the person it was cut from. The shipping model scores 0.9273 against that reference, which means it faithfully reproduces the denoising artefact -- the most likely remaining explanation for 'still a bit robotic'. That is fixable without any training: ref_human.wav.orig is the same 6.5 s untouched, and cloning from it measured 0.659 against the raw human where the current chain measures 0.397."
-      },
-      "pitch_shift_st": 0,
-      "sampling_note": "NOT APPLIED, and not applicable as config. Requested across two directives: temperature 0.75-0.78, top_p 0.85, per-comma pause_duration 180 ms, and 20-30 ms audio chunk streaming. cosy_server calls inference_instruct2(text, instruct, prompt, stream=False); CosyVoice 2 takes no sampling or pause arguments on that path, and the transport is a rendered wav file rather than a stream. Any of these means patching the vendored model or replacing the transport with a websocket -- not setting a value. The pacing that IS reachable is the instruct wording and PACE (ffmpeg atempo).",
-      "pacing_note": "2026-08-25: reverted to the natural-pace instruct and PACE 1.00 after the slow/gentle wording was reported as robotic. Measured, that is exactly what it does: pitch range 16.6-17.3 st on this wording against 11.3-15.9 st on 'speaking gently and slowly'. Narrow pitch range IS the robotic quality, and the same effect is already on record for 'almost whispering' (17.50 -> 8.17 st). Soft delivery and lively delivery pull against each other on this engine. pitch_shift and air are left in the code but set to zero: they measured +0.1% brightness for their trouble, and resampling a voice is the least likely fix for 'sounds synthetic'.",
-      "lowcut_hz": 250,
-      "air": {
-        "hz": 3500,
-        "gain_db": 3.5,
-        "why": "Clarity chain, 2026-08-26. The complaint was that she sounded boomy. Measured across five post-chain variants, two runs each, same line: mud (200-500 Hz) 20.5% -> 17.1%, presence (2-5 kHz) 8.2% -> 12.4%, spectral centroid 2191 -> 2431 Hz. soften is OFF because its 4 dB dip at 3.2 kHz sits exactly in the band that carries clarity -- it was added when the complaint was harshness, and those two pull opposite ways."
-      },
-      "clarity_caveat": "soften was measured to REDUCE harshness (13.6% -> 10.7% of 2-5 kHz). Turning it off and adding +3.5 dB there raises the same band, so if she now reads as sibilant rather than clear, that is this trade and the fix is air gain_db down to ~2.0 or soften back on. No measurement separates 'clear' from 'harsh' -- both are energy in 2-5 kHz. Ears decide."
+      }
     },
     "avatar": {
       "engine": "livetalking-wav2lip",
@@ -354,14 +349,14 @@
     "status": "active",
     "category": "lifestyle",
     "tags": [
-      "taiwanese-american",
-      "abc",
+      "latina",
+      "colombian",
       "lifestyle",
       "fashion",
       "food",
-      "gaming",
+      "fitness",
       "bilingual",
-      "sgv"
+      "miami"
     ],
     "reference_profiles": [
       "@sophieraiin",
@@ -372,25 +367,21 @@
   },
   "identity": {
     "name": "Sofia Hsu",
-    "name_zh": "許家瑀",
-    "handle": "@sofiahsu",
-    "age": 22,
-    "ethnicity": "Taiwanese-American (second generation)",
-    "origin": "Arcadia, California — San Gabriel Valley (626)",
-    "current_location": "Alhambra, CA (USA)",
-    "family_origin": "Mother from Tainan, father from Taichung; both emigrated in the 1990s",
-    "_languages_note": "persona_brain.wants_traditional() and speaks_cjk() are DERIVED from these strings, not stored as flags. wants_traditional needs 'traditional' present and 'simplified' absent; speaks_cjk needs one of chinese/mandarin/cantonese/japanese/korean. Both are satisfied below. Editing this list changes her output language - check both functions after any change.",
+    "handle": "@sofiavargasreal",
+    "age": 24,
+    "ethnicity": "Colombian-Latina",
+    "origin": "Medellín, Colombia",
+    "current_location": "Miami, FL (USA)",
     "languages": [
-      "English (Native)",
-      "Mandarin (Fluent)",
-      "Traditional",
-      "Taiwanese (Basic)"
+      "Spanish (native)",
+      "English (fluent)",
+      "Portuguese (conversational)"
     ],
     "appearance": {
-      "height": "165cm",
-      "hair": "Dark brown-black, long and straight with a slight wave at the ends",
-      "eyes": "Dark brown",
-      "style_vibe": "Clean California everyday: black ribbed tanks, high-waist jeans, three layered thin gold necklaces with a small coin pendant, small gold hoops; films bare-faced and does not retouch skin texture"
+      "height": "168cm",
+      "hair": "Dark brown, long, wavy — often worn naturally or with loose beach waves",
+      "eyes": "Dark brown, expressive",
+      "style_vibe": "Casual-sexy everyday: crop tops, high-waist jeans, colorful co-ords, gold jewelry; dresses up effortlessly for nights out"
     }
   },
   "persona": {
@@ -489,22 +480,22 @@
   "social": {
     "platforms": {
       "instagram": {
-        "handle": "@sofiahsu",
+        "handle": "@sofiavargasreal",
         "focus": "Lifestyle, fashion, food, daily stories",
         "follower_tier": "macro"
       },
       "tiktok": {
-        "handle": "@sofiahsu",
+        "handle": "@sofiavargasreal",
         "focus": "Viral short-form: dance, food reactions, Spanglish comedy",
         "follower_tier": "macro"
       },
       "youtube": {
-        "handle": "Sofia Hsu",
+        "handle": "Sofia Vargas",
         "focus": "Weekly vlogs, travel, longer cooking videos",
         "follower_tier": "mid"
       },
       "twitter_x": {
-        "handle": "@sofiahsuu",
+        "handle": "@sofiavreal",
         "focus": "Football hot takes, memes, real-time reactions",
         "follower_tier": "micro"
       }

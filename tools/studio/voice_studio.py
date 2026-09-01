@@ -370,10 +370,28 @@ def _synthesize_cosyvoice(cid: str, text: str, v: dict, *, speed: float = 1.0,
             _timbre_pass(out, cfg["api"], float(cfg.get("timeout", 30.0)))
     # Softening runs before loudness so the level is set on what actually gets heard: cutting
     # 4 dB out of the busiest band afterwards would leave every line quieter than it asked to be.
+    # Pitch first, before anything measures or levels the result, so the shelf and the loudness
+    # pass both see the spectrum that will actually be heard.
+    ps = v.get("pitch_shift_st")
+    if ps:
+        _pitch_shift(out, float(ps))
     soft = v.get("soften")
     if soft is not False:
         s = soft if isinstance(soft, dict) else {}
         _soften(out, float(s.get("hz", 3200.0)), float(s.get("gain_db", -4.0)))
+    # And the air shelf AFTER softening, because it is restoring the top end that the 3.2 kHz
+    # dip and the reference cleanup between them took away. Running it first would just hand
+    # _soften more to cut.
+    # A low-mid cut, for when the complaint is that she sounds boomy. 200-500 Hz is the band
+    # that reads as boxy; taking a little out there is what "clearer" usually means in practice,
+    # and it costs nothing at the top where identity lives.
+    lc = v.get("lowcut_hz")
+    if lc:
+        _lowmid_cut(out, float(lc))
+    airc = v.get("air")
+    if airc:
+        a = airc if isinstance(airc, dict) else {}
+        _air(out, float(a.get("hz", 3500.0)), float(a.get("gain_db", 1.5)))
     # CosyVoice has no speed parameter; resample the timeline rather than pretend it does.
     if abs(speed - 1.0) > 0.01:
         _retime(out, speed)
@@ -522,6 +540,69 @@ def _soften(path: Path, hz: float = 3200.0, gain_db: float = -4.0) -> None:
     tmp = path.with_suffix(".soft.wav")
     subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(path),
                     "-af", f"equalizer=f={hz}:width_type=o:width=1.4:g={gain_db}", str(tmp)],
+                   check=True, capture_output=True, text=True,
+                   encoding="utf-8", errors="replace")
+    tmp.replace(path)
+
+
+def _pitch_shift(path: Path, semitones: float) -> None:
+    """Raise or lower pitch WITHOUT moving the formants, via ffmpeg's rubberband.
+
+    This is not the pitch experiment that was rejected. That one resampled: +2 semitones took
+    her to 217 Hz and cost harshness (13.8% -> 18.3%) and speaker identity (0.633 -> 0.534),
+    because resampling drags the formants up with the pitch and the result is a smaller voice
+    rather than a lighter one.
+
+    rubberband separates the two. `formant=preserved` holds the vocal-tract resonances where
+    they were and moves only the fundamental, which is the operation that was actually wanted.
+    Whether it survives the identity measurement is a question for the A/B, not an assumption:
+    a shift big enough to hear is big enough to change her.
+    """
+    import subprocess
+    import ffmpeg_util
+    if abs(semitones) < 0.01:
+        return
+    tmp = path.with_suffix(".pitch.wav")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(path),
+                    "-af", f"rubberband=pitch={2 ** (semitones / 12.0):.6f}:formant=preserved",
+                    str(tmp)],
+                   check=True, capture_output=True, text=True,
+                   encoding="utf-8", errors="replace")
+    tmp.replace(path)
+
+
+def _lowmid_cut(path: Path, hz: float = 250.0, gain_db: float = -2.5) -> None:
+    """Take a couple of dB out of the boxy band, in place."""
+    import subprocess
+    import ffmpeg_util
+    tmp = path.with_suffix(".lowmid.wav")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(path),
+                    "-af", f"equalizer=f={hz}:width_type=o:width=1.2:g={gain_db}", str(tmp)],
+                   check=True, capture_output=True, text=True,
+                   encoding="utf-8", errors="replace")
+    tmp.replace(path)
+
+
+def _air(path: Path, hz: float = 3500.0, gain_db: float = 1.5) -> None:
+    """Put back the breath that noise reduction took out.
+
+    Measured across every reference clip in her folder: the shipping reference sits at 10.9%
+    of its energy in 2-5 kHz against 10-27% for the licensed candidates, and 6.6% was recorded
+    earlier still. Breath and sibilance live in that band, so a low number on a clip that is
+    supposed to sound breathy is the fingerprint of over-cleaning.
+
+    Deliberately a SHELF and deliberately small. `_soften` cuts 4 dB at 3.2 kHz with a 1.4-octave
+    peaking filter to take off harshness, and this runs after it: the two are not opposites, the
+    dip removes a resonance and the shelf lifts the whole top end. Anything much beyond 1.5 dB
+    starts undoing a measured improvement rather than complementing it.
+    """
+    import subprocess
+    import ffmpeg_util
+    if abs(gain_db) < 0.01:
+        return
+    tmp = path.with_suffix(".air.wav")
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(path),
+                    "-af", f"highshelf=f={hz}:g={gain_db}:width_type=q:width=0.7", str(tmp)],
                    check=True, capture_output=True, text=True,
                    encoding="utf-8", errors="replace")
     tmp.replace(path)

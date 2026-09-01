@@ -120,6 +120,8 @@ kols/*/voice/ref_blend.wav
 .env
 *.key
 youtube-api-key.txt
+# Dot-sourced by RUN-GEMINI.ps1. Holds the Gemini key and nothing else.
+secrets.local.ps1
 
 # Written answers come back as a file from whoever wrote them; the pack itself is generated.
 writing-pack/

@@ -6,7 +6,7 @@
 #
 #   .\RUN-TUNED.ps1            start everything
 #   .\RUN-TUNED.ps1 -Base      start against stock Ollama instead, for comparison
-param([switch]$Base, [switch]$Stop)
+param([switch]$Base, [switch]$Stop, [switch]$KeepEnv)
 
 $Root = $PSScriptRoot
 $Py   = Join-Path $Root ".venv\Scripts\python.exe"
@@ -49,7 +49,12 @@ if ($Stop) {
   exit 0
 }
 
-if ($Base) {
+if ($KeepEnv) {
+  # The caller has already chosen a brain -- RUN-GEMINI.ps1 does this. Without the switch the
+  # block below would overwrite the endpoint, the model and the tuned flag with the local ones,
+  # and the stack would come up on Ollama while the console said Gemini.
+  "brain: as configured by the caller ($env:KOL_LLM_MODEL)"
+} elseif ($Base) {
   Remove-Item Env:\OLLAMA_BASE_URL, Env:\KOL_LLM_TUNED, Env:\KOL_LLM_MODEL -ErrorAction SilentlyContinue
   "brain: stock Ollama (base model, full persona prompt)"
 } else {

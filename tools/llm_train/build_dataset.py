@@ -165,7 +165,7 @@ prefix, nothing but the message itself."""
 def _client():
     from openai import OpenAI
     return OpenAI(base_url=os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1"),
-                  api_key="ollama")
+                  api_key=os.getenv("KOL_LLM_API_KEY", "ollama"))
 
 
 def parse_strings(text: str) -> list[str]:

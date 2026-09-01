@@ -129,6 +129,25 @@ footer{margin-top:32px;padding-top:12px;border-top:1px solid var(--rule);
 # and the caption tells the viewer to press play.
 JS = """
 document.addEventListener('DOMContentLoaded', function(){
+  // Everything currently able to make a sound, including the invisible prefetch elements.
+  // Pausing only the visible <audio> is not enough: `ahead` has already been handed the next
+  // clip and will happily play it into the new answer.
+  var stoppables = [];
+  function stopAll(){
+    Array.prototype.forEach.call(document.querySelectorAll('audio'), function(x){
+      try { x.pause(); x.removeAttribute('src'); x.load(); } catch(e){}
+    });
+    stoppables.forEach(function(x){
+      try { x.pause(); x.removeAttribute('src'); } catch(e){}
+    });
+  }
+  // Asking is itself an interruption. The form is a plain POST and the reload would stop the
+  // audio eventually, but "eventually" is a round trip — long enough to hear the previous
+  // answer carry on after you have pressed the button, which is exactly the complaint.
+  Array.prototype.forEach.call(document.querySelectorAll('form[action="/comment"]'), function(f){
+    f.addEventListener('submit', stopAll);
+  });
+
   // Every audio element holds the whole answer as a list of sentence clips. Playing them in
   // turn is what lets the server hand over the first one before the last one exists — the
   // listener hears a continuous answer, and the rendering finishes behind it.
@@ -143,6 +162,7 @@ document.addEventListener('DOMContentLoaded', function(){
     // A second element pulls it into the cache first, so the swap plays immediately.
     var ahead = new Audio();
     ahead.preload = 'auto';
+    stoppables.push(ahead);
     function preload(i){
       if(i < clips.length){ ahead.src = '/media/' + clips[i]; ahead.load(); }
     }
@@ -202,16 +222,23 @@ document.addEventListener('DOMContentLoaded', function(){
   // waiting up to another 1.5 s to notice was a third of what remained — spent doing nothing,
   // on a local request costing a few hundred bytes.
   //
-  // The one check that stays is not a preference. Two comments posted seconds apart produce
-  // two answers, and showing the second while the first is still being spoken makes her talk
-  // over herself.
+  // This used to WAIT for the current answer to finish before showing the next one, so that
+  // two comments seconds apart could not make her talk over herself. That is now wrong, and
+  // the distinction is the whole point: overlapping is two voices at once, interrupting is
+  // one voice stopping and another starting. Queueing meant a viewer asked something and then
+  // listened to the previous person's answer play out first, which reads as the stream being
+  // stuck rather than as good manners.
+  //
+  // So the new answer takes the floor. The old clip is stopped explicitly before the reload
+  // rather than left to the navigation, because a page swap does not reliably silence audio
+  // that has already been handed to the decoder, and the failure there is the one thing this
+  // was guarding against: two of her talking at once.
   var seen = parseInt(document.body.getAttribute('data-events') || '0', 10);
   var timer = setInterval(function(){
     fetch('/state').then(function(r){ return r.json(); }).then(function(s){
       if(s.events <= seen) return;
-      var busy = a && !a.paused && !a.ended;
-      if(busy) return;
       clearInterval(timer);
+      stopAll();
       location.reload();
     }).catch(function(){});
   }, 400);
@@ -263,7 +290,8 @@ def answer(c: dict, hist: list, publish=None) -> dict:
     """
     import shutil
     from stage import (respond, respond_streamed, perform, perform_streamed, song_for, classify,
-                       strip_tics, fix_vocative, MODES)
+                       strip_tics, fix_vocative, ensure_name, limit_sentences,
+                       unload_brain, WHOLE_MAX as _WHOLE_MAX, MODES)
 
     mode = c.get("mode") or classify(c["text"])
     t = time.perf_counter()
@@ -318,7 +346,10 @@ def answer(c: dict, hist: list, publish=None) -> dict:
                 # thing first would mean silence until all of it exists.
                 from stage import speech_chunks as _sc
                 _sofar = " ".join(streamed)
-                if len(streamed) > 1 and len(_sofar) > 340 and not opener.get("thread"):
+                # Same threshold the chunker uses, so the early opener fires exactly
+                # when the answer is going to be split anyway.
+                if (len(streamed) > 1 and len(_sofar) > _WHOLE_MAX
+                        and not opener.get("thread")):
                     def _open(sent=streamed[0]):
                         try:
                             from stage import perform as _p
@@ -357,10 +388,22 @@ def answer(c: dict, hist: list, publish=None) -> dict:
     # the stream still signed off with "thanks for asking" long after the chat had stopped.
     text, misnamed = fix_vocative(text, c.get("who"), KOL)
     text, removed = strip_tics(text, first_message=not EVENTS, message=c.get("text", ""))
+    # LAST, and the order is load-bearing. Inserting the name first put it inside the
+    # opening greeting -- "Hey Mark!" -- which strip_tics then removed wholesale, taking
+    # the name with it: "Hey Mark! that jacket..." came out as "That jacket...".
+    # Running after the stripper means the name goes onto text nothing else will touch.
+    text = limit_sentences(text)
+    text, _named = ensure_name(text, c.get("who"))
     removed += [f"called them {n}" for n in misnamed]
     if removed:
         print(f"  stripped: {removed}", flush=True)
     think = time.perf_counter() - t
+
+    # The model has finished writing; the voice is about to start. This is the one moment in
+    # the turn when the card can be handed over cleanly. See stage.unload_brain.
+    _freed = unload_brain()
+    if _freed >= 0:
+        print(f"  brain unloaded in {_freed:.2f}s, card free for the voice", flush=True)
 
     published = False
     stem = f"{datetime.now():%H%M%S}-{mode}-{uuid.uuid4().hex[:4]}"
@@ -453,10 +496,22 @@ def answer_worker() -> None:
     while True:
         with LOCK:
             c = PENDING.pop(0) if PENDING else None
-            # c is None whenever the queue is empty, which is most of the time — asking it for a
-            # name there killed the worker thread on its first idle tick and left every comment
-            # sitting in the queue with nothing to process it.
-            hist = history_for(c.get("who")) if c else []
+        # A new comment is answered on its own, with nothing read back to her.
+        #
+        # This is NOT a speed change, and it would be dishonest to sell it as one: measured, the
+        # four turns history_for() returns are 179 characters of a 7151-character request — 2.5%
+        # — and timing with and against them lands inside the run-to-run noise. It is a change
+        # about what a comment IS. On a stream each one is a fresh question, usually from a
+        # different person, and answering it against the last exchange makes her reply to a
+        # conversation this commenter was never in.
+        #
+        # What it costs: a genuine follow-up from the same person no longer resolves. "and the
+        # other one?" now arrives with nothing to attach to. That is the trade, and on a stream
+        # of interleaved strangers it is the right side of it.
+        #
+        # history_for() is deliberately left in place. The 1:1 chat is one continuous thread
+        # with one person, which is the case it was written for and where it is still correct.
+        hist = []
         if c is None:
             time.sleep(0.4)
             continue
@@ -655,6 +710,36 @@ class Handler(BaseHTTPRequestHandler):
                 body = json.dumps({"clips": list(ev["clips"]) if ev else [],
                                    "done": bool(ev and ev.get("done"))})
             self._send(body.encode(), "application/json")
+        elif p == "/live":
+            # The viewer-facing room. Same pipeline, different surface: `/` stays the control
+            # page with the register picker and the timings on it.
+            from live_ui import live_page
+            self._send(live_page(), "text/html; charset=utf-8")
+        elif p == "/feed":
+            # A live room cannot reload on every message, so the page polls this instead.
+            # `since` is an index into EVENTS, which only ever grows, so a client that misses
+            # a poll catches up rather than losing a turn.
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            try:
+                since = int((q.get("since") or ["0"])[0])
+            except ValueError:
+                since = 0
+            with LOCK:
+                out = [{"i": i, "who": e.get("who"), "fan_text": e.get("fan_text"),
+                        "text": e.get("text"), "clip": e.get("clip"), "stem": e.get("stem")}
+                       for i, e in enumerate(EVENTS) if i >= since]
+                body = json.dumps({"events": out, "answering": bool(PENDING),
+                                   "total": len(EVENTS)})
+            self._send(body.encode(), "application/json")
+        elif p.startswith("/img/"):
+            # Her portrait, for the host tile. Restricted to the one directory and to the
+            # basename, so a path with .. in it cannot walk out of it.
+            f = (REPO / "kols" / KOL / "images" / "soul_v4_outdoor" /
+                 Path(urllib.parse.unquote(p[5:])).name)
+            if not f.is_file() or f.suffix.lower() not in (".png", ".jpg", ".jpeg", ".webp"):
+                self._send(b"no such image", "text/plain; charset=utf-8", 404)
+                return
+            self._send(f.read_bytes(), f"image/{'jpeg' if f.suffix.lower() in ('.jpg', '.jpeg') else f.suffix.lower()[1:]}")
         elif p == "/ping":
             self._send(b"sofia live is reachable", "text/plain; charset=utf-8")
         elif p.startswith("/media/"):
@@ -675,6 +760,15 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if p == "/comment":
                 self._comment(g)
+            elif p == "/say":
+                # /comment redirects, which is right for a form page and wrong for a room:
+                # the reply would replace the page under the viewer mid-answer.
+                text = g("text").strip()
+                if text:
+                    with LOCK:
+                        PENDING.append({"who": g("who", "guest").strip() or "guest",
+                                        "text": text, "mode": None, "voice": None})
+                self._send(json.dumps({"queued": bool(text)}).encode(), "application/json")
             elif p == "/reset":
                 with LOCK:
                     PENDING.clear()
