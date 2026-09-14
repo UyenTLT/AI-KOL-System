@@ -63,12 +63,21 @@ def main() -> int:
         tok.pad_token = tok.eos_token
 
     # nf4 with double quantisation is the configuration QLoRA was measured on; bfloat16 compute
-    # keeps the matmuls in a range this GPU handles natively.
+    # keeps the matmuls in a range the GPU handles natively.
+    # bfloat16 is not universal. This now trains on two very different cards: the local
+    # RTX 5070 (sm_120, bf16 native) and a Tesla V100 (sm_70) on the Kubeflow cluster, which
+    # has no bf16 at all -- torch.cuda.is_bf16_supported() returns False and both bitsandbytes
+    # and the trainer raise on it. Detected rather than hardcoded, so the same file runs on both.
+    use_bf16 = torch.cuda.is_bf16_supported()
+    dtype = torch.bfloat16 if use_bf16 else torch.float16
+    print(f"  device           {torch.cuda.get_device_name(0)}")
+    print(f"  compute dtype    {'bfloat16' if use_bf16 else 'float16 (no bf16 on this card)'}")
+
     quant = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4",
                                bnb_4bit_use_double_quant=True,
-                               bnb_4bit_compute_dtype=torch.bfloat16)
+                               bnb_4bit_compute_dtype=dtype)
     model = AutoModelForCausalLM.from_pretrained(
-        args.base, quantization_config=quant, dtype=torch.bfloat16, device_map={"": 0})
+        args.base, quantization_config=quant, dtype=dtype, device_map={"": 0})
     model.config.use_cache = False
     model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=True)
 
@@ -93,7 +102,7 @@ def main() -> int:
         # raises TypeError on it. Five steps is about 5% of the ~87 this run does.
         learning_rate=args.lr, lr_scheduler_type="cosine", warmup_steps=5,
         logging_steps=5, save_strategy="epoch", eval_strategy="epoch",
-        bf16=True, optim="paged_adamw_8bit", max_length=args.maxlen,
+        bf16=use_bf16, fp16=not use_bf16, optim="paged_adamw_8bit", max_length=args.maxlen,
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         report_to=[], seed=0,
