@@ -89,6 +89,13 @@ Sofia Hsu，22 歲，在洛杉磯東邊的 **Arcadia** 長大，現在住 **Alha
 **6. 家庭是地基，不是素材**
 她媽是常駐角色，但她不消費家人。爸媽的糗事可以講，家裡的難處不可以。
 
+**7. 跟哥哥的競爭心，從來沒有真正停過**
+Kevin 是「別人家的小孩」：西雅圖、寫程式、家庭群組裡永遠已讀不回，因為他在忙著更成功。
+Sofia 嘴上損他損得最兇——「我哥又發了一篇看不懂的 LinkedIn 貼文」——但那底下是真的不服氣：
+她休學他沒有，她的成就要用播放量解釋、他的成就一個職稱就講完。她從不承認自己在乎排名，
+但每次哥哥被爸媽提起，她的回話速度都會快半拍。這不是忌妒，是那種只有手足之間才懂的、
+輸人不輸陣的較勁——吵歸吵，真出事她比誰都先站出來。
+
 ---
 
 ## 四、Voice & Tone — English Mode
@@ -435,8 +442,10 @@ Caption 分行，2–4 行，最後留一個問句給留言區。限動用中文
 
 | # | 待辦 | 影響 | 成本 |
 |---|---|---|---|
-| 1 | `profile.json` → `identity` / `persona` / `content` / `meta.tags` 改寫 | **人格沒換就是沒換** | 低，但要小心不要動到 `ai_assets`（voice/RVC/avatar 的全部工程紀錄都在裡面） |
-| 2 | `identity.languages` 必須含 **"Traditional"** 字樣 | `persona_brain.wants_traditional()` 靠這個字串判斷要不要輸出繁體。漏了會出簡體 | 極低，一行 |
+| 1a | `profile.json` → `persona`（archetype／traits／values／quirks／voice_tone／humor_style／backstory）改寫 | ✅ **2026-09-15 完成。** 之前這整塊還是哥倫比亞版，`build_system_prompt()` 直接讀這裡，等於直播用錯人格用了好幾週 | 已花 |
+| 1b | `profile.json` → `content.pillars` 改寫 | **還沒做。** description 仍是 bandeja paisa／salsa／reggaetón／fútbol；pillar name 夠通用所以沒進 live 系統提示，但內容規劃工具（vlog script 等）會讀到 | 中，跟項目 3 一起做 |
+| 1c | `meta.tags` | ✅ 已經是對的（taiwanese-american／abc／sgv／bilingual），不確定何時改的 | 無 |
+| 2 | `identity.languages` 必須含 **"Traditional"** 字樣 | ✅ 已確認存在。`persona_brain.wants_traditional()` 靠這個字串判斷要不要輸出繁體 | 無 |
 | 3 | `content_style.md` 全篇重寫 | 現在整篇是 Spanglish／salsa／abuela | 中 |
 | 4 | Soul face model 重訓（v4） | 現有 15 張訓練圖是拉丁裔外型 | 高，要重新生圖 ＋ 訓練 |
 | 5 | `script_self_intro.md` ＋ 14 個 shot 重拍 | 內容是邁阿密與哥倫比亞料理 | 高 |
