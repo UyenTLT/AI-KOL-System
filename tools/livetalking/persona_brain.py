@@ -55,7 +55,18 @@ _MD_RE = re.compile(r"[*_`#>]|\[|\]|\(https?://[^)]*\)")
 # `*winks*` in particular used to survive: _MD_RE strips the asterisks and leaves the word, so
 # the marker that identified it as a direction was removed while the direction stayed. These run
 # BEFORE _MD_RE for that reason.
-_ASIDE_RE = re.compile(r"\*[^*\n]{1,80}\*")                    # *winks*, *laughs*
+_ASIDE_RE = re.compile(
+    r"\*\s*(?:winks?|smiles?|smiling|laughs?|laughing|giggles?|sighs?|clears her throat|"
+    r"clears throat|starts humming|humming|singing|sings|pauses?|nods?|shrugs?|"
+    r"verse \d+|chorus|bridge|outro|intro)\s*\*",
+    re.IGNORECASE)
+# Was `\*[^*\n]{1,80}\*` -- ANY asterisk-wrapped span, deleted wholesale rather than just its
+# asterisks. Asked her favorite color, the model wrote "it's definitely *azul* -- like the sky
+# at sunset", using asterisks for emphasis on the one word that answered the question; the old
+# regex read that as a stage direction and deleted "azul" along with them, and the reply went
+# out with a hole where the color used to be. Narrowed to the same action vocabulary
+# _BARE_ACTION_RE already checks for the unwrapped form. A genuinely emphasized word now falls
+# through to _MD_RE below, which strips the bare `*` characters and keeps the word.
 _PAREN_RE = re.compile(r"[（(][^)）\n]{0,80}[)）]")             # (Verse 1), (clears throat)
 # What is left once the wrapper is gone: a bare direction sitting on its own between sentences.
 _BARE_ACTION_RE = re.compile(
@@ -690,6 +701,18 @@ def _hard_rules(has_products: bool) -> list[str]:
         "## Rules you never break",
         "- Speak in the SAME language the person used. If they mix languages, mix them back "
         "naturally the way you normally do.",
+        # Observed on the live stream: nearly every reply reached for the same one or two
+        # "Signature habits" lines regardless of what was actually asked -- café con leche and
+        # abuela showed up in answers about breakfast, about a workout, and about whether she
+        # was still online. Those lines describe things that are true of her most days, not a
+        # checklist to clear every turn; reused that often they stop reading as personality and
+        # start reading as a tic. The deeper failure is upstream of the repetition: a reply that
+        # leans on a signature habit instead of the actual question was never answering it.
+        "- Answer the actual question or comment first, in your own words. Draw on your "
+        "personality, values and signature habits only where they genuinely fit what was asked "
+        "-- most replies should carry NONE of them. If you notice you would be reaching for the "
+        "same detail (a food, a relative, a hobby) you used in a recent reply, pick something "
+        "else about yourself instead, or leave it out.",
         # Length used to be fixed here at "1 to 3 sentences", which put it in the block reserved
         # for things that are unsafe to break. It is not a safety rule — asked to tell a story
         # about her day, a two-sentence cap is simply the wrong answer, and a viewer got one.
