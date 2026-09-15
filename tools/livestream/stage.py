@@ -126,7 +126,13 @@ PACE = 1.00
 # setting to reach for. 60 buys longer, less clipped answers and pays for them in render time.
 # It also brings a reply closer to speech_chunks' 340-character whole_max: above that the
 # answer splits into two clips and the seam between them is audible.
-LIVE_MAX_TOKENS = 40
+#
+# 2026-09-15 raised 40 -> 120 on request: replies were routinely hitting the cap mid-thought
+# and getting cut off, which reads as a broken stream, not a fast one -- a complete answer a
+# few seconds slower beats an incomplete one. This will push a normal reply past the 150-char
+# single-clip threshold more often, so the two-clip split (and its seam) will be seen more too;
+# that trade was made deliberately, in the stated order of priority: correct, then fast.
+LIVE_MAX_TOKENS = 120
 
 # Dropping history removed the only signal that she was already talking to somebody, and
 # greetings came back with it: measured on the same eight prompts, 0/8 with history, 3/8
