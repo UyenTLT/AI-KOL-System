@@ -1045,6 +1045,43 @@ def sentences(text: str, *, min_words: int = 4) -> list[str]:
     return out
 
 
+class _ChunkShim:
+    """Enough of an OpenAI stream chunk's shape for the loop below: `.choices[0].delta.content`
+    and `.choices[0].finish_reason`, backed by one line of Ollama's native NDJSON stream."""
+    class _Choice:
+        class _Delta:
+            def __init__(self, content): self.content = content
+        def __init__(self, content, finish_reason):
+            self.delta = self._Delta(content)
+            self.finish_reason = finish_reason
+    def __init__(self, content, finish_reason):
+        self.choices = [self._Choice(content, finish_reason)]
+
+
+def _native_ollama_stream(base_url: str, model: str, msgs: list, *,
+                          max_tokens: int, temperature: float):
+    """Stream from Ollama's own /api/chat with thinking disabled -- see persona_brain's
+    `_ollama_chat_no_think` for the measurement behind why this bypasses the OpenAI SDK."""
+    import json as _json
+    import urllib.request
+    host = base_url.split("/v1")[0]
+    req = urllib.request.Request(
+        host + "/api/chat",
+        data=_json.dumps({"model": model, "messages": msgs, "think": False, "stream": True,
+                          "options": {"temperature": temperature,
+                                      "num_predict": max_tokens}}).encode(),
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        for line in resp:
+            if not line.strip():
+                continue
+            chunk = _json.loads(line)
+            content = chunk.get("message", {}).get("content", "")
+            finish = ("length" if chunk.get("done_reason") == "length"
+                      else "stop" if chunk.get("done") else None)
+            yield _ChunkShim(content, finish)
+
+
 def respond_streamed(kol_id: str, message: str, mode: str, history: list | None = None,
                      *, model: str | None = None, asker: str | None = None):
     """Yield the reply a sentence at a time, each one rule-checked before it is handed over.
@@ -1088,17 +1125,26 @@ def respond_streamed(kol_id: str, message: str, mode: str, history: list | None 
     client = OpenAI(base_url=DEFAULT_BASE_URL, api_key=os.getenv("KOL_LLM_API_KEY", "ollama"))
     buf, sent_out, finish = "", [], None
     _mdl = model or os.getenv("KOL_LLM_MODEL", DEFAULT_MODEL)
+    _is_local = DEFAULT_BASE_URL.startswith(("http://127.0.0.1", "http://localhost"))
     try:
         # See persona_brain.REASONING_EFFORT: a thinking model spends max_tokens on reasoning
         # and returns a fragment, which at LIVE_MAX_TOKENS=40 means every answer is a fragment.
-        _rk = {}
-        if not DEFAULT_BASE_URL.startswith(("http://127.0.0.1", "http://localhost")):
+        # For a LOCAL Ollama brain the fix is not reasoning_effort (Ollama rejects it) but
+        # hitting /api/chat directly with think=False -- the /v1 compat layer this SDK talks to
+        # silently ignores `think`, so a hybrid-reasoning model streams its whole invisible
+        # reasoning pass, chunk by chunk, before any real content: exactly backwards for an
+        # opener whose entire point is speed.
+        if _is_local:
+            _stream = _native_ollama_stream(DEFAULT_BASE_URL, _mdl, msgs,
+                                            max_tokens=LIVE_MAX_TOKENS, temperature=0.6)
+        else:
+            _rk = {}
             _eff = os.getenv("KOL_LLM_REASONING", "minimal")
             if _eff:
                 _rk["reasoning_effort"] = _eff
-        _stream = client.chat.completions.create(
-            model=_mdl, messages=msgs, temperature=0.6,
-            max_tokens=LIVE_MAX_TOKENS, stream=True, **_rk)
+            _stream = client.chat.completions.create(
+                model=_mdl, messages=msgs, temperature=0.6,
+                max_tokens=LIVE_MAX_TOKENS, stream=True, **_rk)
     except Exception as _exc:
         # Same fallback as persona_brain._complete, for the streamed path. Opening the stream
         # is where a dead endpoint shows up; once it is open, failures mid-stream are handled

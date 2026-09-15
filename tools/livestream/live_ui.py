@@ -228,7 +228,7 @@ function play(clip){
   // Browsers start an AudioContext suspended until a gesture. Without this the analyser
   // returns silence and the avatar sits still through an answer that is audibly playing.
   if(actx && actx.state === 'suspended') actx.resume().catch(function(){});
-  player.src = '/media/' + clip;
+  player.src = 'media/' + clip;
   var q = player.play();
   if(q && q.catch) q.catch(function(){});   // autoplay may need a gesture first
 }
@@ -250,7 +250,7 @@ function talking(on){
 }
 
 function pump(){
-  fetch('/feed?since=' + feedSeen).then(function(r){ return r.json(); }).then(function(s){
+  fetch('feed?since=' + feedSeen).then(function(r){ return r.json(); }).then(function(s){
     talking(!!s.answering);
     (s.events || []).forEach(function(e){
       feedSeen = e.i + 1;
@@ -294,7 +294,7 @@ function send(){
   if(actx && actx.state === 'suspended') actx.resume().catch(function(){});
   // Stop her mid-answer the moment a new question is asked. Asking IS the interruption.
   try { player.pause(); } catch(e){}
-  fetch('/say', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+  fetch('say', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
                  body:'who=' + encodeURIComponent(who) + '&text=' + encodeURIComponent(t)})
     .then(function(){ talking(true); }).catch(function(){});
 }
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function(){
 def live_page(kol_name: str = "Sofia Hsu", handle: str = "@sofiahsu",
               # 256px square, ~100 KB. The full render is 8.5 MB for a 34-pixel circle, which
               # every viewer would download on every page load.
-              avatar: str = "/img/avatar_256.png", seats: int = 8) -> bytes:
+              avatar: str = "img/avatar_256.png", seats: int = 8) -> bytes:
     """The viewer's page. Everything dynamic arrives from /feed, so this is served once."""
     tiles = [f'<div class="seat host" id="seat0"><div class="pic">'
              f'<span class="no">1</span><img src="{avatar}" alt=""></div>'

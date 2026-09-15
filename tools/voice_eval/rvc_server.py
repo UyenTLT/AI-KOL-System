@@ -61,7 +61,7 @@ def load(kol: str = "sofia-hsu", warm: bool = True):
     os.environ.setdefault("outside_index_root", str(RVC / "assets" / "indices"))
     os.environ.setdefault("rmvpe_root", str(RVC / "assets" / "rmvpe"))
     from configs.config import Config
-    from infer.vc.modules import VC
+    from infer.modules.vc.modules import VC
     vc_cfg = _profile(kol)
     model = Path(vc_cfg["model"]).name
     cfg = Config()
@@ -95,11 +95,16 @@ def _once(inp: str, outp: str, pitch: int, index_rate=None, protect=None):
     # index_rate and protect are overridable per request. The profile calls its own defaults
     # unvalidated -- the comparison that chose them did not survive, because RVC inference is
     # nondeterministic and the runs were not repeated -- so they need to be sweepable.
+    # LOCAL PATCH: keyword args, not positional. This checkout's vc_single has an extra
+    # f0_file parameter (an optional uploaded pitch-curve file) ahead of f0_method that the
+    # positional call below did not account for, which silently fed "rmvpe" into f0_file and
+    # shifted every argument after it by one slot.
     return VC_OBJ.vc_single(
-        0, inp, pitch, "rmvpe", LOADED["index"],
-        LOADED["index_rate"] if index_rate is None else float(index_rate),
-        0, 0.25,
-        LOADED["protect"] if protect is None else float(protect))
+        sid=0, input_audio_path=inp, f0_up_key=pitch, f0_file=None, f0_method="rmvpe",
+        file_index=LOADED["index"], file_index2="",
+        index_rate=LOADED["index_rate"] if index_rate is None else float(index_rate),
+        filter_radius=3, resample_sr=0, rms_mix_rate=0.25,
+        protect=LOADED["protect"] if protect is None else float(protect))
 
 
 def convert(inp: str, outp: str, pitch: int = 0, index_rate=None, protect=None) -> dict:

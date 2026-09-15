@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>AI-KOL-System — Project Overview</title>
+<style>
+  @page { size: A4; margin: 9mm 11mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, sans-serif; color: #14181a; font-size: 8pt;
+         line-height: 1.32; margin: 0; }
+  h1 { font-size: 15pt; margin: 0 0 1mm; letter-spacing: -.2px; }
+  .sub { color: #5d6b6e; font-size: 7.6pt; margin-bottom: 2.4mm;
+         border-bottom: 1.5px solid #0e6e68; padding-bottom: 1.8mm; }
+  h2 { font-size: 8.8pt; margin: 2.6mm 0 1mm; color: #0e6e68;
+       text-transform: uppercase; letter-spacing: .5px; }
+  h3 { font-size: 8pt; margin: 1.6mm 0 0.6mm; color: #0b3f3c; }
+  ul { margin: 0; padding-left: 3.8mm; }
+  li { margin-bottom: 0.5mm; }
+  b { color: #0b3f3c; }
+  code { font-family: Consolas, monospace; font-size: 7.7pt; background: #eef2f2; padding: 0 1px; }
+  table { border-collapse: collapse; width: 100%; margin: 1mm 0 0; font-size: 7.5pt; }
+  th { text-align: left; color: #5d6b6e; font-weight: 600; padding: 0.8mm 2mm 0.8mm 0;
+       border-bottom: 1px solid #cfd8d8; }
+  td { padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #eceff0; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cols3 { display: flex; gap: 5mm; }
+  .cols3 > div { flex: 1; }
+  .cols2 { display: flex; gap: 6mm; }
+  .cols2 > div { flex: 1; }
+  .box { background: #f4f7f7; border-left: 2.5px solid #0e6e68; padding: 1.4mm 2mm; margin-top: 1mm; }
+  .pipe { background: #f4f7f7; border-radius: 2px; padding: 1.6mm 2.2mm; margin-top: 1mm; font-size: 7.6pt; }
+  .pipe b { display:inline-block; min-width: 15mm; }
+  .foot { margin-top: 2.6mm; padding-top: 1.6mm; border-top: 1px solid #cfd8d8;
+          color: #7d8a8c; font-size: 7.2pt; }
+  .done { color: #17694a; font-weight: 600; }
+  .todo { color: #a15b00; font-weight: 600; }
+</style></head><body>
+
+<h1>AI-KOL-System &mdash; Project Overview</h1>
+<div class="sub">As of 2026-09-14 &middot; 82 commits &middot; source: this repo itself (<code>git log</code>, <code>tools/selftest</code>, direct file counts)</div>
+
+<h2>1 &middot; Project structure</h2>
+<div class="pipe">
+<b>① BRAIN</b> persona_brain.py + Ollama (Qwen2.5-7B, fine-tuned for Sofia) &rarr;
+<b>② VOICE</b> CosyVoice&nbsp;2 / GPT-SoVITS + RVC timbre pass &rarr;
+<b>③ FACE</b> LiveTalking + LivePortrait/wav2lip, lip-sync at 25fps &rarr;
+<b>④ STREAM</b> WebRTC / OBS / RTMP
+</div>
+<p style="margin:1mm 0 0">Single source of truth: <code>kols/&lt;id&gt;/profile.json</code> &mdash; personality, language, voice, face and sales role are all read from it. Adding a character means adding a folder, not rewriting code.</p>
+<div class="cols2" style="margin-top:1.4mm">
+<div>
+<h3>Key directories</h3>
+<ul>
+  <li><code>kols/</code> &mdash; 10-character DB + 3 shared voice presets (654&nbsp;MB, mostly images/voice/video)</li>
+  <li><code>datasets/</code> &mdash; LLM training data + raw source material (12&nbsp;MB)</li>
+  <li><code>tools/</code> &mdash; 12 modules: chat, livestream, llm_train, tts_train, voice_crawl, voice_eval, livetalking, dashboard, selftest, studio, report, talking_web</li>
+  <li><code>finetune/base/</code> &mdash; base models Qwen2.5-7B-Instruct + Qwen3-8B (30&nbsp;GB, gitignored, never pushed)</li>
+</ul>
+</div>
+<div>
+<h3>Running apps (ports)</h3>
+<ul>
+  <li><b>8770</b> Dashboard &middot; <b>8772</b> Selftest (full-system checks, <code>--cli</code>)</li>
+  <li><b>8777</b> Livestream (stage, auto tone-picking) &middot; <b>8779</b> 1:1 Chat (remembers each viewer)</li>
+  <li><b>9880/9881</b> GPT-SoVITS / CosyVoice&nbsp;2 &middot; <b>8010</b> LiveTalking &middot; <b>11434</b> Ollama</li>
+</ul>
+</div>
+</div>
+
+<h2>2 &middot; Data</h2>
+<div class="cols2">
+<div>
+<h3>LLM training (Sofia Hsu)</h3>
+<table>
+<tr><th>Set</th><th>Rows</th></tr>
+<tr><td>Train (QLoRA)</td><td class="n">1,483</td></tr>
+<tr><td>Validation</td><td class="n">109</td></tr>
+<tr><td>Banter pairs (teasing)</td><td class="n">20</td></tr>
+<tr><td>Humour Q&amp;A (Sofia + merged from HuggingFace)</td><td class="n">914</td></tr>
+<tr><td>Raw style/ material (podcast, livestream, storytime&hellip;)</td><td class="n">41,490</td></tr>
+</table>
+<p style="margin:1mm 0 0;font-size:7.3pt;color:#5d6b6e">Fixed 2026-09-14: 818 train rows + 59 val rows still said "Sofia Vargas" (the old name); renamed to "Sofia Hsu". 2 train rows were dropped outright &mdash; their answers carried old Colombia-family lore that a name swap couldn't fix.</p>
+</div>
+<div>
+<h3>Character assets &mdash; images / video / voice</h3>
+<table>
+<tr><th>Character</th><th>Images</th><th>Video</th><th>Voice</th></tr>
+<tr><td><b>sofia-hsu</b> (flagship, complete)</td><td class="n">11</td><td class="n">3</td><td class="n done">CosyVoice2</td></tr>
+<tr><td>xie-yizhen</td><td class="n">76</td><td class="n">0</td><td class="n">&mdash;</td></tr>
+<tr><td>brooke-sinclair</td><td class="n">40</td><td class="n">0</td><td class="n">&mdash;</td></tr>
+<tr><td>xiang-xiang (real person)</td><td class="n">29</td><td class="n">4</td><td class="n">&mdash;</td></tr>
+<tr><td>lin-wanqing</td><td class="n">5</td><td class="n">1</td><td class="n">&mdash;</td></tr>
+<tr><td>lena-chen</td><td class="n">2</td><td class="n">0</td><td class="n done">GPT-SoVITS</td></tr>
+<tr><td>chloe/sienna/mika/jax</td><td class="n">&le;2 each</td><td class="n">0</td><td class="n todo">none yet</td></tr>
+</table>
+</div>
+</div>
+
+<h2>3 &middot; Hardware</h2>
+<div class="cols2">
+<div>
+<h3>Serving machine (local)</h3>
+<ul>
+  <li>GPU <b>RTX 5070, 12&nbsp;GB VRAM</b> (sm_120, native bf16) &mdash; the hard ceiling for the whole system</li>
+  <li>7B LLM (~4.7&nbsp;GB) + voice + avatar just fit in 12&nbsp;GB; not enough to run them comfortably in parallel or to train lip-sync in-house (needs 23&ndash;30&nbsp;GB)</li>
+</ul>
+</div>
+<div>
+<h3>This session's machine (training/cluster)</h3>
+<ul>
+  <li>GPU <b>Tesla V100-SXM2-16&nbsp;GB</b> (sm_70, driver 550.163, CUDA 12.4, torch 2.8.0+cu128)</li>
+  <li>No native bf16 &rarr; <code>train_lora.py</code> was just patched to auto-detect bf16/fp16, so it runs on both machines</li>
+</ul>
+</div>
+</div>
+
+<h2>4 &middot; What has been done</h2>
+<div class="cols3">
+<div>
+<h3>Voice</h3>
+<ul>
+  <li>5 GPT-SoVITS fine-tuned voices, verified as 5 distinct speakers (ERes2NetV2)</li>
+  <li>Sofia moved to <b>CosyVoice&nbsp;2 instruct mode</b>; RVC runs as a resident timbre pass (~1s instead of 6.4s)</li>
+  <li>A human-trained RVC model was tried and <b>rejected</b> &mdash; didn't hold up</li>
+  <li>Measured: TTS can't sing (pitch range narrows) &rarr; solved with a prebuilt song library + RVC instead</li>
+</ul>
+</div>
+<div>
+<h3>Brain &amp; safety</h3>
+<ul>
+  <li>QLoRA on Qwen2.5-7B; retrained across several passes: on real answers, on humour, on banter</li>
+  <li><b>Guards enforced in code, not prompt</b> &mdash; measured that prompting alone wasn't enough; 13 test cases, 0 violations once code rules were added</li>
+  <li>Latest patches: block invented addresses, block denying relationship status, fix a <code>_GREETING</code> regex that was eating the first word of a reply</li>
+  <li>Append-only reply-approval queue that survives a crash; every profile runs in <code>suggest</code> mode</li>
+</ul>
+</div>
+<div>
+<h3>Latency &amp; infra</h3>
+<ul>
+  <li>Measured that 89% of latency is the voice, not the LLM (0.8s LLM / 6.8s TTS)</li>
+  <li><code>unload_brain()</code>: evicts the LLM from VRAM before rendering voice &rarr; RTF 1.93&rarr;0.87</li>
+  <li>Renders in sentence chunks, publishes as soon as the first audio exists; the live room drives the avatar off the real waveform</li>
+  <li>Renamed the character Sofia Vargas &rarr; <b>Sofia Hsu</b>, Taiwan canon; just finished cleaning up the training data and a leftover old name in <code>kols/index.json</code></li>
+</ul>
+</div>
+</div>
+
+<div class="box">Still open: replies are stiff (7B model ceiling + training data distilled from itself); 4/10 characters have no images yet; wav2lip is on a research-only license (needs to move to MuseTalk before commercial use).</div>
+
+<div class="foot">Reproduce the numbers: <code>python tools/selftest/server.py --cli</code> (live checks) &middot; full detail &amp; measurements: <code>docs/BAO-CAO-TONG-QUAN-2026-08.md</code></div>
+</body></html>

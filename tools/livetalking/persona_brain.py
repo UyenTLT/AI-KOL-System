@@ -73,7 +73,7 @@ _BARE_ACTION_RE = re.compile(
 _BOPOMOFO_RE = re.compile(r"[㄀-ㄯ]+")
 
 
-def sanitize_for_speech(text: str, to_traditional: bool = False) -> str:
+def sanitize_for_speech(text: str, to_traditional: bool = False, strip: bool = True) -> str:
     """Make a model reply safe to hand to a speech synthesiser.
 
     The system prompt asks for no emoji and no Simplified characters, but a prompt is
@@ -114,7 +114,7 @@ def sanitize_for_speech(text: str, to_traditional: bool = False) -> str:
             pass  # optional dependency; leave the text as-is rather than fail a reply
     out = re.sub(r"[ \t]{2,}", " ", out)
     out = re.sub(r"\n{2,}", "\n", out)
-    return out.strip()
+    return out.strip() if strip else out
 
 
 _CJK_RE = re.compile(r"[㐀-䶿一-鿿豈-﫿]")
@@ -835,6 +835,45 @@ def _remote_kw(base_url: str) -> dict:
                                                       and REASONING_EFFORT) else {}
 
 
+class _ShimMsg:
+    def __init__(self, content): self.content = content
+
+class _ShimChoice:
+    def __init__(self, content, finish_reason):
+        self.message = _ShimMsg(content)
+        self.finish_reason = finish_reason
+
+class _ShimResp:
+    def __init__(self, content, finish_reason):
+        self.choices = [_ShimChoice(content, finish_reason)]
+
+
+def _ollama_chat_no_think(base_url, model, msgs, max_tokens, temperature):
+    """Talk to Ollama's native /api/chat with thinking disabled.
+
+    A hybrid-reasoning model served locally (e.g. qwen3) burns the max_tokens budget on an
+    invisible reasoning pass when reached through the OpenAI-compatible /v1 endpoint, which
+    does not expose Ollama's own `think` switch -- passing `think: false` there is silently
+    ignored. Measured on qwen3:8b: through /v1 a 160-token budget produced a reply cut off
+    mid-sentence (reasoning alone used all of it); through /api/chat with think=False the same
+    question returned a complete reply in 29 tokens. Hitting /api/chat directly is what
+    restores the live-stream's fast, complete-sentence replies.
+    """
+    import json as _json
+    import urllib.request
+    host = base_url.split("/v1")[0]
+    req = urllib.request.Request(
+        host + "/api/chat",
+        data=_json.dumps({"model": model, "messages": msgs, "think": False, "stream": False,
+                          "options": {"temperature": temperature, "num_predict": max_tokens}}).encode(),
+        headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        body = _json.loads(resp.read())
+    content = body.get("message", {}).get("content", "")
+    finish_reason = "length" if body.get("done_reason") == "length" else "stop"
+    return _ShimResp(content, finish_reason)
+
+
 def _complete(client, base_url, model, msgs, **kw):
     """One completion, falling back to the local model if a hosted brain does not answer.
 
@@ -847,6 +886,13 @@ def _complete(client, base_url, model, msgs, **kw):
     Deliberately NOT retried against the remote endpoint first. If it is down it is down, and
     a second timeout doubles the silence before the fallback even starts.
     """
+    if not _is_remote(base_url):
+        try:
+            return _ollama_chat_no_think(base_url, model, msgs,
+                                         max_tokens=kw.get("max_tokens", 160),
+                                         temperature=kw.get("temperature", 0.6))
+        except Exception:
+            pass  # fall through to the OpenAI-compat path as a safety net
     from openai import OpenAI
     try:
         return client.chat.completions.create(model=model, messages=msgs,
@@ -952,11 +998,36 @@ def chat(kol_id: str, message: str, *, base_url: str = DEFAULT_BASE_URL,
         return SAFE_FALLBACK["zh" if trad or _CJK_RE.search(message) else "en"]
 
     def gen():
+        # Same problem as _complete, worse here: the OpenAI-compat /v1 endpoint does not
+        # honour `think`, so a local hybrid-reasoning model streams its whole invisible
+        # reasoning pass as if it were the answer, chunk by chunk, before any real content
+        # -- turning the "speak the first sentence early" optimisation into the slowest path
+        # in the system instead of the fastest. Hitting /api/chat directly with think=False
+        # avoids generating those tokens at all.
+        if not _is_remote(base_url):
+            import json as _json
+            import urllib.request
+            host = base_url.split("/v1")[0]
+            req = urllib.request.Request(
+                host + "/api/chat",
+                data=_json.dumps({"model": model, "messages": msgs, "think": False,
+                                  "stream": True,
+                                  "options": {"temperature": 0.6, "num_predict": max_tokens}}).encode(),
+                headers={"Content-Type": "application/json"}, method="POST")
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                for line in resp:
+                    if not line.strip():
+                        continue
+                    chunk = _json.loads(line)
+                    content = chunk.get("message", {}).get("content", "")
+                    if content:
+                        yield sanitize_for_speech(content, trad, strip=False)
+            return
         for chunk in client.chat.completions.create(model=model, messages=msgs,
                                                     temperature=0.6, max_tokens=max_tokens,
                                                     stream=True):
             if chunk.choices and chunk.choices[0].delta.content:
-                yield sanitize_for_speech(chunk.choices[0].delta.content, trad)
+                yield sanitize_for_speech(chunk.choices[0].delta.content, trad, strip=False)
     return gen()
 
 

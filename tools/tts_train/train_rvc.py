@@ -42,7 +42,23 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 RVC = REPO / "RVC"
-PY = RVC / ".venv" / "Scripts" / "python.exe"
+def _rvc_python() -> Path:
+    """The Windows .venv is this project's usual layout; fall back to a same-named conda env
+    (RVC_PYTHON overrides both) so the same script runs on the Linux box this was built on too."""
+    env = os.getenv("RVC_PYTHON")
+    if env:
+        return Path(env)
+    win = RVC / ".venv" / "Scripts" / "python.exe"
+    if win.is_file():
+        return win
+    for envs_root in (Path.home() / ".conda" / "envs", Path("/opt/conda/envs")):
+        candidate = envs_root / "rvc" / "bin" / "python"
+        if candidate.is_file():
+            return candidate
+    return Path(sys.executable)
+
+
+PY = _rvc_python()
 
 STAGES = ["slice", "f0", "feature", "train", "index"]
 
@@ -133,18 +149,25 @@ def main() -> int:
     sr_hz = {"32k": 32000, "40k": 40000, "48k": 48000}[args.sr]
     started = time.perf_counter()
 
+    # This checkout's stage scripts live under infer.modules.train, not train.* at the repo
+    # root -- that root-level package does not exist in this branch at all. Verified against
+    # each script's own sys.argv reads rather than assumed: extract_f0_rmvpe.py takes
+    # (n_part, i_part, i_gpu, exp_dir, is_half) with no device string, and
+    # extract_feature_print.py's 6-arg form is (device, n_part, i_part, exp_dir, version,
+    # is_half) -- one fewer positional than this script used to send.
     if "slice" in todo:
         print(f"\n[slice] {len(list(corpus.glob('*.wav')))} clips from {corpus}")
-        run(["train.preprocess", corpus.as_posix(), str(sr_hz), str(args.workers),
-             d.as_posix(), "False", "3.0"])
+        run(["infer.modules.train.preprocess", corpus.as_posix(), str(sr_hz),
+             str(args.workers), d.as_posix(), "False", "3.0"])
 
     if "f0" in todo:
         print("\n[f0] RMVPE on the GPU")
-        run(["train.dataset.extract_f0", "cuda", "1", "0", "0", d.as_posix(), "False"])
+        run(["infer.modules.train.extract.extract_f0_rmvpe", "1", "0", "0",
+             d.as_posix(), "False"])
 
     if "feature" in todo:
         print("\n[feature] HuBERT/ContentVec")
-        run(["train.dataset.extract_hubert_feature", "cuda:0", "1", "0", "0",
+        run(["infer.modules.train.extract_feature_print", "cuda:0", "1", "0",
              d.as_posix(), args.version, "False"])
 
     if "train" in todo:
@@ -157,16 +180,27 @@ def main() -> int:
         print(f"\n[train] {n} slices, {args.epochs} epochs, batch {args.batch}")
         pg = (RVC / "assets" / "pretrained_v2" / f"f0G{args.sr}.pth").as_posix()
         pd = (RVC / "assets" / "pretrained_v2" / f"f0D{args.sr}.pth").as_posix()
-        run(["train.train", "-e", args.kol_id, "-sr", args.sr, "-f0", "1",
+        run(["infer.modules.train.train", "-e", args.kol_id, "-sr", args.sr, "-f0", "1",
              "-bs", str(args.batch), "-g", "0", "-te", str(args.epochs),
              "-se", str(args.save_every), "-pg", pg, "-pd", pd,
              "-l", "1", "-c", "0", "-sw", "1", "-v", args.version], quiet_tail=12)
 
     if "index" in todo:
         print("\n[index] retrieval index")
+        # No CLI entry point for this exists in this checkout -- train_index() is a Gradio
+        # click-handler closure inside infer-web.py with no way to call it standalone. See
+        # _rvc_build_index.py, which re-implements that same handler's logic.
         (RVC / "assets" / "indices").mkdir(parents=True, exist_ok=True)
-        run(["train.train_index", args.kol_id, args.version,
-             (RVC / "assets" / "indices").as_posix(), str(args.workers), "auto"])
+        script = (Path(__file__).resolve().parent / "_rvc_build_index.py").as_posix()
+        cmd = [str(PY), script, args.kol_id, args.version,
+              (RVC / "assets" / "indices").as_posix()]
+        print(f"  $ python {script} {args.kol_id} {args.version}", flush=True)
+        p = subprocess.run(cmd, cwd=str(RVC), capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
+        for line in (p.stdout + p.stderr).strip().splitlines()[-10:]:
+            print(f"    {line}", flush=True)
+        if p.returncode != 0:
+            raise RuntimeError(f"index build failed with exit code {p.returncode}")
 
     print(f"\n  finished in {(time.perf_counter() - started)/60:.1f} min")
     models = sorted((RVC / "assets" / "weights").glob(f"{args.kol_id}*.pth"))

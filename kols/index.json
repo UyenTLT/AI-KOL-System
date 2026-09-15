@@ -3,14 +3,14 @@
   "description": "Master index of all KOL profiles in this database",
   "kols": [
     {
-      "id": "sofia-vargas",
+      "id": "sofia-hsu",
       "name": "Sofia Hsu",
       "handle": "@sofiahsu",
       "category": "lifestyle",
       "ethnicity": "Taiwanese-American",
       "status": "active",
       "created_at": "2026-06-20",
-      "path": "kols/sofia-vargas/"
+      "path": "kols/sofia-hsu/"
     },
     {
       "id": "xie-yizhen",

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8">
+<title>AI-KOL-System — Tổng quan dự án</title>
+<style>
+  @page { size: A4; margin: 9mm 11mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Calibri, sans-serif; color: #14181a; font-size: 8pt;
+         line-height: 1.32; margin: 0; }
+  h1 { font-size: 15pt; margin: 0 0 1mm; letter-spacing: -.2px; }
+  .sub { color: #5d6b6e; font-size: 7.6pt; margin-bottom: 2.4mm;
+         border-bottom: 1.5px solid #0e6e68; padding-bottom: 1.8mm; }
+  h2 { font-size: 8.8pt; margin: 2.6mm 0 1mm; color: #0e6e68;
+       text-transform: uppercase; letter-spacing: .5px; }
+  h3 { font-size: 8pt; margin: 1.6mm 0 0.6mm; color: #0b3f3c; }
+  ul { margin: 0; padding-left: 3.8mm; }
+  li { margin-bottom: 0.5mm; }
+  b { color: #0b3f3c; }
+  code { font-family: Consolas, monospace; font-size: 7.7pt; background: #eef2f2; padding: 0 1px; }
+  table { border-collapse: collapse; width: 100%; margin: 1mm 0 0; font-size: 7.5pt; }
+  th { text-align: left; color: #5d6b6e; font-weight: 600; padding: 0.8mm 2mm 0.8mm 0;
+       border-bottom: 1px solid #cfd8d8; }
+  td { padding: 0.8mm 2mm 0.8mm 0; border-bottom: 1px solid #eceff0; }
+  td.n { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cols3 { display: flex; gap: 5mm; }
+  .cols3 > div { flex: 1; }
+  .cols2 { display: flex; gap: 6mm; }
+  .cols2 > div { flex: 1; }
+  .box { background: #f4f7f7; border-left: 2.5px solid #0e6e68; padding: 1.4mm 2mm; margin-top: 1mm; }
+  .pipe { background: #f4f7f7; border-radius: 2px; padding: 1.6mm 2.2mm; margin-top: 1mm; font-size: 7.6pt; }
+  .pipe b { display:inline-block; min-width: 15mm; }
+  .foot { margin-top: 2.6mm; padding-top: 1.6mm; border-top: 1px solid #cfd8d8;
+          color: #7d8a8c; font-size: 7.2pt; }
+  .done { color: #17694a; font-weight: 600; }
+  .todo { color: #a15b00; font-weight: 600; }
+</style></head><body>
+
+<h1>AI-KOL-System &mdash; Tổng quan dự án</h1>
+<div class="sub">Trạng thái tính đến 2026-09-14 &middot; 82 commit &middot; nguồn: chính repo này (<code>git log</code>, <code>tools/selftest</code>, đếm file trực tiếp)</div>
+
+<h2>1 &middot; Cấu trúc dự án</h2>
+<div class="pipe">
+<b>① NÃO</b> persona_brain.py + Ollama (Qwen2.5-7B fine-tune riêng cho Sofia) &rarr;
+<b>② GIỌNG</b> CosyVoice&nbsp;2 / GPT-SoVITS + RVC timbre &rarr;
+<b>③ MẶT</b> LiveTalking + LivePortrait/wav2lip, nhép miệng 25fps &rarr;
+<b>④ PHÁT</b> WebRTC / OBS / RTMP
+</div>
+<p style="margin:1mm 0 0">Nguồn sự thật duy nhất: <code>kols/&lt;id&gt;/profile.json</code> &mdash; tính cách, ngôn ngữ, giọng, khuôn mặt, vai trò bán hàng đều đọc từ đó. Thêm nhân vật mới = thêm một thư mục, không viết lại code.</p>
+<div class="cols2" style="margin-top:1.4mm">
+<div>
+<h3>Thư mục chính</h3>
+<ul>
+  <li><code>kols/</code> &mdash; CSDL 10 nhân vật + 3 giọng preset dùng chung (654&nbsp;MB, chủ yếu ảnh/voice/video)</li>
+  <li><code>datasets/</code> &mdash; dữ liệu huấn luyện LLM + nguyên liệu thô (12&nbsp;MB)</li>
+  <li><code>tools/</code> &mdash; 12 module: chat, livestream, llm_train, tts_train, voice_crawl, voice_eval, livetalking, dashboard, selftest, studio, report, talking_web</li>
+  <li><code>finetune/base/</code> &mdash; model gốc Qwen2.5-7B-Instruct + Qwen3-8B (30&nbsp;GB, gitignore, không lên git)</li>
+</ul>
+</div>
+<div>
+<h3>Ứng dụng đang chạy (cổng)</h3>
+<ul>
+  <li><b>8770</b> Dashboard &middot; <b>8772</b> Selftest (kiểm thử toàn hệ thống, <code>--cli</code>)</li>
+  <li><b>8777</b> Livestream (sân khấu, tự chọn giọng điệu) &middot; <b>8779</b> Chat 1:1 (nhớ người dùng)</li>
+  <li><b>9880/9881</b> GPT-SoVITS / CosyVoice&nbsp;2 &middot; <b>8010</b> LiveTalking &middot; <b>11434</b> Ollama</li>
+</ul>
+</div>
+</div>
+
+<h2>2 &middot; Dữ liệu</h2>
+<div class="cols2">
+<div>
+<h3>Huấn luyện LLM (Sofia Hsu)</h3>
+<table>
+<tr><th>Tập</th><th>Số dòng</th></tr>
+<tr><td>Train (QLoRA)</td><td class="n">1&nbsp;483</td></tr>
+<tr><td>Validation</td><td class="n">109</td></tr>
+<tr><td>Banter pairs (trêu đùa)</td><td class="n">20</td></tr>
+<tr><td>Humour Q&amp;A (Sofia + gộp từ HuggingFace)</td><td class="n">914</td></tr>
+<tr><td>Nguyên liệu thô style/ (podcast, livestream, storytime&hellip;)</td><td class="n">41&nbsp;490</td></tr>
+</table>
+<p style="margin:1mm 0 0;font-size:7.3pt;color:#5d6b6e">Vừa sửa 2026-09-14: 818 dòng train + 59 dòng val còn ghi "Sofia Vargas" (tên cũ) đã đổi thành "Sofia Hsu"; xoá 2 dòng train mang lore Colombia (gia đình Vargas) không sửa được bằng đổi tên.</p>
+</div>
+<div>
+<h3>Kho nhân vật &mdash; ảnh / video / giọng</h3>
+<table>
+<tr><th>Nhân vật</th><th>Ảnh</th><th>Video</th><th>Giọng</th></tr>
+<tr><td><b>sofia-hsu</b> (mẫu, hoàn chỉnh)</td><td class="n">11</td><td class="n">3</td><td class="n done">CosyVoice2</td></tr>
+<tr><td>xie-yizhen</td><td class="n">76</td><td class="n">0</td><td class="n">&mdash;</td></tr>
+<tr><td>brooke-sinclair</td><td class="n">40</td><td class="n">0</td><td class="n">&mdash;</td></tr>
+<tr><td>xiang-xiang (người thật)</td><td class="n">29</td><td class="n">4</td><td class="n">&mdash;</td></tr>
+<tr><td>lin-wanqing</td><td class="n">5</td><td class="n">1</td><td class="n">&mdash;</td></tr>
+<tr><td>lena-chen</td><td class="n">2</td><td class="n">0</td><td class="n done">GPT-SoVITS</td></tr>
+<tr><td>chloe/sienna/mika/jax</td><td class="n">&le;2 mỗi người</td><td class="n">0</td><td class="n todo">chưa có</td></tr>
+</table>
+</div>
+</div>
+
+<h2>3 &middot; Hardware</h2>
+<div class="cols2">
+<div>
+<h3>Máy phục vụ (serving, local)</h3>
+<ul>
+  <li>GPU <b>RTX 5070, 12&nbsp;GB VRAM</b> (sm_120, bf16 native) &mdash; trần cứng của toàn hệ thống</li>
+  <li>LLM 7B (~4,7&nbsp;GB) + giọng + avatar vừa khít 12&nbsp;GB; không đủ để chạy song song thoải mái hay tự train lipsync (cần 23&ndash;30&nbsp;GB)</li>
+</ul>
+</div>
+<div>
+<h3>Máy đang chạy phiên này (training/cluster)</h3>
+<ul>
+  <li>GPU <b>Tesla V100-SXM2-16&nbsp;GB</b> (sm_70, driver 550.163, CUDA 12.4, torch 2.8.0+cu128)</li>
+  <li>Không hỗ trợ bf16 gốc &rarr; <code>train_lora.py</code> vừa được sửa để tự dò bf16/fp16, chạy được trên cả hai máy</li>
+</ul>
+</div>
+</div>
+
+<h2>4 &middot; Đã làm được gì</h2>
+<div class="cols3">
+<div>
+<h3>Giọng nói</h3>
+<ul>
+  <li>5 giọng fine-tune GPT-SoVITS, đã xác minh là 5 người khác nhau (ERes2NetV2)</li>
+  <li>Sofia chuyển sang <b>CosyVoice&nbsp;2 instruct</b>; RVC làm lớp timbre, chạy sẵn trong VRAM (~1s thay vì 6,4s)</li>
+  <li>Model RVC tự train bằng người: đã thử, <b>từ chối</b> (không đạt)</li>
+  <li>Đo được: hát không dùng TTS được (dải cao độ hẹp lại) &rarr; dùng thư viện bài hát + RVC</li>
+</ul>
+</div>
+<div>
+<h3>Não &amp; an toàn</h3>
+<ul>
+  <li>QLoRA Qwen2.5-7B; retrain nhiều vòng: theo câu trả lời thật, theo hài hước, theo banter</li>
+  <li><b>Guard bằng code, không bằng prompt</b> &mdash; đo được prompt không đủ; 13 ca kiểm thử, 0 vi phạm sau khi thêm luật code</li>
+  <li>Vừa vá thêm: chặn bịa địa chỉ, chặn phủ nhận tình trạng quan hệ, sửa lỗi <code>_GREETING</code> ăn mất chữ đầu câu</li>
+  <li>Hàng đợi duyệt trả lời append-only, sống sót qua sập máy; mọi hồ sơ ở chế độ <code>suggest</code></li>
+</ul>
+</div>
+<div>
+<h3>Độ trễ &amp; hạ tầng</h3>
+<ul>
+  <li>Đo ra 89% độ trễ nằm ở giọng nói, không phải LLM (0,8s LLM / 6,8s TTS)</li>
+  <li><code>unload_brain()</code>: đẩy model ra khỏi VRAM trước khi render giọng &rarr; RTF 1,93&rarr;0,87</li>
+  <li>Render theo khối câu, phát ngay khi có audio đầu tiên; phòng live có avatar phản ứng theo waveform thật</li>
+  <li>Đổi tên nhân vật Sofia Vargas &rarr; <b>Sofia Hsu</b>, canon Đài Loan; vừa dọn xong phần dữ liệu train + <code>kols/index.json</code> còn sót tên cũ</li>
+</ul>
+</div>
+</div>
+
+<div class="box">Chưa xong / còn chặn: câu trả lời còn cứng (trần năng lực model 7B + dữ liệu tự chưng cất từ chính nó); 4/10 nhân vật chưa có ảnh; wav2lip đang dùng giấy phép nghiên cứu (cần đổi MuseTalk trước khi thương mại).</div>
+
+<div class="foot">Tái tạo số liệu: <code>python tools/selftest/server.py --cli</code> (kiểm thử sống) &middot; chi tiết đề xuất &amp; số đo đầy đủ: <code>docs/BAO-CAO-TONG-QUAN-2026-08.md</code></div>
+</body></html>
